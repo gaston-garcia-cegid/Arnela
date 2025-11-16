@@ -1,0 +1,92 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: arnela-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: arnela_db
+      POSTGRES_USER: arnela_user
+      POSTGRES_PASSWORD: arnela_secure_pass_2024
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arnela_user -d arnela_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arnela-network
+
+  # Redis Cache & Task Queue
+  redis:
+    image: redis:7-alpine
+    container_name: arnela-redis
+    restart: unless-stopped
+    command: redis-server --requirepass arnela_redis_pass_2024
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arnela-network
+
+  # Go API (Backend)
+  go-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arnela-go-api
+    restart: unless-stopped
+    environment:
+      # Application
+      APP_ENV: development
+      APP_PORT: 8080
+      
+      # Database
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: arnela_user
+      DB_PASSWORD: arnela_secure_pass_2024
+      DB_NAME: arnela_db
+      DB_SSLMODE: disable
+      
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: arnela_redis_pass_2024
+      REDIS_DB: 0
+      
+      # JWT Secret
+      JWT_SECRET: your_jwt_secret_key_change_in_production
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - arnela-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  arnela-network:
+    driver: bridge

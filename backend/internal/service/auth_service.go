@@ -1,0 +1,136 @@
+package service
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
+	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
+	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
+)
+
+// AuthService handles authentication logic
+type AuthService struct {
+	userRepo     repository.UserRepository
+	tokenManager *jwt.TokenManager
+	tokenExpiry  time.Duration
+}
+
+// NewAuthService creates a new AuthService
+func NewAuthService(userRepo repository.UserRepository, tokenManager *jwt.TokenManager, tokenExpiry time.Duration) *AuthService {
+	return &AuthService{
+		userRepo:     userRepo,
+		tokenManager: tokenManager,
+		tokenExpiry:  tokenExpiry,
+	}
+}
+
+// RegisterRequest represents a user registration request
+type RegisterRequest struct {
+	Email     string `json:"email" binding:"required,email"`
+	Password  string `json:"password" binding:"required,min=8"`
+	FirstName string `json:"firstName" binding:"required"`
+	LastName  string `json:"lastName" binding:"required"`
+	Role      string `json:"role"`
+}
+
+// LoginRequest represents a user login request
+type LoginRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+// AuthResponse represents the authentication response
+type AuthResponse struct {
+	Token string       `json:"token"`
+	User  *domain.User `json:"user"`
+}
+
+// Register registers a new user
+func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
+	// Check if email already exists
+	exists, err := s.userRepo.EmailExists(ctx, req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check email existence: %w", err)
+	}
+	if exists {
+		return nil, fmt.Errorf("email already registered")
+	}
+
+	// Hash password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	// Set default role if not provided
+	role := domain.UserRole(req.Role)
+	if role == "" {
+		role = domain.RoleClient
+	}
+
+	// Create user
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        req.Email,
+		PasswordHash: string(hashedPassword),
+		FirstName:    req.FirstName,
+		LastName:     req.LastName,
+		Role:         role,
+		IsActive:     true,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Generate token
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, string(user.Role), s.tokenExpiry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return &AuthResponse{
+		Token: token,
+		User:  user,
+	}, nil
+}
+
+// Login authenticates a user and returns a token
+func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
+	// Get user by email
+	user, err := s.userRepo.GetByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Verify password
+	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Generate token
+	token, err := s.tokenManager.GenerateToken(user.ID, user.Email, string(user.Role), s.tokenExpiry)
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+
+	return &AuthResponse{
+		Token: token,
+		User:  user,
+	}, nil
+}
+
+// GetUserByID retrieves a user by ID
+func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	user, err := s.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+	return user, nil
+}
