@@ -29,8 +29,9 @@ func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 // @Param        request body service.RegisterRequest true "Registration data"
 // @Success      201 {object} service.AuthResponse
 // @Failure      400 {object} map[string]string
+// @Failure      409 {object} map[string]string
 // @Failure      500 {object} map[string]string
-// @Router       /api/v1/auth/register [post]
+// @Router       /auth/register [post]
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req service.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -61,7 +62,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 // @Success      200 {object} service.AuthResponse
 // @Failure      400 {object} map[string]string
 // @Failure      401 {object} map[string]string
-// @Router       /api/v1/auth/login [post]
+// @Router       /auth/login [post]
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req service.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -87,18 +88,18 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Success      200 {object} domain.User
 // @Failure      401 {object} map[string]string
 // @Failure      404 {object} map[string]string
-// @Router       /api/v1/auth/me [get]
+// @Router       /auth/me [get]
 func (h *AuthHandler) Me(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
 		return
 	}
 
 	// Convert userID from string to UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
 		return
 	}
 

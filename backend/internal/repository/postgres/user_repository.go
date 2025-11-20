@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
@@ -19,6 +20,10 @@ type userRepository struct {
 
 // NewUserRepository creates a new UserRepository instance
 func NewUserRepository(db *sqlx.DB) repository.UserRepository {
+	if db == nil {
+		panic("database connection is nil")
+	}
+	log.Printf("[DEBUG] UserRepository initialized with db pointer: %p", db)
 	return &userRepository{db: db}
 }
 
@@ -57,17 +62,8 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 	`
 
 	user := &domain.User{}
-	err := r.db.QueryRowContext(ctx, query, id).Scan(
-		&user.ID,
-		&user.Email,
-		&user.PasswordHash,
-		&user.FirstName,
-		&user.LastName,
-		&user.Role,
-		&user.IsActive,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
+	// Use GetContext instead of QueryRowContext for better error handling
+	err := r.db.GetContext(ctx, user, query, id)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -81,32 +77,60 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 
 // GetByEmail retrieves a user by their email
 func (r *userRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	// Log de debug
+	log.Printf("[DEBUG] GetByEmail called for: %s", email)
+	log.Printf("[DEBUG] Repository db pointer: %p", r.db)
+
+	// Verificar que el puntero no sea nil
+	if r.db == nil {
+		log.Printf("[ERROR] Database connection is nil in repository!")
+		return nil, fmt.Errorf("database connection is nil")
+	}
+
+	// Verificar estado del pool
+	stats := r.db.Stats()
+	log.Printf("[DEBUG] DB Pool stats before query - Open=%d, Idle=%d, InUse=%d, WaitCount=%d",
+		stats.OpenConnections, stats.Idle, stats.InUse, stats.WaitCount)
+
+	// ✅ Verificar que el pool tiene conexiones abiertas
+	if stats.OpenConnections == 0 {
+		log.Printf("[ERROR] No open database connections in pool!")
+
+		// Intentar reconectar haciendo ping
+		if err := r.db.Ping(); err != nil {
+			log.Printf("[ERROR] Failed to reconnect: %v", err)
+			return nil, fmt.Errorf("database connection pool is empty and reconnection failed: %w", err)
+		}
+
+		log.Printf("[WARN] Successfully reconnected to database")
+		stats = r.db.Stats()
+		log.Printf("[DEBUG] DB Pool stats after reconnect - Open=%d, Idle=%d, InUse=%d",
+			stats.OpenConnections, stats.Idle, stats.InUse)
+	}
+
 	query := `
-		SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
-		FROM users
-		WHERE email = $1 AND is_active = true
-	`
+        SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
+        FROM users
+        WHERE email = $1 AND is_active = true
+    `
 
 	user := &domain.User{}
-	err := r.db.QueryRowContext(ctx, query, email).Scan(
-		&user.ID,
-		&user.Email,
-		&user.PasswordHash,
-		&user.FirstName,
-		&user.LastName,
-		&user.Role,
-		&user.IsActive,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
+	log.Printf("[DEBUG] Executing query for email: %s", email)
+
+	// Usar GetContext en lugar de Get para respetar el contexto
+	log.Printf("[DEBUG] Executing query for email: %s", email)
+	err := r.db.GetContext(ctx, user, query, email)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Printf("[DEBUG] User not found for email: %s", email)
 			return nil, fmt.Errorf("user not found")
 		}
-		return nil, fmt.Errorf("failed to get user: %w", err)
+		log.Printf("[ERROR] Query failed: %v", err)
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
 
+	log.Printf("[DEBUG] User found: ID=%s, Email=%s, Role=%s", user.ID, user.Email, user.Role)
 	return user, nil
 }
 
@@ -178,34 +202,11 @@ func (r *userRepository) List(ctx context.Context, offset, limit int) ([]*domain
 		LIMIT $1 OFFSET $2
 	`
 
-	rows, err := r.db.QueryContext(ctx, query, limit, offset)
+	var users []*domain.User
+	// Use SelectContext for batch queries
+	err := r.db.SelectContext(ctx, &users, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list users: %w", err)
-	}
-	defer rows.Close()
-
-	var users []*domain.User
-	for rows.Next() {
-		user := &domain.User{}
-		err := rows.Scan(
-			&user.ID,
-			&user.Email,
-			&user.PasswordHash,
-			&user.FirstName,
-			&user.LastName,
-			&user.Role,
-			&user.IsActive,
-			&user.CreatedAt,
-			&user.UpdatedAt,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan user: %w", err)
-		}
-		users = append(users, user)
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 
 	return users, nil
@@ -216,7 +217,7 @@ func (r *userRepository) EmailExists(ctx context.Context, email string) (bool, e
 	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
 
 	var exists bool
-	err := r.db.QueryRowContext(ctx, query, email).Scan(&exists)
+	err := r.db.GetContext(ctx, &exists, query, email)
 	if err != nil {
 		return false, fmt.Errorf("failed to check email existence: %w", err)
 	}

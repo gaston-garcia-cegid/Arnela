@@ -8,8 +8,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// AuthMiddleware creates a middleware for JWT authentication
-func AuthMiddleware(tokenManager *jwt.TokenManager) gin.HandlerFunc {
+// AuthMiddleware handles JWT authentication and authorization
+type AuthMiddleware struct {
+	tokenManager *jwt.TokenManager
+}
+
+// NewAuthMiddleware creates a new AuthMiddleware instance
+func NewAuthMiddleware(tokenManager *jwt.TokenManager) *AuthMiddleware {
+	return &AuthMiddleware{
+		tokenManager: tokenManager,
+	}
+}
+
+// RequireAuth ensures the user is authenticated
+func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -29,9 +41,9 @@ func AuthMiddleware(tokenManager *jwt.TokenManager) gin.HandlerFunc {
 		tokenString := parts[1]
 
 		// Validate token
-		claims, err := tokenManager.ValidateToken(tokenString)
+		claims, err := m.tokenManager.ValidateToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
 			c.Abort()
 			return
 		}
@@ -45,17 +57,24 @@ func AuthMiddleware(tokenManager *jwt.TokenManager) gin.HandlerFunc {
 	}
 }
 
-// RequireRole creates a middleware that checks if the user has a specific role
-func RequireRole(roles ...string) gin.HandlerFunc {
+// RequireRole creates a middleware that checks if the user has one of the specified roles
+func (m *AuthMiddleware) RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("role")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized - no role in context"})
 			c.Abort()
 			return
 		}
 
-		roleStr := userRole.(string)
+		roleStr, ok := userRole.(string)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid role type"})
+			c.Abort()
+			return
+		}
+
+		// Check if user has one of the allowed roles
 		for _, role := range roles {
 			if roleStr == role {
 				c.Next()
@@ -65,5 +84,36 @@ func RequireRole(roles ...string) gin.HandlerFunc {
 
 		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
 		c.Abort()
+	}
+}
+
+// OptionalAuth validates the token if present, but doesn't require it
+func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.Next()
+			return
+		}
+
+		tokenString := parts[1]
+		claims, err := m.tokenManager.ValidateToken(tokenString)
+		if err != nil {
+			c.Next()
+			return
+		}
+
+		// Set user information in context if token is valid
+		c.Set("userID", claims.UserID.String())
+		c.Set("email", claims.Email)
+		c.Set("role", claims.Role)
+
+		c.Next()
 	}
 }

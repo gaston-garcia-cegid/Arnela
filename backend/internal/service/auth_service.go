@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -20,7 +21,7 @@ type AuthService struct {
 }
 
 // NewAuthService creates a new AuthService
-func NewAuthService(userRepo repository.UserRepository, tokenManager *jwt.TokenManager, tokenExpiry time.Duration) *AuthService {
+func NewAuthService(userRepo repository.UserRepository, tokenManager *jwt.TokenManager, tokenExpiry time.Duration) AuthServiceInterface {
 	return &AuthService{
 		userRepo:     userRepo,
 		tokenManager: tokenManager,
@@ -51,13 +52,18 @@ type AuthResponse struct {
 
 // Register registers a new user
 func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthResponse, error) {
+	// Verificar que el contexto no esté cancelado
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	}
+
 	// Check if email already exists
 	exists, err := s.userRepo.EmailExists(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check email existence: %w", err)
 	}
 	if exists {
-		return nil, fmt.Errorf("email already registered")
+		return nil, errors.New("email already registered")
 	}
 
 	// Hash password
@@ -103,15 +109,25 @@ func (s *AuthService) Register(ctx context.Context, req RegisterRequest) (*AuthR
 
 // Login authenticates a user and returns a token
 func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthResponse, error) {
+	// Verificar que el contexto no esté cancelado
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	}
+
 	// Get user by email
 	user, err := s.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, errors.New("invalid credentials")
 	}
 
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, fmt.Errorf("invalid credentials")
+		return nil, errors.New("invalid credentials")
+	}
+
+	// Check if user is active
+	if !user.IsActive {
+		return nil, errors.New("user account is inactive")
 	}
 
 	// Generate token
@@ -128,6 +144,11 @@ func (s *AuthService) Login(ctx context.Context, req LoginRequest) (*AuthRespons
 
 // GetUserByID retrieves a user by ID
 func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	// Verificar que el contexto no esté cancelado
+	if ctx.Err() != nil {
+		return nil, fmt.Errorf("context cancelled: %w", ctx.Err())
+	}
+
 	user, err := s.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)

@@ -14,7 +14,7 @@ definitions:
         description: Soft delete
         type: string
       dni:
-        description: Spanish ID (DNI/NIE/NIF)
+        description: Spanish National ID (DNI/NIE) - Optional
         type: string
       email:
         type: string
@@ -27,6 +27,9 @@ definitions:
       lastName:
         type: string
       lastVisit:
+        type: string
+      nif:
+        description: Spanish Tax ID (NIF) - Required
         type: string
       notes:
         type: string
@@ -110,6 +113,8 @@ definitions:
         type: string
       lastName:
         type: string
+      nif:
+        type: string
       notes:
         type: string
       phone:
@@ -121,10 +126,10 @@ definitions:
       userId:
         type: string
     required:
-    - dni
     - email
     - firstName
     - lastName
+    - nif
     - phone
     type: object
   service.LoginRequest:
@@ -175,6 +180,8 @@ definitions:
         type: boolean
       lastName:
         type: string
+      nif:
+        type: string
       notes:
         type: string
       phone:
@@ -197,101 +204,6 @@ info:
   title: Arnela CRM/CMS API
   version: "1.0"
 paths:
-  /api/v1/auth/login:
-    post:
-      consumes:
-      - application/json
-      description: Authenticates a user and returns a JWT token
-      parameters:
-      - description: Login credentials
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.LoginRequest'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/service.AuthResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Login user
-      tags:
-      - auth
-  /api/v1/auth/me:
-    get:
-      description: Returns the authenticated user's information
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/domain.User'
-        "401":
-          description: Unauthorized
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "404":
-          description: Not Found
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      security:
-      - BearerAuth: []
-      summary: Get current user
-      tags:
-      - auth
-  /api/v1/auth/register:
-    post:
-      consumes:
-      - application/json
-      description: Creates a new user account
-      parameters:
-      - description: Registration data
-        in: body
-        name: request
-        required: true
-        schema:
-          $ref: '#/definitions/service.RegisterRequest'
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: Created
-          schema:
-            $ref: '#/definitions/service.AuthResponse'
-        "400":
-          description: Bad Request
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-        "500":
-          description: Internal Server Error
-          schema:
-            additionalProperties:
-              type: string
-            type: object
-      summary: Register a new user
-      tags:
-      - auth
   /api/v1/clients:
     get:
       description: Retrieves a paginated list of clients with optional filters (admin/employee
@@ -572,6 +484,107 @@ paths:
       summary: Get my client info
       tags:
       - clients
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user and returns a JWT token
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Login user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Returns the authenticated user's information
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.User'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account
+      parameters:
+      - description: Registration data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/service.AuthResponse'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Register a new user
+      tags:
+      - auth
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.
