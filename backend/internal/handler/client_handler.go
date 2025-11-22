@@ -6,6 +6,7 @@ import (
 
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
+	pkgerrors "github.com/gaston-garcia-cegid/arnela/backend/pkg/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -39,7 +40,8 @@ func NewClientHandler(clientService service.ClientServiceInterface) *ClientHandl
 func (h *ClientHandler) CreateClient(c *gin.Context) {
 	var req service.CreateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		appErr := pkgerrors.NewValidationError("Datos de entrada inválidos", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -47,11 +49,18 @@ func (h *ClientHandler) CreateClient(c *gin.Context) {
 	if err != nil {
 		// Check for specific errors
 		errMsg := err.Error()
-		if errMsg == "email already registered" || errMsg == "NIF already registered" || errMsg == "DNI already registered" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		if errMsg == "email already registered" {
+			appErr := pkgerrors.NewConflictError("El email ya está registrado", pkgerrors.CodeEmailAlreadyExists)
+			pkgerrors.RespondWithAppError(c, appErr)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		if errMsg == "NIF already registered" || errMsg == "DNI already registered" {
+			appErr := pkgerrors.NewConflictError("El DNI/NIF ya está registrado", "DNI_ALREADY_EXISTS")
+			pkgerrors.RespondWithAppError(c, appErr)
+			return
+		}
+		appErr := pkgerrors.NewInternalError("Error al crear el cliente")
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -75,13 +84,16 @@ func (h *ClientHandler) GetClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client ID"})
+		appErr := pkgerrors.NewValidationError("ID de cliente inválido", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	client, err := h.clientService.GetClient(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+		appErr := pkgerrors.NewNotFoundError("Cliente no encontrado")
+		appErr.Code = "CLIENT_NOT_FOUND"
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -108,28 +120,39 @@ func (h *ClientHandler) UpdateClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client ID"})
+		appErr := pkgerrors.NewValidationError("ID de cliente inválido", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	var req service.UpdateClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		appErr := pkgerrors.NewValidationError("Datos de entrada inválidos", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	client, err := h.clientService.UpdateClient(c.Request.Context(), id, req)
 	if err != nil {
 		// Check for specific errors
-		if err.Error() == "email already registered" || err.Error() == "DNI already registered" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+		if err.Error() == "email already registered" {
+			appErr := pkgerrors.NewConflictError("El email ya está registrado", pkgerrors.CodeEmailAlreadyExists)
+			pkgerrors.RespondWithAppError(c, appErr)
+			return
+		}
+		if err.Error() == "DNI already registered" {
+			appErr := pkgerrors.NewConflictError("El DNI ya está registrado", "DNI_ALREADY_EXISTS")
+			pkgerrors.RespondWithAppError(c, appErr)
 			return
 		}
 		if err.Error() == "client not found" {
-			c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+			appErr := pkgerrors.NewNotFoundError("Cliente no encontrado")
+			appErr.Code = "CLIENT_NOT_FOUND"
+			pkgerrors.RespondWithAppError(c, appErr)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		appErr := pkgerrors.NewInternalError("Error al actualizar el cliente")
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -153,13 +176,16 @@ func (h *ClientHandler) DeleteClient(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := uuid.Parse(idStr)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid client ID"})
+		appErr := pkgerrors.NewValidationError("ID de cliente inválido", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	err = h.clientService.DeleteClient(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "client not found"})
+		appErr := pkgerrors.NewNotFoundError("Cliente no encontrado")
+		appErr.Code = "CLIENT_NOT_FOUND"
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -203,7 +229,8 @@ func (h *ClientHandler) ListClients(c *gin.Context) {
 
 	response, err := h.clientService.ListClients(c.Request.Context(), filters, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		appErr := pkgerrors.NewInternalError("Error al listar clientes")
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -224,20 +251,24 @@ func (h *ClientHandler) GetMyClient(c *gin.Context) {
 	// Get user ID from context (set by auth middleware)
 	userIDStr, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		appErr := pkgerrors.NewUnauthorizedError("Usuario no autenticado")
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		appErr := pkgerrors.NewValidationError("ID de usuario inválido", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	// Get client by user ID
 	client, err := h.clientService.GetClientByUserID(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "client profile not found"})
+		appErr := pkgerrors.NewNotFoundError("Perfil de cliente no encontrado")
+		appErr.Code = "CLIENT_NOT_FOUND"
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 

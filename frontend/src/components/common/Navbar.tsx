@@ -20,7 +20,7 @@ export function Navbar({ onLoginClick }: NavbarProps) {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-sm">
+    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="text-xl font-bold text-primary hover:text-primary/80 transition-colors">
           Arnela Gabinete

@@ -36,17 +36,23 @@ func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req service.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgerrors.RespondWithError(c, http.StatusBadRequest, "Invalid request data", pkgerrors.CodeValidationFailed)
+		appErr := pkgerrors.NewValidationError("Datos de entrada inválidos", map[string][]string{
+			"general": {"Verifica que todos los campos requeridos estén completos"},
+		})
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	resp, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
-		if err.Error() == "email already registered" {
-			pkgerrors.RespondWithError(c, http.StatusConflict, "Email already registered", pkgerrors.CodeEmailAlreadyExists)
-			return
+		var appErr *pkgerrors.AppError
+		switch err.Error() {
+		case "email already registered":
+			appErr = pkgerrors.NewConflictError("El email ya está registrado", pkgerrors.CodeEmailAlreadyExists)
+		default:
+			appErr = pkgerrors.NewInternalError("Error al crear el usuario")
 		}
-		pkgerrors.RespondWithError(c, http.StatusBadRequest, err.Error(), pkgerrors.CodeValidationFailed)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -67,13 +73,26 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req service.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		pkgerrors.RespondWithError(c, http.StatusBadRequest, "Invalid request data", pkgerrors.CodeValidationFailed)
+		appErr := pkgerrors.NewValidationError("Datos de entrada inválidos", map[string][]string{
+			"general": {"Verifica el formato del email y contraseña"},
+		})
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	resp, err := h.authService.Login(c.Request.Context(), req)
 	if err != nil {
-		pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Invalid credentials", pkgerrors.CodeInvalidCredentials)
+		var appErr *pkgerrors.AppError
+		switch err.Error() {
+		case "invalid credentials":
+			appErr = pkgerrors.NewUnauthorizedError("Email o contraseña incorrectos", pkgerrors.CodeInvalidCredentials)
+		case "user account is inactive":
+			appErr = pkgerrors.NewForbiddenError("Usuario inactivo. Contacta al administrador")
+			appErr.Code = pkgerrors.CodeUserInactive
+		default:
+			appErr = pkgerrors.NewInternalError("Error al procesar el login")
+		}
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
@@ -93,20 +112,24 @@ func (h *AuthHandler) Login(c *gin.Context) {
 func (h *AuthHandler) Me(c *gin.Context) {
 	userIDStr, exists := c.Get("userID")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		appErr := pkgerrors.NewUnauthorizedError("Usuario no autenticado")
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	// Convert userID from string to UUID
 	userID, err := uuid.Parse(userIDStr.(string))
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		appErr := pkgerrors.NewValidationError("ID de usuario inválido", nil)
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 
 	user, err := h.authService.GetUserByID(c.Request.Context(), userID)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		appErr := pkgerrors.NewNotFoundError("Usuario no encontrado")
+		appErr.Code = pkgerrors.CodeUserNotFound
+		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
 

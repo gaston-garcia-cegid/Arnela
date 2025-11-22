@@ -91,13 +91,13 @@ export default function BackofficeDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-chart-3 shadow-sm hover:shadow-md transition-shadow">
+          <Card className="border-l-4 border-l-secondary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Empleados</CardTitle>
               <CardDescription className="text-xs">Personal activo</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-muted-foreground">-</div>
+              <div className="text-3xl font-bold text-secondary">-</div>
             </CardContent>
           </Card>
         </div>

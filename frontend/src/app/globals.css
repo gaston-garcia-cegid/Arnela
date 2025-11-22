@@ -1,81 +1,92 @@
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    /* Paleta profesional para gabinete educativo/terapéutico */
-    
-    /* Backgrounds - Tonos cálidos y acogedores */
-    --background: 39 15% 97%;         /* Beige muy claro */
-    --foreground: 220 13% 18%;        /* Gris oscuro cálido */
-    
-    /* Primary - Azul profesional y confiable */
-    --primary: 217 91% 60%;           /* Azul medio */
-    --primary-foreground: 0 0% 100%;  /* Blanco */
-    
-    /* Secondary - Verde cálido (bienestar) */
-    --secondary: 142 76% 36%;         /* Verde bosque */
-    --secondary-foreground: 0 0% 100%;
-    
-    /* Accent - Naranja suave (energía positiva) */
-    --accent: 27 87% 67%;             /* Coral/naranja suave */
-    --accent-foreground: 220 13% 18%;
-    
-    /* Cards - Blanco puro con bordes suaves */
-    --card: 0 0% 100%;
-    --card-foreground: 220 13% 18%;
-    
-    /* Muted - Neutros suaves */
-    --muted: 39 20% 94%;              /* Beige claro */
-    --muted-foreground: 220 9% 46%;   /* Gris medio */
-    
-    /* Destructive - Rojo suave */
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    
-    /* Borders & Inputs */
-    --border: 220 13% 91%;            /* Border gris claro */
-    --input: 220 13% 91%;
-    --ring: 217 91% 60%;              /* Azul primary */
-    --radius: 0.5rem;
-    
-    /* Popover */
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 13% 18%;
-  }
+/* ============================================
+   TAILWIND 4 CSS-FIRST CONFIGURATION
+   Design System para Arnela Gabinete
+   ============================================ */
 
-  .dark {
-    --background: 220 13% 9%;
-    --foreground: 39 15% 97%;
+@theme {
+  /* Paleta de colores profesional */
+  --color-background: oklch(97% 0.02 39);
+  --color-foreground: oklch(25% 0.02 220);
+  
+  --color-primary: oklch(65% 0.2 217);
+  --color-primary-foreground: oklch(100% 0 0);
+  
+  --color-secondary: oklch(45% 0.15 142);
+  --color-secondary-foreground: oklch(100% 0 0);
+  
+  --color-accent: oklch(72% 0.15 27);
+  --color-accent-foreground: oklch(25% 0.02 220);
+  
+  --color-card: oklch(100% 0 0);
+  --color-card-foreground: oklch(25% 0.02 220);
+  
+  --color-muted: oklch(95% 0.02 39);
+  --color-muted-foreground: oklch(50% 0.02 220);
+  
+  --color-destructive: oklch(55% 0.22 0);
+  --color-destructive-foreground: oklch(100% 0 0);
+  
+  --color-border: oklch(92% 0.01 220);
+  --color-input: oklch(92% 0.01 220);
+  --color-ring: oklch(65% 0.2 217);
+  
+  --color-popover: oklch(100% 0 0);
+  --color-popover-foreground: oklch(25% 0.02 220);
+  
+  /* Border Radius */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
+}
+
+/* Dark mode colors */
+@media (prefers-color-scheme: dark) {
+  @theme {
+    --color-background: oklch(12% 0.02 220);
+    --color-foreground: oklch(97% 0.02 39);
     
-    --primary: 217 91% 60%;
-    --primary-foreground: 0 0% 100%;
+    --color-primary: oklch(65% 0.2 217);
+    --color-primary-foreground: oklch(100% 0 0);
     
-    --secondary: 142 76% 45%;
-    --secondary-foreground: 0 0% 100%;
+    --color-secondary: oklch(50% 0.15 142);
+    --color-secondary-foreground: oklch(100% 0 0);
     
-    --accent: 27 87% 67%;
-    --accent-foreground: 220 13% 9%;
+    --color-accent: oklch(72% 0.15 27);
+    --color-accent-foreground: oklch(12% 0.02 220);
     
-    --card: 220 13% 12%;
-    --card-foreground: 39 15% 97%;
+    --color-card: oklch(15% 0.02 220);
+    --color-card-foreground: oklch(97% 0.02 39);
     
-    --muted: 220 13% 20%;
-    --muted-foreground: 39 15% 70%;
+    --color-muted: oklch(22% 0.02 220);
+    --color-muted-foreground: oklch(75% 0.02 39);
     
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
+    --color-destructive: oklch(55% 0.22 0);
+    --color-destructive-foreground: oklch(100% 0 0);
     
-    --border: 220 13% 20%;
-    --input: 220 13% 20%;
-    --ring: 217 91% 60%;
+    --color-border: oklch(22% 0.02 220);
+    --color-input: oklch(22% 0.02 220);
+    --color-ring: oklch(65% 0.2 217);
     
-    --popover: 220 13% 12%;
-    --popover-foreground: 39 15% 97%;
+    --color-popover: oklch(15% 0.02 220);
+    --color-popover-foreground: oklch(97% 0.02 39);
   }
 }
 
+/* Base styles */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom utilities */
 @layer utilities {
-  /* Utilidad personalizada para overlay de modales */
   .modal-overlay {
     @apply bg-black/60 backdrop-blur-sm;
   }

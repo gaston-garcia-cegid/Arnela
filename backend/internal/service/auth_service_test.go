@@ -110,6 +110,7 @@ func TestAuthService_Login(t *testing.T) {
 		Email:        "john@example.com",
 		PasswordHash: string(hashedPassword),
 		Role:         domain.RoleClient,
+		IsActive:     true, // Active user
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
 	}

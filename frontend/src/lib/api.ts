@@ -11,7 +11,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/a
 
 // Types matching backend responses
 export interface ApiErrorResponse {
-  error: string;
+  error: string;  // Backend sends "error" field with the message
   code?: string;
   details?: Record<string, string[]>;
 }

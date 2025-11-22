@@ -1,6 +1,6 @@
 export function Testimonial() {
   return (
-    <section className="bg-gradient-to-r from-primary/5 via-primary/10 to-accent/5 py-16 px-4 md:py-20">
+    <section className="bg-linear-to-r from-primary/5 via-primary/10 to-accent/5 py-16 px-4 md:py-20">
       <div className="container mx-auto">
         <div className="mx-auto max-w-4xl">
           <div className="text-center mb-6">

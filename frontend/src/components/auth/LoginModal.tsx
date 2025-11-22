@@ -26,6 +26,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import {
   UnauthorizedError,
+  ForbiddenError,
   NetworkError,
   ValidationError,
   ApiError,
@@ -78,6 +79,8 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     } catch (err) {
       if (err instanceof UnauthorizedError) {
         setError('Email o contraseña incorrectos. Por favor, verifica tus credenciales.');
+      } else if (err instanceof ForbiddenError) {
+        setError('Tu cuenta está inactiva. Por favor, contacta al administrador.');
       } else if (err instanceof NetworkError) {
         setError('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
       } else if (err instanceof ValidationError) {

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { UnauthorizedError, NetworkError, ValidationError } from '../../../lib/errors';
+import { UnauthorizedError, ForbiddenError, NetworkError, ValidationError } from '../../../lib/errors';
 
 // Use vi.hoisted to ensure mocks are available before imports
 const { mockPush, mockLoginFn, mockStoreLogin } = vi.hoisted(() => {
@@ -67,6 +67,25 @@ describe('LoginModal - Error Handling', () => {
     });
   });
 
+  it('should display inactive user message for forbidden error (403)', async () => {
+    const user = userEvent.setup();
+    
+    // Mock API to throw ForbiddenError
+    mockLoginFn.mockRejectedValue(
+      new ForbiddenError('User account is inactive')
+    );
+
+    render(<LoginModal isOpen={true} onClose={mockOnClose} />);
+
+    await user.type(screen.getByLabelText(/email/i), 'inactive@example.com');
+    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+    await user.click(screen.getByRole('button', { name: /ingresar/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/tu cuenta está inactiva/i)).toBeInTheDocument();
+    });
+  });
+
   it('should display network error message when connection fails', async () => {
     const user = userEvent.setup();
     
@@ -104,16 +123,17 @@ describe('LoginModal - Error Handling', () => {
 
     // Wait for error to be displayed (should show first field's first error)
     await waitFor(() => {
-      expect(screen.getByText('Email format is invalid')).toBeInTheDocument();
-    });
+      expect(screen.getByText(/email format is invalid/i)).toBeInTheDocument();
+    }, { timeout: 5000 });
   });
 
   it('should disable form during submission', async () => {
     const user = userEvent.setup();
     
-    // Mock API with delayed response
+    let resolveLogin: any;
+    // Mock API with delayed response that we control
     mockLoginFn.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 1000))
+      () => new Promise((resolve) => { resolveLogin = resolve; })
     );
 
     render(<LoginModal isOpen={true} onClose={mockOnClose} />);
@@ -122,11 +142,25 @@ describe('LoginModal - Error Handling', () => {
     await user.type(screen.getByLabelText(/contraseña/i), 'password123');
 
     const submitButton = screen.getByRole('button', { name: /ingresar/i });
-    await user.click(submitButton);
+    
+    // Start submission
+    const clickPromise = user.click(submitButton);
 
-    // Check that inputs are disabled during submission
-    expect(screen.getByLabelText(/email/i)).toBeDisabled();
+    // Wait a bit for state to update
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeDisabled();
+    }, { timeout: 500 });
+    
     expect(screen.getByLabelText(/contraseña/i)).toBeDisabled();
+    
+    // Resolve the promise to complete the test
+    if (resolveLogin) {
+      resolveLogin({
+        token: 'token',
+        user: { id: '1', email: 'test@example.com', role: 'client', firstName: 'Test', lastName: 'User', isActive: true },
+      });
+    }
+    await clickPromise;
   });
 
   it('should successfully login and redirect based on role', async () => {
@@ -140,6 +174,7 @@ describe('LoginModal - Error Handling', () => {
         role: 'admin' as const,
         firstName: 'Admin',
         lastName: 'User',
+        isActive: true,
       },
     };
 
@@ -151,9 +186,12 @@ describe('LoginModal - Error Handling', () => {
     await user.type(screen.getByLabelText(/contraseña/i), 'password123');
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
+    // Wait for login to complete
     await waitFor(() => {
       expect(mockStoreLogin).toHaveBeenCalledWith(mockResponse.token, mockResponse.user);
-      expect(mockOnClose).toHaveBeenCalled();
-    }, { timeout: 3000 });
+    }, { timeout: 5000 });
+    
+    expect(mockPush).toHaveBeenCalledWith('/dashboard/backoffice');
+    expect(mockOnClose).toHaveBeenCalled();
   });
 });

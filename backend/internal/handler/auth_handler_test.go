@@ -126,7 +126,8 @@ func TestAuthHandler_Register(t *testing.T) {
 				var response map[string]interface{}
 				err := json.Unmarshal(rec.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Contains(t, response["error"], "email already registered")
+				// Now returns Spanish message
+				assert.Contains(t, response["error"], "El email ya está registrado")
 			},
 		},
 		{
@@ -226,7 +227,8 @@ func TestAuthHandler_Login(t *testing.T) {
 				var response map[string]interface{}
 				err := json.Unmarshal(rec.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Contains(t, response["error"], "invalid credentials")
+				// Now returns Spanish message
+				assert.Contains(t, response["error"], "Email o contraseña incorrectos")
 			},
 		},
 		{
@@ -336,7 +338,8 @@ func TestAuthHandler_Me(t *testing.T) {
 				var response map[string]interface{}
 				err := json.Unmarshal(rec.Body.Bytes(), &response)
 				assert.NoError(t, err)
-				assert.Contains(t, response["error"], "user not found")
+				// Now returns Spanish message
+				assert.Contains(t, response["error"], "Usuario no encontrado")
 			},
 		},
 	}
