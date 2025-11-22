@@ -22,6 +22,13 @@ func NewClientRepository(db *sqlx.DB) repository.ClientRepository {
 	return &clientRepository{db: db}
 }
 
+// ✅ Constante con columnas comunes para SELECT
+const clientColumns = `
+    id, user_id, email, first_name, last_name, phone, dni, nif,
+    address_street, address_city, address_province, address_postal_code, address_country,
+    notes, is_active, created_at, updated_at, deleted_at
+`
+
 func (r *clientRepository) Create(ctx context.Context, client *domain.Client) error {
 	query := `
 		INSERT INTO clients (
@@ -32,18 +39,18 @@ func (r *clientRepository) Create(ctx context.Context, client *domain.Client) er
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		client.ID,
-		client.UserID, // ✅ AÑADIDO
+		client.UserID,
 		client.Email,
 		client.FirstName,
 		client.LastName,
 		client.Phone,
 		client.DNI,
 		client.NIF,
-		client.Address.Street,
-		client.Address.City,
-		client.Address.Province,
-		client.Address.PostalCode,
-		client.Address.Country,
+		client.AddressStreet,
+		client.AddressCity,
+		client.AddressProvince,
+		client.AddressPostalCode,
+		client.AddressCountry,
 		client.Notes,
 		client.IsActive,
 		client.CreatedAt,
@@ -54,13 +61,7 @@ func (r *clientRepository) Create(ctx context.Context, client *domain.Client) er
 
 func (r *clientRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
 	var client domain.Client
-	query := `
-		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
-			   address_street, address_city, address_province, address_postal_code, address_country,
-			   notes, is_active, created_at, updated_at
-		FROM clients
-		WHERE id = $1 AND is_active = true
-	`
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE id = $1 AND deleted_at IS NULL`, clientColumns)
 
 	err := r.db.GetContext(ctx, &client, query, id)
 	if err != nil {
@@ -75,13 +76,7 @@ func (r *clientRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.C
 
 func (r *clientRepository) GetByEmail(ctx context.Context, email string) (*domain.Client, error) {
 	var client domain.Client
-	query := `
-		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
-			   address_street, address_city, address_province, address_postal_code, address_country,
-			   notes, is_active, created_at, updated_at
-		FROM clients
-		WHERE email = $1 AND is_active = true
-	`
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE email = $1 AND deleted_at IS NULL`, clientColumns)
 
 	err := r.db.GetContext(ctx, &client, query, email)
 	if err != nil {
@@ -96,13 +91,7 @@ func (r *clientRepository) GetByEmail(ctx context.Context, email string) (*domai
 
 func (r *clientRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Client, error) {
 	var client domain.Client
-	query := `
-		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
-			   address_street, address_city, address_province, address_postal_code, address_country,
-			   notes, is_active, created_at, updated_at
-		FROM clients
-		WHERE user_id = $1 AND is_active = true
-	`
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE user_id = $1 AND deleted_at IS NULL`, clientColumns)
 
 	err := r.db.GetContext(ctx, &client, query, userID)
 	if err != nil {
@@ -117,13 +106,7 @@ func (r *clientRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*
 
 func (r *clientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Client, error) {
 	var client domain.Client
-	query := `
-		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
-			   address_street, address_city, address_province, address_postal_code, address_country,
-			   notes, is_active, created_at, updated_at
-		FROM clients
-		WHERE dni = $1 AND is_active = true
-	`
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE dni = $1 AND deleted_at IS NULL`, clientColumns)
 
 	err := r.db.GetContext(ctx, &client, query, dni)
 	if err != nil {
@@ -138,13 +121,7 @@ func (r *clientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Cl
 
 func (r *clientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Client, error) {
 	var client domain.Client
-	query := `
-		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
-			   address_street, address_city, address_province, address_postal_code, address_country,
-			   notes, is_active, created_at, updated_at
-		FROM clients
-		WHERE nif = $1 AND is_active = true
-	`
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE nif = $1 AND deleted_at IS NULL`, clientColumns)
 
 	err := r.db.GetContext(ctx, &client, query, nif)
 	if err != nil {
@@ -161,25 +138,43 @@ func (r *clientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Cl
 func (r *clientRepository) Update(ctx context.Context, client *domain.Client) error {
 	query := `
 		UPDATE clients SET
-			user_id = :user_id,
-			first_name = :first_name,
-			last_name = :last_name,
-			email = :email,
-			phone = :phone,
-			nif = :nif,
-			dni = :dni,
-			date_of_birth = :date_of_birth,
-			address = :address,
-			city = :city,
-			postal_code = :postal_code,
-			province = :province,
-			is_active = :is_active,
-			last_visit = :last_visit,
-			notes = :notes,
-			updated_at = :updated_at
-		WHERE id = :id AND deleted_at IS NULL`
+			user_id = $1,
+			email = $2,
+			first_name = $3,
+			last_name = $4,
+			phone = $5,
+			dni = $6,
+			nif = $7,
+			address_street = $8,
+			address_city = $9,
+			address_province = $10,
+			address_postal_code = $11,
+			address_country = $12,
+			notes = $13,
+			is_active = $14,
+			updated_at = $15
+		WHERE id = $16 AND deleted_at IS NULL
+	`
 
-	result, err := r.db.NamedExecContext(ctx, query, client)
+	result, err := r.db.ExecContext(ctx, query,
+		client.UserID,
+		client.Email,
+		client.FirstName,
+		client.LastName,
+		client.Phone,
+		client.DNI,
+		client.NIF,
+		client.AddressStreet,
+		client.AddressCity,
+		client.AddressProvince,
+		client.AddressPostalCode,
+		client.AddressCountry,
+		client.Notes,
+		client.IsActive,
+		time.Now(),
+		client.ID,
+	)
+
 	if err != nil {
 		return fmt.Errorf("failed to update client: %w", err)
 	}
@@ -198,10 +193,7 @@ func (r *clientRepository) Update(ctx context.Context, client *domain.Client) er
 
 // Delete soft-deletes a client
 func (r *clientRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `
-		UPDATE clients
-		SET deleted_at = $1
-		WHERE id = $2 AND deleted_at IS NULL`
+	query := `UPDATE clients SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL`
 
 	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
@@ -224,7 +216,8 @@ func (r *clientRepository) Delete(ctx context.Context, id uuid.UUID) error {
 func (r *clientRepository) List(ctx context.Context, filters repository.ClientFilters, page, pageSize int) ([]*domain.Client, error) {
 	var clients []*domain.Client
 
-	query := `SELECT * FROM clients WHERE deleted_at IS NULL`
+	// ✅ Usar columnas explícitas en lugar de SELECT *
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE deleted_at IS NULL`, clientColumns)
 	args := []interface{}{}
 	argCount := 0
 
@@ -252,13 +245,13 @@ func (r *clientRepository) List(ctx context.Context, filters repository.ClientFi
 
 	if filters.City != "" {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("city ILIKE $%d", argCount))
+		conditions = append(conditions, fmt.Sprintf("address_city ILIKE $%d", argCount))
 		args = append(args, "%"+filters.City+"%")
 	}
 
 	if filters.Province != "" {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("province ILIKE $%d", argCount))
+		conditions = append(conditions, fmt.Sprintf("address_province ILIKE $%d", argCount))
 		args = append(args, "%"+filters.Province+"%")
 	}
 
@@ -308,13 +301,13 @@ func (r *clientRepository) Count(ctx context.Context, filters repository.ClientF
 
 	if filters.City != "" {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("city ILIKE $%d", argCount))
+		conditions = append(conditions, fmt.Sprintf("address_city ILIKE $%d", argCount))
 		args = append(args, "%"+filters.City+"%")
 	}
 
 	if filters.Province != "" {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("province ILIKE $%d", argCount))
+		conditions = append(conditions, fmt.Sprintf("address_province ILIKE $%d", argCount))
 		args = append(args, "%"+filters.Province+"%")
 	}
 

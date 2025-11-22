@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// ClientServiceInterface defines the interface for client service
 type ClientService interface {
 	CreateClient(ctx context.Context, req CreateClientRequest) (*domain.Client, error)
 	GetClient(ctx context.Context, id uuid.UUID) (*domain.Client, error)
@@ -24,10 +25,10 @@ type ClientService interface {
 
 type clientService struct {
 	clientRepo repository.ClientRepository
-	userRepo   repository.UserRepository // ✅ AÑADIDO
+	userRepo   repository.UserRepository
 }
 
-func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository) ClientService {
+func NewClientService(clientRepo repository.ClientRepository, userRepo repository.UserRepository) ClientServiceInterface {
 	return &clientService{
 		clientRepo: clientRepo,
 		userRepo:   userRepo,
@@ -37,39 +38,36 @@ func NewClientService(clientRepo repository.ClientRepository, userRepo repositor
 func (s *clientService) CreateClient(ctx context.Context, req CreateClientRequest) (*domain.Client, error) {
 	log.Printf("[DEBUG] Creating client with email: %s", req.Email)
 
-	// ✅ PASO 1: Verificar que el email no exista en clients
-	if exists, err := s.clientRepo.EmailExists(ctx, req.Email, req.UserID); err != nil {
+	// Verificaciones de existencia
+	if exists, err := s.clientRepo.EmailExists(ctx, req.Email, nil); err != nil {
 		return nil, fmt.Errorf("failed to check email existence: %w", err)
 	} else if exists {
 		return nil, fmt.Errorf("email already registered")
 	}
 
-	// ✅ PASO 2: Verificar que el email no exista en users
 	if exists, err := s.userRepo.EmailExists(ctx, req.Email); err != nil {
 		return nil, fmt.Errorf("failed to check user email existence: %w", err)
 	} else if exists {
 		return nil, fmt.Errorf("email already registered as user")
 	}
 
-	// ✅ PASO 3: Verificar DNI único
 	if req.DNI != "" {
-		if exists, err := s.clientRepo.DNIExists(ctx, req.DNI, req.UserID); err != nil {
+		if exists, err := s.clientRepo.DNIExists(ctx, req.DNI, nil); err != nil {
 			return nil, fmt.Errorf("failed to check DNI existence: %w", err)
 		} else if exists {
 			return nil, fmt.Errorf("DNI already registered")
 		}
 	}
 
-	// ✅ PASO 4: Verificar NIF único (si se proporciona)
 	if req.NIF != "" {
-		if exists, err := s.clientRepo.NIFExists(ctx, req.NIF, req.UserID); err != nil {
+		if exists, err := s.clientRepo.NIFExists(ctx, req.NIF, nil); err != nil {
 			return nil, fmt.Errorf("failed to check NIF existence: %w", err)
 		} else if exists {
 			return nil, fmt.Errorf("NIF already registered")
 		}
 	}
 
-	// ✅ PASO 5: Crear usuario con DNI como contraseña
+	// Crear usuario con DNI como contraseña
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.DNI), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
@@ -81,7 +79,7 @@ func (s *clientService) CreateClient(ctx context.Context, req CreateClientReques
 		PasswordHash: string(hashedPassword),
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
-		Role:         domain.RoleClient, // ✅ Rol de cliente
+		Role:         domain.RoleClient,
 		IsActive:     true,
 		CreatedAt:    time.Now(),
 		UpdatedAt:    time.Now(),
@@ -93,25 +91,27 @@ func (s *clientService) CreateClient(ctx context.Context, req CreateClientReques
 
 	log.Printf("[DEBUG] User created: ID=%s, Email=%s, Role=%s", user.ID, user.Email, user.Role)
 
-	// ✅ PASO 6: Crear cliente vinculado al usuario
+	// Crear cliente vinculado al usuario
 	client := &domain.Client{
 		ID:        uuid.New(),
-		UserID:    user.ID, // ✅ Vincular con usuario
+		UserID:    user.ID,
 		Email:     req.Email,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Phone:     req.Phone,
 		DNI:       req.DNI,
 		NIF:       req.NIF,
-		Address:   domain.Address{Street: req.Address},
 		Notes:     req.Notes,
 		IsActive:  true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	}
 
+	// ✅ Usar helper para asignar address
+	client.SetAddress(req.Address)
+
 	if err := s.clientRepo.Create(ctx, client); err != nil {
-		// ✅ ROLLBACK: Si falla la creación del cliente, eliminar usuario
+		// Rollback: eliminar usuario
 		if deleteErr := s.userRepo.Delete(ctx, user.ID); deleteErr != nil {
 			log.Printf("[ERROR] Failed to rollback user creation: %v", deleteErr)
 		}
@@ -143,7 +143,7 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 
 	// Update fields if provided
 	if req.Email != nil {
-		if exists, err := s.clientRepo.EmailExists(ctx, *req.Email, req.UserID); err != nil {
+		if exists, err := s.clientRepo.EmailExists(ctx, *req.Email, &client.ID); err != nil {
 			return nil, fmt.Errorf("failed to check email existence: %w", err)
 		} else if exists && *req.Email != client.Email {
 			return nil, fmt.Errorf("email already registered")
@@ -160,7 +160,7 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 		client.Phone = *req.Phone
 	}
 	if req.DNI != nil {
-		if exists, err := s.clientRepo.DNIExists(ctx, *req.DNI, req.UserID); err != nil {
+		if exists, err := s.clientRepo.DNIExists(ctx, *req.DNI, &client.ID); err != nil {
 			return nil, fmt.Errorf("failed to check DNI existence: %w", err)
 		} else if exists && *req.DNI != client.DNI {
 			return nil, fmt.Errorf("DNI already registered")
@@ -168,7 +168,7 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 		client.DNI = *req.DNI
 	}
 	if req.NIF != nil {
-		if exists, err := s.clientRepo.NIFExists(ctx, *req.NIF, req.UserID); err != nil {
+		if exists, err := s.clientRepo.NIFExists(ctx, *req.NIF, &client.ID); err != nil {
 			return nil, fmt.Errorf("failed to check NIF existence: %w", err)
 		} else if exists && *req.NIF != client.NIF {
 			return nil, fmt.Errorf("NIF already registered")
@@ -176,7 +176,8 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 		client.NIF = *req.NIF
 	}
 	if req.Address != nil {
-		client.Address = domain.Address{Street: *req.Address}
+		// ✅ Usar helper para actualizar address
+		client.SetAddress(*req.Address)
 	}
 	if req.Notes != nil {
 		client.Notes = *req.Notes
@@ -199,14 +200,19 @@ func (s *clientService) DeleteClient(ctx context.Context, id uuid.UUID) error {
 }
 
 func (s *clientService) ListClients(ctx context.Context, filters repository.ClientFilters, page, pageSize int) (*ClientListResponse, error) {
-	// Get paginated clients from repository
+	// Get total count
+	total, err := s.clientRepo.Count(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get paginated clients
 	clients, err := s.clientRepo.List(ctx, filters, page, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	// Calculate total and pagination metadata
-	total := len(clients)
+	// Calculate pagination metadata
 	totalPages := (total + pageSize - 1) / pageSize
 
 	return &ClientListResponse{

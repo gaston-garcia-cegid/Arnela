@@ -24,6 +24,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
+import {
+  UnauthorizedError,
+  NetworkError,
+  ValidationError,
+  ApiError,
+} from '@/lib/errors';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -68,7 +76,24 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      if (err instanceof UnauthorizedError) {
+        setError('Email o contraseña incorrectos. Por favor, verifica tus credenciales.');
+      } else if (err instanceof NetworkError) {
+        setError('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
+      } else if (err instanceof ValidationError) {
+        const details = err.details;
+        if (details) {
+          // Show first validation error
+          const firstField = Object.keys(details)[0];
+          setError(details[firstField][0]);
+        } else {
+          setError(err.message);
+        }
+      } else if (ApiError.isApiError(err)) {
+        setError(err.message);
+      } else {
+        setError('Error inesperado al iniciar sesión. Por favor, intenta nuevamente.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -129,10 +154,10 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
             />
 
             {error && (
-              <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-4 text-sm text-destructive flex items-start gap-3">
-                <span className="text-lg flex-shrink-0">⚠️</span>
-                <span className="leading-relaxed">{error}</span>
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
 
             <div className="flex gap-3 pt-4">

@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
+	pkgerrors "github.com/gaston-garcia-cegid/arnela/backend/pkg/errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -35,17 +36,17 @@ func NewAuthHandler(authService service.AuthServiceInterface) *AuthHandler {
 func (h *AuthHandler) Register(c *gin.Context) {
 	var req service.RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		pkgerrors.RespondWithError(c, http.StatusBadRequest, "Invalid request data", pkgerrors.CodeValidationFailed)
 		return
 	}
 
 	resp, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
 		if err.Error() == "email already registered" {
-			c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+			pkgerrors.RespondWithError(c, http.StatusConflict, "Email already registered", pkgerrors.CodeEmailAlreadyExists)
 			return
 		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		pkgerrors.RespondWithError(c, http.StatusBadRequest, err.Error(), pkgerrors.CodeValidationFailed)
 		return
 	}
 
@@ -66,13 +67,13 @@ func (h *AuthHandler) Register(c *gin.Context) {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req service.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		pkgerrors.RespondWithError(c, http.StatusBadRequest, "Invalid request data", pkgerrors.CodeValidationFailed)
 		return
 	}
 
 	resp, err := h.authService.Login(c.Request.Context(), req)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Invalid credentials", pkgerrors.CodeInvalidCredentials)
 		return
 	}
 

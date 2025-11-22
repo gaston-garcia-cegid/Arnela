@@ -1,12 +1,19 @@
 // API Client for Arnela Backend
 // Base URL: http://localhost:8080/api/v1
 
+import {
+  parseApiError,
+  handleFetchError,
+  ApiError as ApiErrorClass,
+} from './errors';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // Types matching backend responses
-export interface ApiError {
+export interface ApiErrorResponse {
   error: string;
-  details?: string;
+  code?: string;
+  details?: Record<string, string[]>;
 }
 
 export interface RegisterRequest {
@@ -75,8 +82,13 @@ export interface ListClientsResponse {
   total: number;
 }
 
-// Helper function to make authenticated requests
-async function fetchWithAuth(url: string, token?: string, options: RequestInit = {}) {
+// Helper function to make authenticated requests with retry logic
+async function fetchWithAuth(
+  url: string,
+  token?: string,
+  options: RequestInit = {},
+  retries = 3
+) {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
@@ -86,19 +98,42 @@ async function fetchWithAuth(url: string, token?: string, options: RequestInit =
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${url}`, {
-    ...options,
-    headers,
-  });
+  let lastError: ApiErrorClass | null = null;
 
-  if (!response.ok) {
-    const error: ApiError = await response.json().catch(() => ({
-      error: 'Unknown error occurred',
-    }));
-    throw new Error(error.error || `HTTP ${response.status}: ${response.statusText}`);
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await fetch(`${API_BASE_URL}${url}`, {
+        ...options,
+        headers,
+      });
+
+      if (!response.ok) {
+        const errorData: ApiErrorResponse = await response.json().catch(() => ({
+          error: 'Unknown error occurred',
+        }));
+        throw parseApiError(response.status, errorData);
+      }
+
+      return response.json();
+    } catch (error) {
+      lastError = handleFetchError(error);
+
+      // Don't retry on client errors (400-499)
+      if (lastError.statusCode >= 400 && lastError.statusCode < 500) {
+        throw lastError;
+      }
+
+      // On last attempt, throw the error
+      if (attempt === retries - 1) {
+        throw lastError;
+      }
+
+      // Exponential backoff: wait 1s, 2s, 4s...
+      await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+    }
   }
 
-  return response.json();
+  throw lastError || new ApiErrorClass('Unknown error', 500);
 }
 
 // Auth endpoints
