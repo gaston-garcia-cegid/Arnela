@@ -119,7 +119,7 @@ func main() {
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tokenManager, cfg.JWT.TokenExpiry)
-	clientService := service.NewClientService(clientRepo)
+	clientService := service.NewClientService(clientRepo, userRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)

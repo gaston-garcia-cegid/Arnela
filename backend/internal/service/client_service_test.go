@@ -109,9 +109,10 @@ func TestClientService_CreateClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockClientRepository)
+			mockUserRepo := new(mocks.MockUserRepository)
 			tt.mockSetup(mockRepo)
 
-			clientService := NewClientService(mockRepo)
+			clientService := NewClientService(mockRepo, mockUserRepo)
 
 			ctx := context.Background()
 			client, err := clientService.CreateClient(ctx, tt.request)
@@ -168,13 +169,13 @@ func TestClientService_GetClient(t *testing.T) {
 			expectedError: "client not found",
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockClientRepository)
+			mockUserRepo := new(mocks.MockUserRepository)
 			tt.mockSetup(mockRepo)
 
-			clientService := NewClientService(mockRepo)
+			clientService := NewClientService(mockRepo, mockUserRepo)
 
 			ctx := context.Background()
 			client, err := clientService.GetClient(ctx, tt.clientID)
@@ -193,7 +194,6 @@ func TestClientService_GetClient(t *testing.T) {
 		})
 	}
 }
-
 func TestClientService_DeleteClient(t *testing.T) {
 	validClient := &domain.Client{
 		ID:        uuid.New(),
@@ -231,9 +231,10 @@ func TestClientService_DeleteClient(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockClientRepository)
+			mockUserRepo := new(mocks.MockUserRepository)
 			tt.mockSetup(mockRepo)
 
-			clientService := NewClientService(mockRepo)
+			clientService := NewClientService(mockRepo, mockUserRepo)
 
 			ctx := context.Background()
 			err := clientService.DeleteClient(ctx, tt.clientID)

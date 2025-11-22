@@ -1,39 +1,31 @@
 -- Create clients table
 CREATE TABLE IF NOT EXISTS clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    email VARCHAR(255) UNIQUE NOT NULL,
     first_name VARCHAR(100) NOT NULL,
     last_name VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    dni VARCHAR(20) NOT NULL,
-    date_of_birth DATE,
-    address TEXT,
-    city VARCHAR(100),
-    postal_code VARCHAR(10),
-    province VARCHAR(100),
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    last_visit TIMESTAMP,
+    phone VARCHAR(20),
+    dni VARCHAR(20) UNIQUE,
+    nif VARCHAR(20) UNIQUE,
+    address_street VARCHAR(255),
+    address_city VARCHAR(100),
+    address_province VARCHAR(100),
+    address_postal_code VARCHAR(10),
+    address_country VARCHAR(100),
     notes TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    deleted_at TIMESTAMP
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    deleted_at TIMESTAMP NULL
 );
 
 -- Create indexes
-CREATE INDEX idx_clients_email ON clients(email) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_dni ON clients(dni) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_phone ON clients(phone) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_user_id ON clients(user_id) WHERE user_id IS NOT NULL;
-CREATE INDEX idx_clients_last_name ON clients(last_name) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_is_active ON clients(is_active) WHERE deleted_at IS NULL;
-CREATE INDEX idx_clients_deleted_at ON clients(deleted_at) WHERE deleted_at IS NOT NULL;
-
--- Create unique constraint for email (excluding soft-deleted records)
-CREATE UNIQUE INDEX idx_clients_email_unique ON clients(email) WHERE deleted_at IS NULL;
-
--- Create unique constraint for DNI (excluding soft-deleted records)
-CREATE UNIQUE INDEX idx_clients_dni_unique ON clients(dni) WHERE deleted_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_clients_user_id ON clients(user_id);
+CREATE INDEX IF NOT EXISTS idx_clients_email ON clients(email);
+CREATE INDEX IF NOT EXISTS idx_clients_dni ON clients(dni);
+CREATE INDEX IF NOT EXISTS idx_clients_nif ON clients(nif);
+CREATE INDEX IF NOT EXISTS idx_clients_is_active ON clients(is_active);
 
 -- Trigger to automatically update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_clients_updated_at()

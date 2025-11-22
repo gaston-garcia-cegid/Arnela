@@ -14,43 +14,53 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// ClientRepository is the PostgreSQL implementation of repository.ClientRepository
-type ClientRepository struct {
+type clientRepository struct {
 	db *sqlx.DB
 }
 
-// NewClientRepository creates a new ClientRepository
-func NewClientRepository(db *sqlx.DB) *ClientRepository {
-	return &ClientRepository{db: db}
+func NewClientRepository(db *sqlx.DB) repository.ClientRepository {
+	return &clientRepository{db: db}
 }
 
-// Create creates a new client
-func (r *ClientRepository) Create(ctx context.Context, client *domain.Client) error {
+func (r *clientRepository) Create(ctx context.Context, client *domain.Client) error {
 	query := `
 		INSERT INTO clients (
-			id, user_id, first_name, last_name, email, phone, nif, dni,
-			date_of_birth, address, city, postal_code, province,
-			is_active, last_visit, notes, created_at, updated_at
-		) VALUES (
-			:id, :user_id, :first_name, :last_name, :email, :phone, :nif, :dni,
-			:date_of_birth, :address, :city, :postal_code, :province,
-			:is_active, :last_visit, :notes, :created_at, :updated_at
-		)`
-
-	_, err := r.db.NamedExecContext(ctx, query, client)
-	if err != nil {
-		return fmt.Errorf("failed to create client: %w", err)
-	}
-
-	return nil
+			id, user_id, email, first_name, last_name, phone, dni, nif,
+			address_street, address_city, address_province, address_postal_code, address_country,
+			notes, is_active, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+	`
+	_, err := r.db.ExecContext(ctx, query,
+		client.ID,
+		client.UserID, // ✅ AÑADIDO
+		client.Email,
+		client.FirstName,
+		client.LastName,
+		client.Phone,
+		client.DNI,
+		client.NIF,
+		client.Address.Street,
+		client.Address.City,
+		client.Address.Province,
+		client.Address.PostalCode,
+		client.Address.Country,
+		client.Notes,
+		client.IsActive,
+		client.CreatedAt,
+		client.UpdatedAt,
+	)
+	return err
 }
 
-// GetByID retrieves a client by ID
-func (r *ClientRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
+func (r *clientRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Client, error) {
 	var client domain.Client
 	query := `
-		SELECT * FROM clients
-		WHERE id = $1 AND deleted_at IS NULL`
+		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
+			   address_street, address_city, address_province, address_postal_code, address_country,
+			   notes, is_active, created_at, updated_at
+		FROM clients
+		WHERE id = $1 AND is_active = true
+	`
 
 	err := r.db.GetContext(ctx, &client, query, id)
 	if err != nil {
@@ -63,80 +73,92 @@ func (r *ClientRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.C
 	return &client, nil
 }
 
-// GetByEmail retrieves a client by email
-func (r *ClientRepository) GetByEmail(ctx context.Context, email string) (*domain.Client, error) {
+func (r *clientRepository) GetByEmail(ctx context.Context, email string) (*domain.Client, error) {
 	var client domain.Client
 	query := `
-		SELECT * FROM clients
-		WHERE email = $1 AND deleted_at IS NULL`
+		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
+			   address_street, address_city, address_province, address_postal_code, address_country,
+			   notes, is_active, created_at, updated_at
+		FROM clients
+		WHERE email = $1 AND is_active = true
+	`
 
 	err := r.db.GetContext(ctx, &client, query, email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("client not found")
 		}
-		return nil, fmt.Errorf("failed to get client: %w", err)
+		return nil, fmt.Errorf("failed to get client by email: %w", err)
 	}
 
 	return &client, nil
 }
 
-// GetByNIF retrieves a client by NIF
-func (r *ClientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Client, error) {
+func (r *clientRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Client, error) {
 	var client domain.Client
 	query := `
-		SELECT * FROM clients
-		WHERE nif = $1 AND deleted_at IS NULL`
-
-	err := r.db.GetContext(ctx, &client, query, nif)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("client not found")
-		}
-		return nil, fmt.Errorf("failed to get client: %w", err)
-	}
-
-	return &client, nil
-}
-
-// GetByDNI retrieves a client by DNI
-func (r *ClientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Client, error) {
-	var client domain.Client
-	query := `
-		SELECT * FROM clients
-		WHERE dni = $1 AND deleted_at IS NULL`
-
-	err := r.db.GetContext(ctx, &client, query, dni)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("client not found")
-		}
-		return nil, fmt.Errorf("failed to get client: %w", err)
-	}
-
-	return &client, nil
-}
-
-// GetByUserID retrieves a client by associated user ID
-func (r *ClientRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Client, error) {
-	var client domain.Client
-	query := `
-		SELECT * FROM clients
-		WHERE user_id = $1 AND deleted_at IS NULL`
+		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
+			   address_street, address_city, address_province, address_postal_code, address_country,
+			   notes, is_active, created_at, updated_at
+		FROM clients
+		WHERE user_id = $1 AND is_active = true
+	`
 
 	err := r.db.GetContext(ctx, &client, query, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("client not found")
 		}
-		return nil, fmt.Errorf("failed to get client: %w", err)
+		return nil, fmt.Errorf("failed to get client by user ID: %w", err)
+	}
+
+	return &client, nil
+}
+
+func (r *clientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Client, error) {
+	var client domain.Client
+	query := `
+		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
+			   address_street, address_city, address_province, address_postal_code, address_country,
+			   notes, is_active, created_at, updated_at
+		FROM clients
+		WHERE dni = $1 AND is_active = true
+	`
+
+	err := r.db.GetContext(ctx, &client, query, dni)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("client not found")
+		}
+		return nil, fmt.Errorf("failed to get client by DNI: %w", err)
+	}
+
+	return &client, nil
+}
+
+func (r *clientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Client, error) {
+	var client domain.Client
+	query := `
+		SELECT id, user_id, email, first_name, last_name, phone, dni, nif,
+			   address_street, address_city, address_province, address_postal_code, address_country,
+			   notes, is_active, created_at, updated_at
+		FROM clients
+		WHERE nif = $1 AND is_active = true
+	`
+
+	err := r.db.GetContext(ctx, &client, query, nif)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("client not found")
+		}
+		return nil, fmt.Errorf("failed to get client by NIF: %w", err)
 	}
 
 	return &client, nil
 }
 
 // Update updates a client's information
-func (r *ClientRepository) Update(ctx context.Context, client *domain.Client) error {
+func (r *clientRepository) Update(ctx context.Context, client *domain.Client) error {
 	query := `
 		UPDATE clients SET
 			user_id = :user_id,
@@ -175,7 +197,7 @@ func (r *ClientRepository) Update(ctx context.Context, client *domain.Client) er
 }
 
 // Delete soft-deletes a client
-func (r *ClientRepository) Delete(ctx context.Context, id uuid.UUID) error {
+func (r *clientRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	query := `
 		UPDATE clients
 		SET deleted_at = $1
@@ -199,7 +221,7 @@ func (r *ClientRepository) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 // List retrieves a paginated list of clients with optional filters
-func (r *ClientRepository) List(ctx context.Context, filters repository.ClientFilters, offset, limit int) ([]*domain.Client, error) {
+func (r *clientRepository) List(ctx context.Context, filters repository.ClientFilters, page, pageSize int) ([]*domain.Client, error) {
 	var clients []*domain.Client
 
 	query := `SELECT * FROM clients WHERE deleted_at IS NULL`
@@ -246,7 +268,7 @@ func (r *ClientRepository) List(ctx context.Context, filters repository.ClientFi
 
 	query += " ORDER BY last_name, first_name"
 	query += fmt.Sprintf(" LIMIT $%d OFFSET $%d", argCount+1, argCount+2)
-	args = append(args, limit, offset)
+	args = append(args, pageSize, (page-1)*pageSize)
 
 	err := r.db.SelectContext(ctx, &clients, query, args...)
 	if err != nil {
@@ -257,7 +279,7 @@ func (r *ClientRepository) List(ctx context.Context, filters repository.ClientFi
 }
 
 // Count returns the total number of clients matching the filters
-func (r *ClientRepository) Count(ctx context.Context, filters repository.ClientFilters) (int, error) {
+func (r *clientRepository) Count(ctx context.Context, filters repository.ClientFilters) (int, error) {
 	query := `SELECT COUNT(*) FROM clients WHERE deleted_at IS NULL`
 	args := []interface{}{}
 	argCount := 0
@@ -310,7 +332,7 @@ func (r *ClientRepository) Count(ctx context.Context, filters repository.ClientF
 }
 
 // EmailExists checks if an email is already registered
-func (r *ClientRepository) EmailExists(ctx context.Context, email string, excludeID *uuid.UUID) (bool, error) {
+func (r *clientRepository) EmailExists(ctx context.Context, email string, excludeID *uuid.UUID) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE email = $1 AND deleted_at IS NULL`
 	args := []interface{}{email}
 
@@ -331,7 +353,7 @@ func (r *ClientRepository) EmailExists(ctx context.Context, email string, exclud
 }
 
 // NIFExists checks if a NIF is already registered
-func (r *ClientRepository) NIFExists(ctx context.Context, nif string, excludeID *uuid.UUID) (bool, error) {
+func (r *clientRepository) NIFExists(ctx context.Context, nif string, excludeID *uuid.UUID) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE nif = $1 AND deleted_at IS NULL`
 	args := []interface{}{nif}
 
@@ -352,7 +374,7 @@ func (r *ClientRepository) NIFExists(ctx context.Context, nif string, excludeID 
 }
 
 // DNIExists checks if a DNI is already registered
-func (r *ClientRepository) DNIExists(ctx context.Context, dni string, excludeID *uuid.UUID) (bool, error) {
+func (r *clientRepository) DNIExists(ctx context.Context, dni string, excludeID *uuid.UUID) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE dni = $1 AND dni != '' AND deleted_at IS NULL`
 	args := []interface{}{dni}
 

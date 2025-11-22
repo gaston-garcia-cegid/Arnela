@@ -26,7 +26,7 @@ type CreateClientRequest struct {
 	Email       string     `json:"email" binding:"required,email"`
 	Phone       string     `json:"phone" binding:"required"`
 	NIF         string     `json:"nif" binding:"required"`
-	DNI         string     `json:"dni,omitempty"`
+	DNI         string     `json:"dni" binding:"required"`
 	DateOfBirth *string    `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
 	Address     string     `json:"address,omitempty"`
 	City        string     `json:"city,omitempty"`
@@ -37,19 +37,20 @@ type CreateClientRequest struct {
 
 // UpdateClientRequest represents a request to update a client
 type UpdateClientRequest struct {
-	FirstName   *string `json:"firstName,omitempty"`
-	LastName    *string `json:"lastName,omitempty"`
-	Email       *string `json:"email,omitempty"`
-	Phone       *string `json:"phone,omitempty"`
-	NIF         *string `json:"nif,omitempty"`
-	DNI         *string `json:"dni,omitempty"`
-	DateOfBirth *string `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
-	Address     *string `json:"address,omitempty"`
-	City        *string `json:"city,omitempty"`
-	PostalCode  *string `json:"postalCode,omitempty"`
-	Province    *string `json:"province,omitempty"`
-	IsActive    *bool   `json:"isActive,omitempty"`
-	Notes       *string `json:"notes,omitempty"`
+	UserID      *uuid.UUID `json:"userId,omitempty"`
+	FirstName   *string    `json:"firstName,omitempty"`
+	LastName    *string    `json:"lastName,omitempty"`
+	Email       *string    `json:"email,omitempty" binding:"omitempty,email"`
+	Phone       *string    `json:"phone,omitempty"`
+	NIF         *string    `json:"nif,omitempty"`
+	DNI         *string    `json:"dni,omitempty"`
+	DateOfBirth *string    `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
+	Address     *string    `json:"address,omitempty"`
+	City        *string    `json:"city,omitempty"`
+	PostalCode  *string    `json:"postalCode,omitempty"`
+	Province    *string    `json:"province,omitempty"`
+	IsActive    *bool      `json:"isActive,omitempty"`
+	Notes       *string    `json:"notes,omitempty"`
 }
 
 // ClientListResponse represents a paginated list of clients
