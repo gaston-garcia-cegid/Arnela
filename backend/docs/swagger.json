@@ -17,7 +17,7 @@
     "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/api/v1/clients": {
+        "/clients": {
             "get": {
                 "security": [
                     {
@@ -182,7 +182,7 @@
                 }
             }
         },
-        "/api/v1/clients/me": {
+        "/clients/me": {
             "get": {
                 "security": [
                     {
@@ -225,7 +225,7 @@
                 }
             }
         },
-        "/api/v1/clients/{id}": {
+        "/clients/{id}": {
             "get": {
                 "security": [
                     {

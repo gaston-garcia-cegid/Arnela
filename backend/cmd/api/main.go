@@ -71,7 +71,7 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	// ✅ PASO 3: Cerrar la conexión temporal (ya está cerrada por migrate, pero por si acaso)
+	// ✅ PASO 3: Cerrar la conexión temporal
 	if err := dbForMigrations.Close(); err != nil {
 		log.Printf("[WARN] Error closing migrations database connection: %v", err)
 	}
@@ -115,12 +115,15 @@ func main() {
 
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
+	clientRepo := postgres.NewClientRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tokenManager, cfg.JWT.TokenExpiry)
+	clientService := service.NewClientService(clientRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
+	clientHandler := handler.NewClientHandler(clientService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
@@ -164,12 +167,27 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Auth routes
+		// Auth routes (public)
 		auth := v1.Group("/auth")
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
 			auth.GET("/me", authMiddleware.RequireAuth(), authHandler.Me)
+		}
+
+		// Client routes (authenticated)
+		clients := v1.Group("/clients")
+		clients.Use(authMiddleware.RequireAuth())
+		{
+			// Client self-service (any authenticated user can get their own client info)
+			clients.GET("/me", clientHandler.GetMyClient)
+
+			// Admin/Employee only routes
+			clients.POST("", authMiddleware.RequireRole("admin", "employee"), clientHandler.CreateClient)
+			clients.GET("", authMiddleware.RequireRole("admin", "employee"), clientHandler.ListClients)
+			clients.GET("/:id", authMiddleware.RequireRole("admin", "employee"), clientHandler.GetClient)
+			clients.PUT("/:id", authMiddleware.RequireRole("admin", "employee"), clientHandler.UpdateClient)
+			clients.DELETE("/:id", authMiddleware.RequireRole("admin"), clientHandler.DeleteClient)
 		}
 	}
 

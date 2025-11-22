@@ -204,7 +204,7 @@ info:
   title: Arnela CRM/CMS API
   version: "1.0"
 paths:
-  /api/v1/clients:
+  /clients:
     get:
       description: Retrieves a paginated list of clients with optional filters (admin/employee
         only)
@@ -312,7 +312,7 @@ paths:
       summary: Create a new client
       tags:
       - clients
-  /api/v1/clients/{id}:
+  /clients/{id}:
     delete:
       description: Soft-deletes a client (admin only)
       parameters:
@@ -457,7 +457,7 @@ paths:
       summary: Update client
       tags:
       - clients
-  /api/v1/clients/me:
+  /clients/me:
     get:
       description: Retrieves the authenticated client's information (client role only)
       produces:
