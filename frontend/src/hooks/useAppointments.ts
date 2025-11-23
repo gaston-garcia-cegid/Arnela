@@ -13,12 +13,22 @@ import type {
   Therapist,
 } from '@/types/appointment';
 
+interface AppointmentFilters {
+  clientId?: string;
+  therapistId?: string;
+  status?: string;
+  startDate?: string;
+  endDate?: string;
+  page?: number;
+  pageSize?: number;
+}
+
 export function useAppointments() {
   const { token } = useAuthStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Get my appointments (client)
+  // Get my appointments (client only - uses /appointments/me)
   const getMyAppointments = useCallback(
     async (page: number = 1, pageSize: number = 10) => {
       if (!token) {
@@ -32,10 +42,39 @@ export function useAppointments() {
       try {
         const response = await api.appointments.getMyAppointments(token, page, pageSize);
         return {
-          appointments: response.appointments || [], // ✅ Fallback a array vacío
+          appointments: response.appointments || [],
           total: response.total || 0,
           page: response.page || 1,
           pageSize: response.pageSize || 10,
+        };
+      } catch (err: any) {
+        setError(err.message || 'Error al cargar las citas');
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token]
+  );
+
+  // List all appointments with filters (admin/employee - uses /appointments)
+  const listAllAppointments = useCallback(
+    async (filters?: AppointmentFilters) => {
+      if (!token) {
+        setError('No autenticado');
+        return null;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await api.appointments.list(token, filters);
+        return {
+          appointments: response.appointments || [],
+          total: response.total || 0,
+          page: filters?.page || 1,
+          pageSize: filters?.pageSize || 10,
         };
       } catch (err: any) {
         setError(err.message || 'Error al cargar las citas');
@@ -179,10 +218,10 @@ export function useAppointments() {
 
     try {
       const response = await api.appointments.getTherapists(token);
-      return response.therapists || []; // ✅ Fallback a array vacío
+      return response.therapists || [];
     } catch (err: any) {
       setError(err.message || 'Error al cargar los terapeutas');
-      return []; // ✅ Devolver array vacío en caso de error
+      return [];
     } finally {
       setLoading(false);
     }
@@ -201,10 +240,10 @@ export function useAppointments() {
 
       try {
         const response = await api.appointments.getAvailableSlots(token, therapistId, date, duration);
-        return response.slots || []; // ✅ Fallback a array vacío
+        return response.slots || [];
       } catch (err: any) {
         setError(err.message || 'Error al cargar horarios disponibles');
-        return []; // ✅ Devolver array vacío en caso de error
+        return [];
       } finally {
         setLoading(false);
       }
@@ -215,7 +254,8 @@ export function useAppointments() {
   return {
     loading,
     error,
-    getMyAppointments,
+    getMyAppointments,       // ✅ For clients: /appointments/me?page=1&pageSize=10
+    listAllAppointments,     // ✅ For admin/employee: /appointments?filters...
     getAppointment,
     createAppointment,
     updateAppointment,

@@ -16,14 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BackofficeAppointmentList } from '@/components/appointments/BackofficeAppointmentList';
 import { AppointmentDetailsModal } from '@/components/appointments/AppointmentDetailsModal';
 import { ConfirmAppointmentModal } from '@/components/appointments/ConfirmAppointmentModal';
 import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import type { Therapist } from '@/types/appointment';
-import { formatDateForAPI } from '@/lib/appointmentUtils';
 
 export default function BackofficeAppointmentsPage() {
   const user = useAuthStore((state) => state.user);
@@ -39,7 +37,7 @@ export default function BackofficeAppointmentsPage() {
   const {
     loading,
     error,
-    getMyAppointments,
+    listAllAppointments,  // ✅ Changed from getMyAppointments
     getAppointment,
     getTherapists,
   } = useAppointments();
@@ -76,7 +74,15 @@ export default function BackofficeAppointmentsPage() {
   };
 
   const loadAppointments = async () => {
-    const filters: any = {
+    // ✅ Build filters object with proper structure
+    const filters: {
+      page: number;
+      pageSize: number;
+      status?: string;
+      therapistId?: string;
+      startDate?: string;
+      endDate?: string;
+    } = {
       page: pagination.page,
       pageSize: pagination.pageSize,
     };
@@ -99,7 +105,8 @@ export default function BackofficeAppointmentsPage() {
       filters.endDate = endDate.toISOString();
     }
 
-    const response = await getMyAppointments(filters);
+    // ✅ Use listAllAppointments instead of getMyAppointments
+    const response = await listAllAppointments(filters);
     if (response) {
       setAppointments(response.appointments);
       setPagination({ total: response.total });
