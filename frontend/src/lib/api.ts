@@ -185,6 +185,19 @@ export const api = {
       });
     },
 
+    search: async (query: string, token: string, isActive: boolean = true): Promise<Client[]> => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('search', query);
+      if (isActive) queryParams.append('isActive', 'true');
+      queryParams.append('pageSize', '50'); // Get more results for search
+      
+      const response = await fetchWithAuth(`/clients?${queryParams.toString()}`, token, {
+        method: 'GET',
+      }) as ListClientsResponse;
+      
+      return response.clients || [];
+    },
+
     create: async (data: CreateClientRequest, token: string): Promise<Client> => {
       return fetchWithAuth('/clients', token, {
         method: 'POST',

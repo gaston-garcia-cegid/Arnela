@@ -45,7 +45,7 @@ export interface Appointment {
 }
 
 export interface CreateAppointmentRequest {
-  // clientId is derived automatically from authenticated user in backend
+  clientId?: string; // Optional: for admin/employee creating appointments for others
   therapistId: string;
   title: string;
   description?: string;

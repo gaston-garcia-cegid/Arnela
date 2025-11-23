@@ -44,12 +44,27 @@ func NewAppointmentService(appointmentRepo repository.AppointmentRepository, cli
 }
 
 // CreateAppointment creates a new appointment with pending status
-// The clientID is derived automatically from the createdBy (userID)
+// If clientId is provided (admin/employee), uses that; otherwise derives from createdBy (client self-booking)
 func (s *appointmentService) CreateAppointment(ctx context.Context, req domain.CreateAppointmentRequest, createdBy uuid.UUID) (*domain.Appointment, error) {
-	// Get client by user ID (createdBy is the userID)
-	client, err := s.clientRepo.GetByUserID(ctx, createdBy)
-	if err != nil {
-		return nil, fmt.Errorf("cliente no encontrado para el usuario autenticado")
+	var client *domain.Client
+	var err error
+
+	// If clientId is provided (admin/employee creating for another client), use it
+	if req.ClientID != "" {
+		clientID, parseErr := uuid.Parse(req.ClientID)
+		if parseErr != nil {
+			return nil, fmt.Errorf("clientId no válido")
+		}
+		client, err = s.clientRepo.GetByID(ctx, clientID)
+		if err != nil {
+			return nil, fmt.Errorf("cliente no encontrado")
+		}
+	} else {
+		// Otherwise, derive client from authenticated user (client self-booking)
+		client, err = s.clientRepo.GetByUserID(ctx, createdBy)
+		if err != nil {
+			return nil, fmt.Errorf("cliente no encontrado para el usuario autenticado")
+		}
 	}
 
 	if !client.IsActive {

@@ -108,6 +108,7 @@ func (a *Appointment) CanBeCancelledByClient() bool {
 
 // CreateAppointmentRequest represents the request to create an appointment
 type CreateAppointmentRequest struct {
+	ClientID        string    `json:"clientId"` // Optional: For admin/employee creating appointments for others
 	TherapistID     string    `json:"therapistId" binding:"required"`
 	Title           string    `json:"title" binding:"required"`
 	Description     string    `json:"description"`

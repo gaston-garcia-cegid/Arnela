@@ -251,6 +251,34 @@ export function useAppointments() {
     [token]
   );
 
+  // Search clients (admin/employee - for creating appointments for others)
+  const searchClients = useCallback(
+    async (query: string) => {
+      if (!token) {
+        setError('No autenticado');
+        return [];
+      }
+
+      if (!query || query.trim().length < 2) {
+        return [];
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const clients = await api.clients.search(query.trim(), token, true);
+        return clients;
+      } catch (err: any) {
+        setError(err.message || 'Error al buscar clientes');
+        return [];
+      } finally {
+        setLoading(false);
+      }
+    },
+    [token]
+  );
+
   return {
     loading,
     error,
@@ -263,5 +291,6 @@ export function useAppointments() {
     confirmAppointment,
     getTherapists,
     getAvailableSlots,
+    searchClients,           // ✅ For admin/employee: search active clients
   };
 }

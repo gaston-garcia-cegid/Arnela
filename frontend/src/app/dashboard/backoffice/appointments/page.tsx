@@ -20,6 +20,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { BackofficeAppointmentList } from '@/components/appointments/BackofficeAppointmentList';
 import { AppointmentDetailsModal } from '@/components/appointments/AppointmentDetailsModal';
 import { ConfirmAppointmentModal } from '@/components/appointments/ConfirmAppointmentModal';
+import { CreateAppointmentModalBackoffice } from '@/components/appointments/CreateAppointmentModalBackoffice';
 import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import type { Therapist } from '@/types/appointment';
 
@@ -28,6 +29,7 @@ export default function BackofficeAppointmentsPage() {
   const router = useRouter();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [confirmingAppointmentId, setConfirmingAppointmentId] = useState<string | null>(null);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [therapistFilter, setTherapistFilter] = useState<string>('all');
@@ -175,6 +177,14 @@ export default function BackofficeAppointmentsPage() {
             </Button>
             <h1 className="text-lg font-bold text-primary md:text-xl">Gestión de Citas</h1>
           </div>
+          <Button
+            onClick={() => setCreateModalOpen(true)}
+            size="default"
+            className="gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Nueva Cita
+          </Button>
         </div>
       </header>
 
@@ -402,6 +412,16 @@ export default function BackofficeAppointmentsPage() {
           onSuccess={handleAppointmentUpdated}
         />
       )}
+
+      {/* Create Appointment Modal (Admin/Employee) */}
+      <CreateAppointmentModalBackoffice
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={() => {
+          setCreateModalOpen(false);
+          loadAppointments();
+        }}
+      />
     </div>
   );
 }
