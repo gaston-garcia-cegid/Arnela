@@ -30,7 +30,7 @@ export function useAppointments() {
       setError(null);
 
       try {
-        const response = await api.appointments.getMyAppointments(`?page=${page}&pageSize=${pageSize}`);
+        const response = await api.appointments.getMyAppointments(token, page, pageSize);
         return {
           appointments: response.appointments || [], // ✅ Fallback a array vacío
           total: response.total || 0,

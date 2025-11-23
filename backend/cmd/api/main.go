@@ -119,7 +119,7 @@ func main() {
 	appointmentRepo := postgres.NewAppointmentRepository(db)
 
 	// Initialize services
-	authService := service.NewAuthService(userRepo, tokenManager, cfg.JWT.TokenExpiry)
+	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
 	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo)
 

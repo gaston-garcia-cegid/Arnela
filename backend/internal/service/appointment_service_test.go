@@ -238,7 +238,6 @@ func TestCreateAppointment_Success(t *testing.T) {
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
-		ClientID:        clientID,
 		TherapistID:     "therapist-1",
 		Title:           "Consulta",
 		Description:     "Primera consulta",
@@ -271,7 +270,6 @@ func TestCreateAppointment_InvalidTherapist(t *testing.T) {
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
-		ClientID:        clientID,
 		TherapistID:     "invalid-therapist",
 		Title:           "Consulta",
 		StartTime:       startTime,
@@ -310,7 +308,6 @@ func TestCreateAppointment_WeekendRejected(t *testing.T) {
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
-		ClientID:        clientID,
 		TherapistID:     "therapist-1",
 		Title:           "Consulta",
 		StartTime:       saturdayAt10,

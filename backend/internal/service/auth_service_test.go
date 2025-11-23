@@ -70,10 +70,11 @@ func TestAuthService_Register(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockUserRepository)
+			mockClientRepo := new(mocks.MockClientRepository)
 			tt.mockSetup(mockRepo)
 
 			tokenManager := jwt.NewTokenManager("test-secret", "test-issuer")
-			authService := NewAuthService(mockRepo, tokenManager, 24*time.Hour)
+			authService := NewAuthService(mockRepo, mockClientRepo, tokenManager, 24*time.Hour)
 
 			ctx := context.Background()
 			response, err := authService.Register(ctx, tt.request)
@@ -155,14 +156,14 @@ func TestAuthService_Login(t *testing.T) {
 			expectedError: "invalid credentials",
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockUserRepository)
+			mockClientRepo := new(mocks.MockClientRepository)
 			tt.mockSetup(mockRepo)
 
 			tokenManager := jwt.NewTokenManager("test-secret", "test-issuer")
-			authService := NewAuthService(mockRepo, tokenManager, 24*time.Hour)
+			authService := NewAuthService(mockRepo, mockClientRepo, tokenManager, 24*time.Hour)
 
 			ctx := context.Background()
 			response, err := authService.Login(ctx, tt.request)
@@ -218,14 +219,14 @@ func TestAuthService_GetUserByID(t *testing.T) {
 			expectedError: "user not found",
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := new(mocks.MockUserRepository)
+			mockClientRepo := new(mocks.MockClientRepository)
 			tt.mockSetup(mockRepo)
 
 			tokenManager := jwt.NewTokenManager("test-secret", "test-issuer")
-			authService := NewAuthService(mockRepo, tokenManager, 24*time.Hour)
+			authService := NewAuthService(mockRepo, mockClientRepo, tokenManager, 24*time.Hour)
 
 			ctx := context.Background()
 			user, err := authService.GetUserByID(ctx, tt.userID)

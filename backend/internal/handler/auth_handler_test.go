@@ -47,6 +47,14 @@ func (m *MockAuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domai
 	return args.Get(0).(*domain.User), args.Error(1)
 }
 
+func (m *MockAuthService) GetClientIDForUser(ctx context.Context, userID string) (string, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return "", args.Error(1)
+	}
+	return args.Get(0).(string), args.Error(1)
+}
+
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	return gin.New()

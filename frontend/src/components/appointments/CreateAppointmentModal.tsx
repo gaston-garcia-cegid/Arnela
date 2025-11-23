@@ -93,8 +93,8 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
   const handleSubmit = async () => {
     if (!user || !selectedTime) return;
 
+    // ✅ clientId is derived automatically from authenticated user in backend
     const result = await createAppointment({
-      clientId: user.id,
       therapistId: selectedTherapist,
       title: title || 'Consulta de Terapia',
       description,

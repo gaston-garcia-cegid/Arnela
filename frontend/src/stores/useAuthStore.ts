@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 // User interface following project conventions (camelCase for props)
+// Note: clientId is NOT stored here. Backend derives it automatically from userId when needed.
 export interface User {
-  id: string;
+  id: string; // This is the USER ID (not client ID)
   email: string;
   firstName: string;
   lastName: string;

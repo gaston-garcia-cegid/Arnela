@@ -112,8 +112,8 @@ func (a *Appointment) OverlapsWith(other *Appointment, bufferMinutes int) bool {
 }
 
 // CreateAppointmentRequest represents the request to create an appointment
+// Note: clientId is derived automatically from the authenticated user's context
 type CreateAppointmentRequest struct {
-	ClientID        uuid.UUID `json:"clientId" binding:"required"`
 	TherapistID     string    `json:"therapistId" binding:"required"`
 	Title           string    `json:"title" binding:"required,max=255"`
 	Description     string    `json:"description"`

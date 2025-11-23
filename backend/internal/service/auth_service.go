@@ -16,14 +16,16 @@ import (
 // AuthService handles authentication logic
 type AuthService struct {
 	userRepo     repository.UserRepository
+	clientRepo   repository.ClientRepository
 	tokenManager *jwt.TokenManager
 	tokenExpiry  time.Duration
 }
 
 // NewAuthService creates a new AuthService
-func NewAuthService(userRepo repository.UserRepository, tokenManager *jwt.TokenManager, tokenExpiry time.Duration) AuthServiceInterface {
+func NewAuthService(userRepo repository.UserRepository, clientRepo repository.ClientRepository, tokenManager *jwt.TokenManager, tokenExpiry time.Duration) AuthServiceInterface {
 	return &AuthService{
 		userRepo:     userRepo,
+		clientRepo:   clientRepo,
 		tokenManager: tokenManager,
 		tokenExpiry:  tokenExpiry,
 	}
@@ -154,4 +156,25 @@ func (s *AuthService) GetUserByID(ctx context.Context, id uuid.UUID) (*domain.Us
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 	return user, nil
+}
+
+// GetClientIDForUser retrieves the client ID for a given user ID
+func (s *AuthService) GetClientIDForUser(ctx context.Context, userID string) (string, error) {
+	// Verificar que el contexto no esté cancelado
+	if ctx.Err() != nil {
+		return "", fmt.Errorf("context cancelled: %w", ctx.Err())
+	}
+
+	uid, err := uuid.Parse(userID)
+	if err != nil {
+		return "", fmt.Errorf("invalid user ID format")
+	}
+
+	// Get client by user ID
+	client, err := s.clientRepo.GetByUserID(ctx, uid)
+	if err != nil {
+		return "", fmt.Errorf("client not found for user: %w", err)
+	}
+
+	return client.ID.String(), nil
 }
