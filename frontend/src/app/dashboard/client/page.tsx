@@ -73,12 +73,18 @@ export default function ClientDashboard() {
               <CardTitle className="flex items-center gap-2 text-accent">
                 <span>📅</span> Mis Citas
               </CardTitle>
-              <CardDescription>Próximas citas programadas</CardDescription>
+              <CardDescription>Gestiona tus citas de terapia</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">No tienes citas programadas</p>
-              <Button className="w-full" variant="default">
-                Solicitar cita
+              <p className="text-sm text-muted-foreground mb-4">
+                Agenda, consulta y administra tus sesiones de terapia
+              </p>
+              <Button 
+                className="w-full" 
+                variant="default"
+                onClick={() => router.push('/dashboard/client/appointments')}
+              >
+                Ver mis citas
               </Button>
             </CardContent>
           </Card>

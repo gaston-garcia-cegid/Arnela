@@ -7,6 +7,18 @@ import {
   ApiError as ApiErrorClass,
 } from './errors';
 
+import type {
+  Appointment,
+  CreateAppointmentRequest,
+  UpdateAppointmentRequest,
+  ConfirmAppointmentRequest,
+  CancelAppointmentRequest,
+  ListAppointmentsResponse,
+  GetMyAppointmentsResponse,
+  GetTherapistsResponse,
+  GetAvailableSlotsResponse,
+} from '@/types/appointment';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // Types matching backend responses
@@ -190,6 +202,116 @@ export const api = {
     delete: async (id: string, token: string): Promise<void> => {
       return fetchWithAuth(`/clients/${id}`, token, {
         method: 'DELETE',
+      });
+    },
+  },
+
+  appointments: {
+    // Create a new appointment
+    create: async (data: CreateAppointmentRequest, token: string): Promise<Appointment> => {
+      return fetchWithAuth('/appointments', token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Get appointment by ID
+    getById: async (id: string, token: string): Promise<Appointment> => {
+      return fetchWithAuth(`/appointments/${id}`, token, {
+        method: 'GET',
+      });
+    },
+
+    // Update appointment
+    update: async (id: string, data: UpdateAppointmentRequest, token: string): Promise<Appointment> => {
+      return fetchWithAuth(`/appointments/${id}`, token, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Cancel appointment
+    cancel: async (id: string, data: CancelAppointmentRequest, token: string): Promise<{ message: string }> => {
+      return fetchWithAuth(`/appointments/${id}/cancel`, token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // Get my appointments (client only)
+    getMyAppointments: async (
+      token: string, 
+      page: number = 1, 
+      pageSize: number = 10
+    ): Promise<GetMyAppointmentsResponse> => {
+      return fetchWithAuth(`/appointments/me?page=${page}&pageSize=${pageSize}`, token, {
+        method: 'GET',
+      });
+    },
+
+    // Confirm appointment (admin/employee only)
+    confirm: async (id: string, data: ConfirmAppointmentRequest, token: string): Promise<Appointment> => {
+      return fetchWithAuth(`/appointments/${id}/confirm`, token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    // List all appointments with filters (admin/employee only)
+    list: async (
+      token: string,
+      filters?: {
+        clientId?: string;
+        therapistId?: string;
+        status?: string;
+        startDate?: string;
+        endDate?: string;
+        page?: number;
+        pageSize?: number;
+      }
+    ): Promise<ListAppointmentsResponse> => {
+      const queryParams = new URLSearchParams();
+      
+      if (filters) {
+        if (filters.clientId) queryParams.append('clientId', filters.clientId);
+        if (filters.therapistId) queryParams.append('therapistId', filters.therapistId);
+        if (filters.status) queryParams.append('status', filters.status);
+        if (filters.startDate) queryParams.append('startDate', filters.startDate);
+        if (filters.endDate) queryParams.append('endDate', filters.endDate);
+        if (filters.page) queryParams.append('page', filters.page.toString());
+        if (filters.pageSize) queryParams.append('pageSize', filters.pageSize.toString());
+      }
+
+      const queryString = queryParams.toString();
+      const url = queryString ? `/appointments?${queryString}` : '/appointments';
+
+      return fetchWithAuth(url, token, {
+        method: 'GET',
+      });
+    },
+
+    // Get available therapists
+    getTherapists: async (token: string): Promise<GetTherapistsResponse> => {
+      return fetchWithAuth('/appointments/therapists', token, {
+        method: 'GET',
+      });
+    },
+
+    // Get available time slots for a therapist on a specific date
+    getAvailableSlots: async (
+      token: string,
+      therapistId: string,
+      date: string, // YYYY-MM-DD format
+      duration: 45 | 60
+    ): Promise<GetAvailableSlotsResponse> => {
+      const queryParams = new URLSearchParams({
+        therapistId,
+        date,
+        duration: duration.toString(),
+      });
+
+      return fetchWithAuth(`/appointments/available-slots?${queryParams.toString()}`, token, {
+        method: 'GET',
       });
     },
   },

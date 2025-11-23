@@ -4,20 +4,29 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 // AuthMiddleware handles JWT authentication and authorization
 type AuthMiddleware struct {
 	tokenManager *jwt.TokenManager
+	clientRepo   repository.ClientRepository
 }
 
 // NewAuthMiddleware creates a new AuthMiddleware instance
 func NewAuthMiddleware(tokenManager *jwt.TokenManager) *AuthMiddleware {
 	return &AuthMiddleware{
 		tokenManager: tokenManager,
+		clientRepo:   nil,
 	}
+}
+
+// SetClientRepo sets the client repository for the middleware
+func (m *AuthMiddleware) SetClientRepo(clientRepo repository.ClientRepository) {
+	m.clientRepo = clientRepo
 }
 
 // RequireAuth ensures the user is authenticated
@@ -48,10 +57,27 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			return
 		}
 
+		// Parse userID as UUID
+		userID, err := uuid.Parse(claims.UserID.String())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
+			c.Abort()
+			return
+		}
+
 		// Set user information in context
-		c.Set("userID", claims.UserID.String())
+		c.Set("userID", userID)
+		c.Set("userRole", claims.Role)
 		c.Set("email", claims.Email)
-		c.Set("role", claims.Role)
+		c.Set("role", claims.Role) // Keep for backward compatibility
+
+		// If user is a client, fetch and set clientID
+		if claims.Role == "client" && m.clientRepo != nil {
+			client, err := m.clientRepo.GetByUserID(c.Request.Context(), userID)
+			if err == nil && client != nil {
+				c.Set("clientID", client.ID)
+			}
+		}
 
 		c.Next()
 	}

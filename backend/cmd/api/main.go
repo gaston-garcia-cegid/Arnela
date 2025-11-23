@@ -116,17 +116,21 @@ func main() {
 	// Initialize repositories
 	userRepo := postgres.NewUserRepository(db)
 	clientRepo := postgres.NewClientRepository(db)
+	appointmentRepo := postgres.NewAppointmentRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
+	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
+	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
+	authMiddleware.SetClientRepo(clientRepo)
 
 	// Setup Gin router
 	if cfg.Server.Environment == "production" {
@@ -188,6 +192,26 @@ func main() {
 			clients.GET("/:id", authMiddleware.RequireRole("admin", "employee"), clientHandler.GetClient)
 			clients.PUT("/:id", authMiddleware.RequireRole("admin", "employee"), clientHandler.UpdateClient)
 			clients.DELETE("/:id", authMiddleware.RequireRole("admin"), clientHandler.DeleteClient)
+		}
+
+		// Appointment routes (authenticated)
+		appointments := v1.Group("/appointments")
+		appointments.Use(authMiddleware.RequireAuth())
+		{
+			// Public endpoints (all authenticated users)
+			appointments.GET("/therapists", appointmentHandler.GetTherapists)
+			appointments.GET("/available-slots", appointmentHandler.GetAvailableSlots)
+			appointments.POST("", appointmentHandler.CreateAppointment)
+			appointments.GET("/:id", appointmentHandler.GetAppointment)
+			appointments.PUT("/:id", appointmentHandler.UpdateAppointment)
+			appointments.POST("/:id/cancel", appointmentHandler.CancelAppointment)
+
+			// Client-specific endpoint
+			appointments.GET("/me", appointmentHandler.GetMyAppointments)
+
+			// Admin/Employee only routes
+			appointments.GET("", authMiddleware.RequireRole("admin", "employee"), appointmentHandler.ListAppointments)
+			appointments.POST("/:id/confirm", authMiddleware.RequireRole("admin", "employee"), appointmentHandler.ConfirmAppointment)
 		}
 	}
 

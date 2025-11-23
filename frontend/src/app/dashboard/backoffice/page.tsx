@@ -182,11 +182,14 @@ export default function BackofficeDashboard() {
           >
             <span className="text-xl mr-2">+</span> Nuevo Cliente
           </Button>
-          <Button className="h-20 text-base font-semibold bg-accent hover:bg-accent/90 text-accent-foreground">
-            <span className="text-xl mr-2">+</span> Nueva Cita
+          <Button 
+            className="h-20 text-base font-semibold bg-accent hover:bg-accent/90 text-accent-foreground"
+            onClick={() => router.push('/dashboard/backoffice/appointments')}
+          >
+            📅 Gestión de Citas
           </Button>
           <Button className="h-20 text-base font-semibold" variant="outline">
-            📅 Ver Calendario
+            📊 Reportes
           </Button>
         </div>
       </main>
