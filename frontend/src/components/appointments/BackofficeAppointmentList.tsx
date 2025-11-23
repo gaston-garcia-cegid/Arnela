@@ -109,7 +109,7 @@ export function BackofficeAppointmentList({
                       <p className="text-xs font-medium text-muted-foreground">Terapeuta</p>
                       <div className="flex items-center gap-2">
                         <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
                           style={{ backgroundColor: therapist.avatarColor }}
                         >
                           {therapist.name.split(' ')[1]?.[0] || therapist.name[0]}

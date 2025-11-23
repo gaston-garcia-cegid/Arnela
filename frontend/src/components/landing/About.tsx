@@ -48,7 +48,7 @@ export function About() {
           </div>
           
           <div className="flex items-center justify-center">
-            <div className="aspect-square w-full max-w-md overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 to-accent/10 shadow-md">
+            <div className="aspect-square w-full max-w-md overflow-hidden rounded-xl bg-linear-to-br from-primary/10 to-accent/10 shadow-md">
               {/* Placeholder for image - replace with actual image */}
               <div className="flex h-full items-center justify-center text-muted-foreground">
                 <div className="text-center p-8">

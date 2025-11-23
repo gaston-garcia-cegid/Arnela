@@ -167,7 +167,7 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
                   >
                     <div className="flex items-start gap-4">
                       <div
-                        className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl flex-shrink-0"
+                        className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0"
                         style={{ backgroundColor: therapist.avatarColor }}
                       >
                         {therapist.name.split(' ')[1]?.[0] || therapist.name[0]}
@@ -179,7 +179,7 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
                         </p>
                       </div>
                       {selectedTherapist === therapist.id && (
-                        <Check className="h-6 w-6 text-primary flex-shrink-0" />
+                        <Check className="h-6 w-6 text-primary shrink-0" />
                       )}
                     </div>
                   </div>
