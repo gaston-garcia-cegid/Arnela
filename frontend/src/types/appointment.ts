@@ -33,9 +33,9 @@ export interface Appointment {
   endTime: string;   // ISO 8601 date string
   durationMinutes: number;
   status: AppointmentStatus;
-  notes: string;
-  cancellationReason: string;
-  googleCalendarEventId: string;
+  notes?: string;
+  cancellationReason?: string;
+  googleCalendarEventId?: string;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

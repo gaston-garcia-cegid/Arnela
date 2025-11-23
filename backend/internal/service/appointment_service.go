@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -219,7 +220,6 @@ func (s *appointmentService) CancelAppointment(ctx context.Context, id uuid.UUID
 		return fmt.Errorf("cita no encontrada")
 	}
 
-	// If not admin, check if client owns the appointment and can cancel
 	if !isAdmin {
 		client, err := s.clientRepo.GetByUserID(ctx, userID)
 		if err != nil {
@@ -237,7 +237,12 @@ func (s *appointmentService) CancelAppointment(ctx context.Context, id uuid.UUID
 
 	// Update appointment
 	appointment.Status = domain.AppointmentStatusCancelled
-	appointment.CancellationReason = req.Reason
+	appointment.CancellationReason = domain.NullableString{
+		NullString: sql.NullString{
+			String: req.Reason,
+			Valid:  true,
+		},
+	}
 	appointment.UpdatedAt = time.Now()
 
 	if err := s.appointmentRepo.Update(ctx, appointment); err != nil {
@@ -280,7 +285,17 @@ func (s *appointmentService) ConfirmAppointment(ctx context.Context, id uuid.UUI
 	}
 
 	appointment.Status = domain.AppointmentStatusConfirmed
-	appointment.Notes = req.Notes
+
+	// ✅ Use NullableString wrapper
+	if req.Notes != "" {
+		appointment.Notes = domain.NullableString{
+			NullString: sql.NullString{
+				String: req.Notes,
+				Valid:  true,
+			},
+		}
+	}
+
 	appointment.UpdatedAt = time.Now()
 
 	if err := s.appointmentRepo.Update(ctx, appointment); err != nil {
