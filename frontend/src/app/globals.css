@@ -3,75 +3,43 @@
 /* ============================================
    TAILWIND 4 CSS-FIRST CONFIGURATION
    Design System para Arnela Gabinete
+   Paleta cálida inspirada en la imagen de portada
    ============================================ */
 
 @theme {
-  /* Paleta de colores profesional */
-  --color-background: oklch(97% 0.02 39);
-  --color-foreground: oklch(25% 0.02 220);
+  /* Paleta de colores cálida */
+  --color-background: #fdf8f6;           /* Marfil cálido - fondo principal */
+  --color-foreground: #a44c2e;            /* Terracota oscuro - texto principal */
   
-  --color-primary: oklch(65% 0.2 217);
-  --color-primary-foreground: oklch(100% 0 0);
+  --color-primary: #a44c2e;               /* Terracota oscuro - botones y énfasis */
+  --color-primary-foreground: #fdf8f6;    /* Marfil para texto en primary */
   
-  --color-secondary: oklch(45% 0.15 142);
-  --color-secondary-foreground: oklch(100% 0 0);
+  --color-secondary: #a4d4e4;             /* Azul claro - acentos suaves */
+  --color-secondary-foreground: #a44c2e;  /* Terracota para texto en secondary */
   
-  --color-accent: oklch(72% 0.15 27);
-  --color-accent-foreground: oklch(25% 0.02 220);
+  --color-accent: #fbd4cc;                /* Rosa pálido - highlights y hover */
+  --color-accent-foreground: #a44c2e;     /* Terracota para texto en accent */
   
-  --color-card: oklch(100% 0 0);
-  --color-card-foreground: oklch(25% 0.02 220);
+  --color-card: #fdf8f6;                  /* Marfil para cards */
+  --color-card-foreground: #a44c2e;       /* Terracota para texto en cards */
   
-  --color-muted: oklch(95% 0.02 39);
-  --color-muted-foreground: oklch(50% 0.02 220);
+  --color-muted: #f4e4ec;                 /* Rosa muy pálido - fondos secundarios */
+  --color-muted-foreground: #8a6b5e;      /* Marrón medio para texto muted */
   
-  --color-destructive: oklch(55% 0.22 0);
-  --color-destructive-foreground: oklch(100% 0 0);
+  --color-destructive: #d32f2f;           /* Rojo para errores */
+  --color-destructive-foreground: #ffffff; /* Blanco para texto en destructive */
   
-  --color-border: oklch(92% 0.01 220);
-  --color-input: oklch(92% 0.01 220);
-  --color-ring: oklch(65% 0.2 217);
+  --color-border: #e8d5cd;                /* Border suave y cálido */
+  --color-input: #fdf8f6;                 /* Marfil para inputs */
+  --color-ring: #a44c2e;                  /* Terracota para focus ring */
   
-  --color-popover: oklch(100% 0 0);
-  --color-popover-foreground: oklch(25% 0.02 220);
+  --color-popover: #fdf8f6;               /* Marfil para popovers */
+  --color-popover-foreground: #a44c2e;    /* Terracota para texto en popovers */
   
   /* Border Radius */
   --radius-lg: 0.5rem;
   --radius-md: calc(0.5rem - 2px);
   --radius-sm: calc(0.5rem - 4px);
-}
-
-/* Dark mode colors */
-@media (prefers-color-scheme: dark) {
-  @theme {
-    --color-background: oklch(12% 0.02 220);
-    --color-foreground: oklch(97% 0.02 39);
-    
-    --color-primary: oklch(65% 0.2 217);
-    --color-primary-foreground: oklch(100% 0 0);
-    
-    --color-secondary: oklch(50% 0.15 142);
-    --color-secondary-foreground: oklch(100% 0 0);
-    
-    --color-accent: oklch(72% 0.15 27);
-    --color-accent-foreground: oklch(12% 0.02 220);
-    
-    --color-card: oklch(15% 0.02 220);
-    --color-card-foreground: oklch(97% 0.02 39);
-    
-    --color-muted: oklch(22% 0.02 220);
-    --color-muted-foreground: oklch(75% 0.02 39);
-    
-    --color-destructive: oklch(55% 0.22 0);
-    --color-destructive-foreground: oklch(100% 0 0);
-    
-    --color-border: oklch(22% 0.02 220);
-    --color-input: oklch(22% 0.02 220);
-    --color-ring: oklch(65% 0.2 217);
-    
-    --color-popover: oklch(15% 0.02 220);
-    --color-popover-foreground: oklch(97% 0.02 39);
-  }
 }
 
 /* Base styles */
@@ -89,5 +57,11 @@
 @layer utilities {
   .modal-overlay {
     @apply bg-black/60 backdrop-blur-sm;
+  }
+  
+  /* Overlay cálido para Hero y fondos especiales */
+  .bg-overlay-warm {
+    background: linear-gradient(135deg, #fbd4cccc 0%, #f4e4ecb3 50%, #a4d4e4cc 100%);
+    mix-blend-mode: multiply;
   }
 }

@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 
 interface NavbarProps {
-  onLoginClick?: () => void;
+  readonly onLoginClick?: () => void;
 }
 
-export function Navbar({ onLoginClick }: NavbarProps) {
+export function Navbar({ onLoginClick }: Readonly<NavbarProps>) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const navLinks = [
@@ -20,9 +20,9 @@ export function Navbar({ onLoginClick }: NavbarProps) {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 shadow-sm">
+    <nav className="sticky top-0 z-50 border-b border-primary bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80 shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold text-primary hover:text-primary/80 transition-colors">
+        <Link href="/" className="text-xl font-bold text-primary hover:text-accent transition-colors">
           Arnela Gabinete
         </Link>
 
@@ -32,13 +32,13 @@ export function Navbar({ onLoginClick }: NavbarProps) {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-medium text-foreground/80 transition-colors hover:text-primary"
+              className="text-sm font-medium text-primary/80 transition-colors hover:text-accent"
             >
               {link.label}
             </Link>
           ))}
           {onLoginClick && (
-            <Button onClick={onLoginClick} variant="default" size="sm" className="ml-2">
+            <Button onClick={onLoginClick} variant="default" size="sm" className="ml-2 bg-primary text-background hover:bg-accent hover:text-primary">
               Iniciar sesión
             </Button>
           )}
@@ -46,7 +46,7 @@ export function Navbar({ onLoginClick }: NavbarProps) {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden"
+          className="md:hidden text-primary"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           aria-label="Toggle menu"
         >
