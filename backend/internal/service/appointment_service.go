@@ -384,7 +384,7 @@ func (s *appointmentService) GetAvailableSlots(ctx context.Context, therapistID 
 
 		// Check if slot overlaps with any existing appointment (with 15min buffer)
 		isAvailable := true
-		buffer := 15 * time.Minute
+		buffer := 60 * time.Minute
 
 		for _, appt := range existingAppointments {
 			// Skip cancelled appointments
@@ -403,8 +403,8 @@ func (s *appointmentService) GetAvailableSlots(ctx context.Context, therapistID 
 			availableSlots = append(availableSlots, currentSlot)
 		}
 
-		// Move to next slot (15min interval)
-		currentSlot = currentSlot.Add(15 * time.Minute)
+		// Move to next slot (60min interval)
+		currentSlot = currentSlot.Add(60 * time.Minute)
 	}
 
 	return availableSlots, nil
