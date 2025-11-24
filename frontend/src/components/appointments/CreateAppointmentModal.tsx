@@ -223,30 +223,29 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
                     today.setHours(0, 0, 0, 0);
                     return date < today || !isWeekday(date);
                   }}
-                  className="rounded-md border bg-white shadow-sm"
+                  className="rounded-md border bg-gray-50 shadow-sm"
                   classNames={{
                     months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
                     month: "space-y-4",
-                    caption: "flex justify-center pt-1 relative items-center text-base font-semibold",
-                    caption_label: "text-base font-semibold",
-                    nav: "space-x-1 flex items-center",
-                    nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 inline-flex items-center justify-center",
-                    nav_button_previous: "absolute left-1",
-                    nav_button_next: "absolute right-1",
+                    caption: "flex justify-center pt-1 relative items-center text-xl font-bold text-gray-900",
+                    caption_label: "text-xl font-bold text-gray-900",
+                    nav: "space-x-2 flex items-center",
+                    nav_button: "h-12 w-12 bg-primary text-white rounded-full p-0 opacity-100 hover:scale-105 transition-all inline-flex items-center justify-center text-2xl font-bold",
+                    nav_button_previous: "absolute left-2",
+                    nav_button_next: "absolute right-2",
                     table: "w-full border-collapse space-y-1",
                     head_row: "flex",
-                    head_cell: "text-muted-foreground rounded-md w-12 font-normal text-sm",
+                    head_cell: "text-gray-700 rounded-md w-12 font-semibold text-base",
                     row: "flex w-full mt-2",
-                    cell: "text-center text-base p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                    day: "h-12 w-12 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors",
-                    day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                    day_today: "bg-accent text-accent-foreground font-semibold",
-                    day_outside: "text-muted-foreground opacity-50",
-                    day_disabled: "text-muted-foreground opacity-50 cursor-not-allowed",
+                    cell: "text-center text-lg p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
+                    day: "h-12 w-12 p-0 font-semibold text-gray-900 aria-selected:opacity-100 hover:bg-primary/10 hover:text-primary rounded-md transition-colors",
+                    day_selected: "bg-primary text-white hover:bg-primary focus:bg-primary focus:text-white",
+                    day_today: "bg-accent text-primary font-bold border border-primary",
+                    day_outside: "text-gray-400 opacity-50",
+                    day_disabled: "text-gray-400 opacity-50 cursor-not-allowed",
                     day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
                     day_hidden: "invisible",
                   }}
-                  // ✅ Permitir navegar a meses futuros
                   fromDate={new Date()}
                   toDate={new Date(new Date().setMonth(new Date().getMonth() + 6))}
                 />
