@@ -70,7 +70,7 @@ export function EditEmployeeModal({
       phone: employee.phone,
       dni: employee.dni,
       specialty: employee.specialty,
-      hireDate: employee.hireDate.split('T')[0], // Extract date part
+      hireDate: employee.hireDate ? employee.hireDate.split('T')[0] : '', // Extract date part
       notes: employee.notes || '',
       isActive: employee.isActive,
     },
@@ -85,7 +85,7 @@ export function EditEmployeeModal({
       phone: employee.phone,
       dni: employee.dni,
       specialty: employee.specialty,
-      hireDate: employee.hireDate.split('T')[0],
+      hireDate: employee.hireDate ? employee.hireDate.split('T')[0] : '',
       notes: employee.notes || '',
       isActive: employee.isActive,
     });

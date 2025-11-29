@@ -235,7 +235,7 @@ export default function EmployeesPage() {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4" />
-                    <span>Ingreso: {formatDate(employee.hireDate)}</span>
+                    <span>Ingreso: {employee.hireDate ? formatDate(employee.hireDate) : 'N/A'}</span>
                   </div>
                   {employee.notes && (
                     <p className="text-sm text-muted-foreground line-clamp-2 pt-2 border-t">

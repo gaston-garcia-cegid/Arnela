@@ -24,7 +24,6 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 		Email:       "juan.perez@example.com",
 		Phone:       "612345678",
 		DNI:         "12345678Z",
-		Position:    "Fisioterapeuta",
 		Specialties: []string{"Deportiva", "Traumatología"},
 		AvatarColor: "#FF5733",
 	}
@@ -71,9 +70,7 @@ func TestEmployeeService_CreateEmployee_InvalidEmail(t *testing.T) {
 				Email:     tt.email,
 				Phone:     "612345678",
 				DNI:       "12345678Z",
-				Position:  "Fisioterapeuta",
 			}
-
 			employee, err := service.CreateEmployee(context.Background(), req)
 
 			assert.Error(t, err)
@@ -105,7 +102,6 @@ func TestEmployeeService_CreateEmployee_InvalidPhone(t *testing.T) {
 				Email:     "juan@example.com",
 				Phone:     tt.phone,
 				DNI:       "12345678Z",
-				Position:  "Fisioterapeuta",
 			}
 
 			employee, err := service.CreateEmployee(context.Background(), req)
@@ -140,9 +136,7 @@ func TestEmployeeService_CreateEmployee_InvalidDNI(t *testing.T) {
 				Email:     "juan@example.com",
 				Phone:     "612345678",
 				DNI:       tt.dni,
-				Position:  "Fisioterapeuta",
 			}
-
 			employee, err := service.CreateEmployee(context.Background(), req)
 
 			assert.Error(t, err)
@@ -164,7 +158,6 @@ func TestEmployeeService_CreateEmployee_EmailExists(t *testing.T) {
 		Email:     "existing@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
-		Position:  "Fisioterapeuta",
 	}
 
 	mockRepo.On("EmailExists", ctx, "existing@example.com").Return(true, nil)
@@ -189,7 +182,6 @@ func TestEmployeeService_CreateEmployee_DNIExists(t *testing.T) {
 		Email:     "juan@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
-		Position:  "Fisioterapeuta",
 	}
 
 	mockRepo.On("EmailExists", ctx, "juan@example.com").Return(false, nil)
@@ -412,8 +404,7 @@ func TestEmployeeService_CreateEmployee_DefaultAvatarColor(t *testing.T) {
 		Email:     "juan@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
-		Position:  "Fisioterapeuta",
-		// AvatarColor not provided
+		// no AvatarColor provided -> should get default
 	}
 
 	mockRepo.On("EmailExists", ctx, "juan@example.com").Return(false, nil)
