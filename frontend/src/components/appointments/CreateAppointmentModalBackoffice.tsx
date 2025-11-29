@@ -26,7 +26,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Check, Loader2, Search, User } from 'lucide-react';
 import { es } from 'date-fns/locale';
-import { Therapist } from '@/types/appointment';
+import { Employee } from '@/types/employee';
 import type { Client } from '@/lib/api';
 
 interface CreateAppointmentModalBackofficeProps {
@@ -55,14 +55,14 @@ export function CreateAppointmentModalBackoffice({
   const user = useAuthStore((state) => state.user);
   const { 
     createAppointment, 
-    getTherapists, 
+    getEmployees, 
     getAvailableSlots, 
     searchClients,
     loading, 
     error 
   } = useAppointments();
 
-  const [step, setStep] = useState<'client' | 'therapist' | 'datetime' | 'details'>('client');
+  const [step, setStep] = useState<'client' | 'employee' | 'datetime' | 'details'>('client');
   
   // Step 1: Client selection
   const [clientSearchQuery, setClientSearchQuery] = useState('');
@@ -70,9 +70,9 @@ export function CreateAppointmentModalBackoffice({
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [searchingClients, setSearchingClients] = useState(false);
   
-  // Step 2: Therapist selection
-  const [therapists, setTherapists] = useState<Therapist[]>([]);
-  const [selectedTherapist, setSelectedTherapist] = useState<string>('');
+  // Step 2: Employee selection
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<string>('');
   
   // Step 3: Date & time
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -85,10 +85,10 @@ export function CreateAppointmentModalBackoffice({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
-  // Load therapists on mount
+  // Load employees on mount
   useEffect(() => {
     if (open) {
-      loadTherapists();
+      loadEmployees();
     }
   }, [open]);
 
@@ -110,14 +110,14 @@ export function CreateAppointmentModalBackoffice({
 
   // Load available slots when date/duration changes
   useEffect(() => {
-    if (selectedTherapist && selectedDate && duration) {
+    if (selectedEmployee && selectedDate && duration) {
       loadAvailableSlots();
     }
-  }, [selectedTherapist, selectedDate, duration]);
+  }, [selectedEmployee, selectedDate, duration]);
 
-  const loadTherapists = async () => {
-    const data = await getTherapists();
-    setTherapists(data);
+  const loadEmployees = async () => {
+    const data = await getEmployees();
+    setEmployees(data);
   };
 
   const loadAvailableSlots = async () => {
@@ -125,7 +125,7 @@ export function CreateAppointmentModalBackoffice({
 
     setLoadingSlots(true);
     const dateStr = formatDateForAPI(selectedDate);
-    const slots = await getAvailableSlots(selectedTherapist, dateStr, duration);
+    const slots = await getAvailableSlots(selectedEmployee, dateStr, duration);
     setAvailableSlots(slots);
     setLoadingSlots(false);
   };
@@ -136,7 +136,7 @@ export function CreateAppointmentModalBackoffice({
     // ✅ Admin creates appointment for selected client
     const result = await createAppointment({
       clientId: selectedClient.id, // Explicitly set clientId
-      therapistId: selectedTherapist,
+      employeeId: selectedEmployee,
       title: title || 'Consulta de Terapia',
       description,
       startTime: selectedTime,
@@ -154,7 +154,7 @@ export function CreateAppointmentModalBackoffice({
     setClientSearchQuery('');
     setSearchedClients([]);
     setSelectedClient(null);
-    setSelectedTherapist('');
+    setSelectedEmployee('');
     setSelectedDate(undefined);
     setSelectedTime('');
     setDuration(60);
@@ -168,12 +168,12 @@ export function CreateAppointmentModalBackoffice({
     onClose();
   };
 
-  const canProceedToTherapist = selectedClient !== null;
-  const canProceedToDateTime = selectedTherapist !== '';
+  const canProceedToEmployee = selectedClient !== null;
+  const canProceedToDateTime = selectedEmployee !== '';
   const canProceedToDetails = selectedTime !== '';
   const canSubmit = title.trim() !== '';
 
-  const selectedTherapistData = therapists.find((t) => t.id === selectedTherapist);
+  const selectedEmployeeData = employees.find((e) => e.id === selectedEmployee);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
@@ -182,7 +182,7 @@ export function CreateAppointmentModalBackoffice({
           <DialogTitle className="text-2xl">Agendar Cita (Admin)</DialogTitle>
           <DialogDescription className="text-base">
             {step === 'client' && 'Paso 1: Selecciona el cliente'}
-            {step === 'therapist' && 'Paso 2: Selecciona un terapeuta'}
+            {step === 'employee' && 'Paso 2: Selecciona un profesional'}
             {step === 'datetime' && 'Paso 3: Elige fecha y hora'}
             {step === 'details' && 'Paso 4: Detalles de la cita'}
           </DialogDescription>
@@ -297,36 +297,36 @@ export function CreateAppointmentModalBackoffice({
           </div>
         )}
 
-        {/* Step 2: Select Therapist */}
-        {step === 'therapist' && (
+        {/* Step 2: Select Employee */}
+        {step === 'employee' && (
           <div className="space-y-4 py-4">
             <div>
-              <Label className="text-base font-semibold">Selecciona un Terapeuta</Label>
+              <Label className="text-base font-semibold">Selecciona un Profesional</Label>
               <div className="mt-4 grid gap-4">
-                {therapists.map((therapist) => (
+                {employees.map((employee) => (
                   <div
-                    key={therapist.id}
+                    key={employee.id}
                     className={`p-5 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${
-                      selectedTherapist === therapist.id
+                      selectedEmployee === employee.id
                         ? 'border-primary bg-primary/5 shadow-md'
                         : 'border-border hover:border-primary/50'
                     }`}
-                    onClick={() => setSelectedTherapist(therapist.id)}
+                    onClick={() => setSelectedEmployee(employee.id)}
                   >
                     <div className="flex items-start gap-4">
                       <div
                         className="w-14 h-14 rounded-full flex items-center justify-center text-white font-bold text-xl shrink-0"
-                        style={{ backgroundColor: therapist.avatarColor }}
+                        style={{ backgroundColor: employee.avatarColor }}
                       >
-                        {therapist.name.split(' ')[1]?.[0] || therapist.name[0]}
+                        {employee.firstName[0]}{employee.lastName[0]}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-lg">{therapist.name}</h3>
+                        <h3 className="font-semibold text-lg">{employee.firstName} {employee.lastName}</h3>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {therapist.specialties.join(', ')}
+                          {employee.specialty}
                         </p>
                       </div>
-                      {selectedTherapist === therapist.id && (
+                      {selectedEmployee === employee.id && (
                         <Check className="h-6 w-6 text-primary shrink-0" />
                       )}
                     </div>
@@ -460,8 +460,8 @@ export function CreateAppointmentModalBackoffice({
                   {selectedClient?.firstName} {selectedClient?.lastName} (DNI: {selectedClient?.dni || selectedClient?.nif})
                 </p>
                 <p className="text-sm">
-                  <strong className="font-semibold">Terapeuta:</strong>{' '}
-                  {selectedTherapistData?.name}
+                  <strong className="font-semibold">Profesional:</strong>{' '}
+                  {selectedEmployeeData?.firstName} {selectedEmployeeData?.lastName}
                 </p>
                 <p className="text-sm">
                   <strong className="font-semibold">Fecha:</strong>{' '}
@@ -520,8 +520,8 @@ export function CreateAppointmentModalBackoffice({
               variant="outline"
               size="lg"
               onClick={() => {
-                if (step === 'therapist') setStep('client');
-                if (step === 'datetime') setStep('therapist');
+                if (step === 'employee') setStep('client');
+                if (step === 'datetime') setStep('employee');
                 if (step === 'details') setStep('datetime');
               }}
             >
@@ -532,15 +532,15 @@ export function CreateAppointmentModalBackoffice({
           {step === 'client' && (
             <Button
               size="lg"
-              onClick={() => setStep('therapist')}
-              disabled={!canProceedToTherapist}
+              onClick={() => setStep('employee')}
+              disabled={!canProceedToEmployee}
               className="flex-1"
             >
               Siguiente
             </Button>
           )}
 
-          {step === 'therapist' && (
+          {step === 'employee' && (
             <Button
               size="lg"
               onClick={() => setStep('datetime')}

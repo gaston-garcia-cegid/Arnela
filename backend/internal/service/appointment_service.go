@@ -23,23 +23,25 @@ type AppointmentServiceInterface interface {
 	// Admin operations
 	ConfirmAppointment(ctx context.Context, id uuid.UUID, req domain.ConfirmAppointmentRequest) (*domain.Appointment, error)
 	ListAppointments(ctx context.Context, filters domain.AppointmentFilter) ([]*domain.Appointment, int, error)
-	GetAppointmentsByTherapist(ctx context.Context, therapistID string, startDate, endDate time.Time) ([]*domain.Appointment, error)
-	GetAvailableSlots(ctx context.Context, therapistID string, date time.Time, duration int) ([]time.Time, error)
+	GetAppointmentsByEmployee(ctx context.Context, employeeID uuid.UUID, startDate, endDate time.Time) ([]*domain.Appointment, error)
+	GetAvailableSlots(ctx context.Context, employeeID uuid.UUID, date time.Time, duration int) ([]time.Time, error)
 
 	// Utility
-	GetTherapists(ctx context.Context) []domain.Therapist
-	ValidateAppointmentTime(ctx context.Context, therapistID string, startTime time.Time, duration int, excludeID *uuid.UUID) error
+	ListEmployees(ctx context.Context) ([]*domain.Employee, error)
+	ValidateAppointmentTime(ctx context.Context, employeeID uuid.UUID, startTime time.Time, duration int, excludeID *uuid.UUID) error
 }
 
 type appointmentService struct {
 	appointmentRepo repository.AppointmentRepository
 	clientRepo      repository.ClientRepository
+	employeeRepo    repository.EmployeeRepository
 }
 
-func NewAppointmentService(appointmentRepo repository.AppointmentRepository, clientRepo repository.ClientRepository) AppointmentServiceInterface {
+func NewAppointmentService(appointmentRepo repository.AppointmentRepository, clientRepo repository.ClientRepository, employeeRepo repository.EmployeeRepository) AppointmentServiceInterface {
 	return &appointmentService{
 		appointmentRepo: appointmentRepo,
 		clientRepo:      clientRepo,
+		employeeRepo:    employeeRepo,
 	}
 }
 
@@ -71,9 +73,19 @@ func (s *appointmentService) CreateAppointment(ctx context.Context, req domain.C
 		return nil, fmt.Errorf("el cliente está inactivo")
 	}
 
-	// Validate therapist exists
-	if !domain.IsValidTherapistID(req.TherapistID) {
-		return nil, fmt.Errorf("terapeuta no válido")
+	// Parse and validate employee ID
+	employeeID, err := uuid.Parse(req.EmployeeID)
+	if err != nil {
+		return nil, fmt.Errorf("employeeId no válido")
+	}
+
+	// Validate employee exists and is active
+	employee, err := s.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		return nil, fmt.Errorf("empleado no encontrado")
+	}
+	if !employee.IsActive {
+		return nil, fmt.Errorf("el empleado no está disponible")
 	}
 
 	// Validate duration
@@ -89,7 +101,7 @@ func (s *appointmentService) CreateAppointment(ctx context.Context, req domain.C
 		StartTime:       req.StartTime,
 		EndTime:         endTime,
 		DurationMinutes: req.DurationMinutes,
-		TherapistID:     req.TherapistID,
+		EmployeeID:      employeeID,
 	}
 
 	// Validate business hours (Mon-Fri 9:00-18:00)
@@ -103,7 +115,7 @@ func (s *appointmentService) CreateAppointment(ctx context.Context, req domain.C
 	}
 
 	// Validate no overlap (with 15min buffer)
-	if err := s.ValidateAppointmentTime(ctx, req.TherapistID, req.StartTime, req.DurationMinutes, nil); err != nil {
+	if err := s.ValidateAppointmentTime(ctx, employeeID, req.StartTime, req.DurationMinutes, nil); err != nil {
 		return nil, err
 	}
 
@@ -162,11 +174,19 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 		appointment.Description = req.Description
 	}
 
-	if req.TherapistID != "" {
-		if !domain.IsValidTherapistID(req.TherapistID) {
-			return nil, fmt.Errorf("terapeuta no válido")
+	if req.EmployeeID != "" {
+		employeeID, err := uuid.Parse(req.EmployeeID)
+		if err != nil {
+			return nil, fmt.Errorf("employeeId no válido")
 		}
-		appointment.TherapistID = req.TherapistID
+		employee, err := s.employeeRepo.GetByID(ctx, employeeID)
+		if err != nil {
+			return nil, fmt.Errorf("empleado no encontrado")
+		}
+		if !employee.IsActive {
+			return nil, fmt.Errorf("el empleado no está disponible")
+		}
+		appointment.EmployeeID = employeeID
 	}
 
 	// Handle time updates
@@ -205,7 +225,7 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 		}
 
 		// Validate no overlap (excluding current appointment)
-		if err := s.ValidateAppointmentTime(ctx, appointment.TherapistID, newStartTime, newDuration, &id); err != nil {
+		if err := s.ValidateAppointmentTime(ctx, appointment.EmployeeID, newStartTime, newDuration, &id); err != nil {
 			return nil, err
 		}
 
@@ -335,19 +355,23 @@ func (s *appointmentService) ListAppointments(ctx context.Context, filters domai
 	return appointments, count, nil
 }
 
-// GetAppointmentsByTherapist retrieves appointments for a therapist in a date range
-func (s *appointmentService) GetAppointmentsByTherapist(ctx context.Context, therapistID string, startDate, endDate time.Time) ([]*domain.Appointment, error) {
-	if !domain.IsValidTherapistID(therapistID) {
-		return nil, fmt.Errorf("terapeuta no válido")
+// GetAppointmentsByEmployee retrieves appointments for an employee in a date range
+func (s *appointmentService) GetAppointmentsByEmployee(ctx context.Context, employeeID uuid.UUID, startDate, endDate time.Time) ([]*domain.Appointment, error) {
+	// Validate employee exists
+	_, err := s.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		return nil, fmt.Errorf("empleado no encontrado")
 	}
 
-	return s.appointmentRepo.GetByDateRange(ctx, startDate, endDate, &therapistID)
+	return s.appointmentRepo.GetByDateRange(ctx, startDate, endDate, &employeeID)
 }
 
-// GetAvailableSlots returns available time slots for a therapist on a specific date
-func (s *appointmentService) GetAvailableSlots(ctx context.Context, therapistID string, date time.Time, duration int) ([]time.Time, error) {
-	if !domain.IsValidTherapistID(therapistID) {
-		return nil, fmt.Errorf("terapeuta no válido")
+// GetAvailableSlots returns available time slots for an employee on a specific date
+func (s *appointmentService) GetAvailableSlots(ctx context.Context, employeeID uuid.UUID, date time.Time, duration int) ([]time.Time, error) {
+	// Validate employee exists
+	_, err := s.employeeRepo.GetByID(ctx, employeeID)
+	if err != nil {
+		return nil, fmt.Errorf("empleado no encontrado")
 	}
 
 	if duration != 45 && duration != 60 {
@@ -365,7 +389,7 @@ func (s *appointmentService) GetAvailableSlots(ctx context.Context, therapistID 
 	endOfDay := time.Date(year, month, day, 18, 0, 0, 0, date.Location())
 
 	// Get existing appointments for the day
-	existingAppointments, err := s.appointmentRepo.GetByDateRange(ctx, startOfDay, endOfDay, &therapistID)
+	existingAppointments, err := s.appointmentRepo.GetByDateRange(ctx, startOfDay, endOfDay, &employeeID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing appointments: %w", err)
 	}
@@ -410,13 +434,26 @@ func (s *appointmentService) GetAvailableSlots(ctx context.Context, therapistID 
 	return availableSlots, nil
 }
 
-// GetTherapists returns all available therapists
-func (s *appointmentService) GetTherapists(ctx context.Context) []domain.Therapist {
-	return domain.GetMockTherapists()
+// ListEmployees returns all active employees
+func (s *appointmentService) ListEmployees(ctx context.Context) ([]*domain.Employee, error) {
+	employees, err := s.employeeRepo.List(ctx, 100, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list employees: %w", err)
+	}
+
+	// Filter active only
+	var activeEmployees []*domain.Employee
+	for _, emp := range employees {
+		if emp.IsActive {
+			activeEmployees = append(activeEmployees, emp)
+		}
+	}
+
+	return activeEmployees, nil
 }
 
 // ValidateAppointmentTime validates if an appointment time is valid (no overlap, business hours)
-func (s *appointmentService) ValidateAppointmentTime(ctx context.Context, therapistID string, startTime time.Time, duration int, excludeID *uuid.UUID) error {
+func (s *appointmentService) ValidateAppointmentTime(ctx context.Context, employeeID uuid.UUID, startTime time.Time, duration int, excludeID *uuid.UUID) error {
 	endTime := startTime.Add(time.Duration(duration) * time.Minute)
 
 	// Add 15min buffer before and after
@@ -424,7 +461,7 @@ func (s *appointmentService) ValidateAppointmentTime(ctx context.Context, therap
 	bufferEndTime := endTime.Add(15 * time.Minute)
 
 	// Check for overlapping appointments
-	hasOverlap, err := s.appointmentRepo.CheckOverlap(ctx, therapistID, bufferStartTime, bufferEndTime, excludeID)
+	hasOverlap, err := s.appointmentRepo.CheckOverlap(ctx, employeeID, bufferStartTime, bufferEndTime, excludeID)
 	if err != nil {
 		return fmt.Errorf("failed to check overlap: %w", err)
 	}

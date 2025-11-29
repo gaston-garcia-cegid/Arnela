@@ -117,16 +117,19 @@ func main() {
 	userRepo := postgres.NewUserRepository(db)
 	clientRepo := postgres.NewClientRepository(db)
 	appointmentRepo := postgres.NewAppointmentRepository(db)
+	employeeRepo := postgres.NewEmployeeRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
-	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo)
+	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo, employeeRepo)
+	employeeService := service.NewEmployeeService(employeeRepo, userRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
+	employeeHandler := handler.NewEmployeeHandler(employeeService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
@@ -212,6 +215,21 @@ func main() {
 			// Admin/Employee only routes
 			appointments.GET("", authMiddleware.RequireRole("admin", "employee"), appointmentHandler.ListAppointments)
 			appointments.POST("/:id/confirm", authMiddleware.RequireRole("admin", "employee"), appointmentHandler.ConfirmAppointment)
+		}
+
+		// Employee routes (authenticated)
+		employees := v1.Group("/employees")
+		employees.Use(authMiddleware.RequireAuth())
+		{
+			// Public endpoints (clients can see employees and specialties for booking)
+			employees.GET("", employeeHandler.ListEmployees)
+			employees.GET("/:id", employeeHandler.GetEmployee)
+			employees.GET("/specialty/:specialty", employeeHandler.GetEmployeesBySpecialty)
+
+			// Admin only routes
+			employees.POST("", authMiddleware.RequireRole("admin"), employeeHandler.CreateEmployee)
+			employees.PUT("/:id", authMiddleware.RequireRole("admin"), employeeHandler.UpdateEmployee)
+			employees.DELETE("/:id", authMiddleware.RequireRole("admin"), employeeHandler.DeleteEmployee)
 		}
 	}
 

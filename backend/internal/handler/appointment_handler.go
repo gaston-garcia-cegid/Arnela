@@ -312,7 +312,7 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 // @Produce      json
 // @Security     BearerAuth
 // @Param        clientId query string false "Filter by client ID"
-// @Param        therapistId query string false "Filter by therapist ID"
+// @Param        employeeId query string false "Filter by employee ID"
 // @Param        status query string false "Filter by status"
 // @Param        startDate query string false "Filter by start date (RFC3339)"
 // @Param        endDate query string false "Filter by end date (RFC3339)"
@@ -335,8 +335,10 @@ func (h *AppointmentHandler) ListAppointments(c *gin.Context) {
 		}
 	}
 
-	if therapistID := c.Query("therapistId"); therapistID != "" {
-		filters.TherapistID = &therapistID
+	if employeeIDStr := c.Query("employeeId"); employeeIDStr != "" {
+		if employeeID, err := uuid.Parse(employeeIDStr); err == nil {
+			filters.EmployeeID = &employeeID
+		}
 	}
 
 	if statusStr := c.Query("status"); statusStr != "" {
@@ -379,17 +381,23 @@ func (h *AppointmentHandler) ListAppointments(c *gin.Context) {
 	})
 }
 
-// GetTherapists returns all available therapists
-// @Summary      Get therapists
-// @Description  Returns all available therapists
+// GetTherapists is deprecated - use /api/v1/employees endpoint instead
+// @Summary      Get therapists (deprecated)
+// @Description  Returns all available employees (use /api/v1/employees instead)
 // @Tags         appointments
 // @Produce      json
 // @Security     BearerAuth
+// @Deprecated
 // @Success      200 {object} map[string]interface{}
 // @Router       /api/v1/appointments/therapists [get]
 func (h *AppointmentHandler) GetTherapists(c *gin.Context) {
-	therapists := h.appointmentService.GetTherapists(c.Request.Context())
-	c.JSON(http.StatusOK, gin.H{"therapists": therapists})
+	employees, err := h.appointmentService.ListEmployees(c.Request.Context())
+	if err != nil {
+		appErr := pkgerrors.NewInternalError("Error al obtener empleados")
+		pkgerrors.RespondWithAppError(c, appErr)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"therapists": employees})
 }
 
 // GetAvailableSlots returns available time slots for a therapist
@@ -398,21 +406,28 @@ func (h *AppointmentHandler) GetTherapists(c *gin.Context) {
 // @Tags         appointments
 // @Produce      json
 // @Security     BearerAuth
-// @Param        therapistId query string true "Therapist ID"
+// @Param        employeeId query string true "Employee ID (UUID)"
 // @Param        date query string true "Date (YYYY-MM-DD)"
 // @Param        duration query int true "Duration in minutes (45 or 60)"
 // @Success      200 {object} map[string]interface{}
 // @Failure      400 {object} map[string]string
 // @Router       /api/v1/appointments/available-slots [get]
 func (h *AppointmentHandler) GetAvailableSlots(c *gin.Context) {
-	therapistID := c.Query("therapistId")
+	employeeIDStr := c.Query("employeeId")
 	dateStr := c.Query("date")
 	durationStr := c.Query("duration")
 
-	if therapistID == "" || dateStr == "" || durationStr == "" {
+	if employeeIDStr == "" || dateStr == "" || durationStr == "" {
 		appErr := pkgerrors.NewValidationError("Parámetros faltantes", map[string][]string{
-			"general": {"Se requiere therapistId, date y duration"},
+			"general": {"Se requiere employeeId, date y duration"},
 		})
+		pkgerrors.RespondWithAppError(c, appErr)
+		return
+	}
+
+	employeeID, err := uuid.Parse(employeeIDStr)
+	if err != nil {
+		appErr := pkgerrors.NewValidationError("ID de empleado inválido", nil)
 		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
@@ -433,7 +448,7 @@ func (h *AppointmentHandler) GetAvailableSlots(c *gin.Context) {
 		return
 	}
 
-	slots, err := h.appointmentService.GetAvailableSlots(c.Request.Context(), therapistID, date, duration)
+	slots, err := h.appointmentService.GetAvailableSlots(c.Request.Context(), employeeID, date, duration)
 	if err != nil {
 		appErr := pkgerrors.NewValidationError(err.Error(), nil)
 		pkgerrors.RespondWithAppError(c, appErr)

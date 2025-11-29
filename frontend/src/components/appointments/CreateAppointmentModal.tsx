@@ -95,7 +95,7 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
 
     // ✅ clientId is derived automatically from authenticated user in backend
     const result = await createAppointment({
-      therapistId: selectedTherapist,
+      employeeId: selectedTherapist,
       title: title || 'Consulta de Terapia',
       description,
       startTime: selectedTime,

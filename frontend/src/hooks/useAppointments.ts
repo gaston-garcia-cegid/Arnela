@@ -10,12 +10,12 @@ import type {
   UpdateAppointmentRequest,
   CancelAppointmentRequest,
   ConfirmAppointmentRequest,
-  Therapist,
 } from '@/types/appointment';
+import { Employee } from '@/types/employee';
 
 interface AppointmentFilters {
   clientId?: string;
-  therapistId?: string;
+  employeeId?: string; // Changed from therapistId
   status?: string;
   startDate?: string;
   endDate?: string;
@@ -206,8 +206,8 @@ export function useAppointments() {
     [token]
   );
 
-  // Get therapists
-  const getTherapists = useCallback(async (): Promise<Therapist[]> => {
+  // Get employees for appointments
+  const getEmployees = useCallback(async (): Promise<Employee[]> => {
     if (!token) {
       setError('No autenticado');
       return [];
@@ -217,19 +217,32 @@ export function useAppointments() {
     setError(null);
 
     try {
-      const response = await api.appointments.getTherapists(token);
-      return response.therapists || [];
+      const response = await api.appointments.getEmployees(token);
+      return response.employees || [];
     } catch (err: any) {
-      setError(err.message || 'Error al cargar los terapeutas');
+      setError(err.message || 'Error al cargar los profesionales');
       return [];
     } finally {
       setLoading(false);
     }
   }, [token]);
 
+  // Deprecated: Use getEmployees instead
+  const getTherapists = useCallback(async (): Promise<any[]> => {
+    const employees = await getEmployees();
+    // Map employees to therapist format for backward compatibility
+    return employees.map(e => ({
+      id: e.id,
+      name: `${e.firstName} ${e.lastName}`,
+      specialties: [e.specialty],
+      isAvailable: e.isActive,
+      avatarColor: e.avatarColor
+    }));
+  }, [getEmployees]);
+
   // Get available slots
   const getAvailableSlots = useCallback(
-    async (therapistId: string, date: string, duration: 45 | 60): Promise<string[]> => {
+    async (employeeId: string, date: string, duration: 45 | 60): Promise<string[]> => {
       if (!token) {
         setError('No autenticado');
         return [];
@@ -239,7 +252,7 @@ export function useAppointments() {
       setError(null);
 
       try {
-        const response = await api.appointments.getAvailableSlots(token, therapistId, date, duration);
+        const response = await api.appointments.getAvailableSlots(token, employeeId, date, duration);
         return response.slots || [];
       } catch (err: any) {
         setError(err.message || 'Error al cargar horarios disponibles');
@@ -289,7 +302,8 @@ export function useAppointments() {
     updateAppointment,
     cancelAppointment,
     confirmAppointment,
-    getTherapists,
+    getEmployees,            // ✅ Get active employees for appointments
+    getTherapists,           // Deprecated: For backward compatibility
     getAvailableSlots,
     searchClients,           // ✅ For admin/employee: search active clients
   };

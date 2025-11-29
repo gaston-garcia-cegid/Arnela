@@ -50,11 +50,11 @@ func (ns *NullableString) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// Appointment represents an appointment between a client and therapist
+// Appointment represents an appointment between a client and employee (therapist)
 type Appointment struct {
 	ID                    uuid.UUID         `json:"id" db:"id"`
 	ClientID              uuid.UUID         `json:"clientId" db:"client_id"`
-	TherapistID           string            `json:"therapistId" db:"therapist_id"`
+	EmployeeID            uuid.UUID         `json:"employeeId" db:"employee_id"`
 	Title                 string            `json:"title" db:"title"`
 	Description           string            `json:"description" db:"description"`
 	StartTime             time.Time         `json:"startTime" db:"start_time"`
@@ -70,8 +70,8 @@ type Appointment struct {
 	DeletedAt             sql.NullTime      `json:"deletedAt,omitempty" db:"deleted_at"`
 
 	// Relations (not in DB)
-	Therapist *Therapist `json:"therapist,omitempty" db:"-"`
-	Client    *Client    `json:"client,omitempty" db:"-"`
+	Employee *Employee `json:"employee,omitempty" db:"-"`
+	Client   *Client   `json:"client,omitempty" db:"-"`
 }
 
 // IsDuringBusinessHours checks if appointment is Monday-Friday 9:00-18:00
@@ -109,7 +109,7 @@ func (a *Appointment) CanBeCancelledByClient() bool {
 // CreateAppointmentRequest represents the request to create an appointment
 type CreateAppointmentRequest struct {
 	ClientID        string    `json:"clientId"` // Optional: For admin/employee creating appointments for others
-	TherapistID     string    `json:"therapistId" binding:"required"`
+	EmployeeID      string    `json:"employeeId" binding:"required"`
 	Title           string    `json:"title" binding:"required"`
 	Description     string    `json:"description"`
 	StartTime       time.Time `json:"startTime" binding:"required"`
@@ -118,7 +118,7 @@ type CreateAppointmentRequest struct {
 
 // UpdateAppointmentRequest represents the request to update an appointment
 type UpdateAppointmentRequest struct {
-	TherapistID     string    `json:"therapistId"`
+	EmployeeID      string    `json:"employeeId"`
 	Title           string    `json:"title"`
 	Description     string    `json:"description"`
 	StartTime       time.Time `json:"startTime"`
@@ -137,11 +137,11 @@ type ConfirmAppointmentRequest struct {
 
 // AppointmentFilter represents filters for listing appointments
 type AppointmentFilter struct {
-	ClientID    *uuid.UUID         `json:"clientId"`
-	TherapistID *string            `json:"therapistId"`
-	Status      *AppointmentStatus `json:"status"`
-	StartDate   *time.Time         `json:"startDate"`
-	EndDate     *time.Time         `json:"endDate"`
-	Page        int                `json:"page"`
-	PageSize    int                `json:"pageSize"`
+	ClientID   *uuid.UUID         `json:"clientId"`
+	EmployeeID *uuid.UUID         `json:"employeeId"`
+	Status     *AppointmentStatus `json:"status"`
+	StartDate  *time.Time         `json:"startDate"`
+	EndDate    *time.Time         `json:"endDate"`
+	Page       int                `json:"page"`
+	PageSize   int                `json:"pageSize"`
 }

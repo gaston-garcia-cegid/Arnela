@@ -1,5 +1,7 @@
 // Appointment types matching backend domain models
 
+import { Employee } from './employee';
+
 export type AppointmentStatus = 
   | 'pending' 
   | 'confirmed' 
@@ -7,6 +9,7 @@ export type AppointmentStatus =
   | 'completed' 
   | 'rescheduled';
 
+// Deprecated: Use Employee instead
 export interface Therapist {
   id: string;
   name: string;
@@ -26,7 +29,7 @@ export interface Client {
 export interface Appointment {
   id: string;
   clientId: string;
-  therapistId: string;
+  employeeId: string; // Changed from therapistId
   title: string;
   description: string;
   startTime: string; // ISO 8601 date string
@@ -41,12 +44,16 @@ export interface Appointment {
   updatedAt: string;
   deletedAt?: string;
   client?: Client;
+  employee?: Employee; // Changed from therapist
+  
+  // Deprecated: For backward compatibility
+  therapistId?: string;
   therapist?: Therapist;
 }
 
 export interface CreateAppointmentRequest {
   clientId?: string; // Optional: for admin/employee creating appointments for others
-  therapistId: string;
+  employeeId: string; // Changed from therapistId
   title: string;
   description?: string;
   startTime: string; // ISO 8601 date string
@@ -58,7 +65,7 @@ export interface UpdateAppointmentRequest {
   description?: string;
   startTime?: string;
   durationMinutes?: 45 | 60;
-  therapistId?: string;
+  employeeId?: string; // Changed from therapistId
 }
 
 export interface ConfirmAppointmentRequest {
@@ -71,12 +78,15 @@ export interface CancelAppointmentRequest {
 
 export interface AppointmentFilter {
   clientId?: string;
-  therapistId?: string;
+  employeeId?: string; // Changed from therapistId
   status?: AppointmentStatus;
   startDate?: string; // ISO 8601 date string
   endDate?: string;   // ISO 8601 date string
   page?: number;
   pageSize?: number;
+  
+  // Deprecated: For backward compatibility
+  therapistId?: string;
 }
 
 export interface ListAppointmentsResponse {
@@ -93,8 +103,13 @@ export interface GetMyAppointmentsResponse {
   pageSize: number;
 }
 
+// Deprecated: Use GetEmployeesResponse from employee.ts
 export interface GetTherapistsResponse {
   therapists: Therapist[];
+}
+
+export interface GetEmployeesResponse {
+  employees: Employee[];
 }
 
 export interface GetAvailableSlotsResponse {

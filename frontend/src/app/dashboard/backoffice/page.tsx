@@ -174,7 +174,7 @@ export default function BackofficeDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Button 
             className="h-20 text-base font-semibold" 
             variant="default"
@@ -187,6 +187,12 @@ export default function BackofficeDashboard() {
             onClick={() => router.push('/dashboard/backoffice/appointments')}
           >
             📅 Gestión de Citas
+          </Button>
+          <Button 
+            className="h-20 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={() => router.push('/dashboard/backoffice/employees')}
+          >
+            👥 Gestión de Empleados
           </Button>
           <Button className="h-20 text-base font-semibold" variant="outline">
             📊 Reportes

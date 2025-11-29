@@ -77,24 +77,24 @@ func (m *MockAppointmentRepository) GetByClientID(ctx context.Context, clientID 
 	return args.Get(0).([]*domain.Appointment), args.Error(1)
 }
 
-func (m *MockAppointmentRepository) GetByTherapistID(ctx context.Context, therapistID string, limit, offset int) ([]*domain.Appointment, error) {
-	args := m.Called(ctx, therapistID, limit, offset)
+func (m *MockAppointmentRepository) GetByEmployeeID(ctx context.Context, employeeID uuid.UUID, limit, offset int) ([]*domain.Appointment, error) {
+	args := m.Called(ctx, employeeID, limit, offset)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.Appointment), args.Error(1)
 }
 
-func (m *MockAppointmentRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, therapistID *string) ([]*domain.Appointment, error) {
-	args := m.Called(ctx, startDate, endDate, therapistID)
+func (m *MockAppointmentRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, employeeID *uuid.UUID) ([]*domain.Appointment, error) {
+	args := m.Called(ctx, startDate, endDate, employeeID)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]*domain.Appointment), args.Error(1)
 }
 
-func (m *MockAppointmentRepository) CheckOverlap(ctx context.Context, therapistID string, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
-	args := m.Called(ctx, therapistID, startTime, endTime, excludeID)
+func (m *MockAppointmentRepository) CheckOverlap(ctx context.Context, employeeID uuid.UUID, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
+	args := m.Called(ctx, employeeID, startTime, endTime, excludeID)
 	return args.Bool(0), args.Error(1)
 }
 
@@ -191,6 +191,89 @@ func (m *MockClientRepository) GetByNIF(ctx context.Context, nif string) (*domai
 	return args.Get(0).(*domain.Client), args.Error(1)
 }
 
+// MockEmployeeRepository for testing
+type MockEmployeeRepository struct {
+	mock.Mock
+}
+
+func (m *MockEmployeeRepository) Create(ctx context.Context, employee *domain.Employee) error {
+	args := m.Called(ctx, employee)
+	return args.Error(0)
+}
+
+func (m *MockEmployeeRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Employee, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Employee), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) Update(ctx context.Context, employee *domain.Employee) error {
+	args := m.Called(ctx, employee)
+	return args.Error(0)
+}
+
+func (m *MockEmployeeRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
+func (m *MockEmployeeRepository) List(ctx context.Context, limit, offset int) ([]*domain.Employee, error) {
+	args := m.Called(ctx, limit, offset)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Employee), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) Count(ctx context.Context) (int, error) {
+	args := m.Called(ctx)
+	return args.Int(0), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) EmailExists(ctx context.Context, email string) (bool, error) {
+	args := m.Called(ctx, email)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) DNIExists(ctx context.Context, dni string) (bool, error) {
+	args := m.Called(ctx, dni)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) GetByEmail(ctx context.Context, email string) (*domain.Employee, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Employee), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Employee, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Employee), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) GetByDNI(ctx context.Context, dni string) (*domain.Employee, error) {
+	args := m.Called(ctx, dni)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Employee), args.Error(1)
+}
+
+func (m *MockEmployeeRepository) GetBySpecialty(ctx context.Context, specialty string) ([]*domain.Employee, error) {
+	args := m.Called(ctx, specialty)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*domain.Employee), args.Error(1)
+}
+
 // Helper function to create a valid appointment time (Monday 10:00 AM, future date)
 func getValidAppointmentTime() time.Time {
 	now := time.Now()
@@ -206,21 +289,31 @@ func getValidAppointmentTime() time.Time {
 func TestCreateAppointment_Success(t *testing.T) {
 	mockAppointmentRepo := new(MockAppointmentRepository)
 	mockClientRepo := new(MockClientRepository)
-	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo)
+	mockEmployeeRepo := new(MockEmployeeRepository)
+	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo, mockEmployeeRepo)
 
 	ctx := context.Background()
 	clientID := uuid.New()
+	employeeID := uuid.New()
 	createdBy := uuid.New()
 	startTime := getValidAppointmentTime()
 
-	// Mock client exists and is active
-	mockClientRepo.On("GetByID", ctx, clientID).Return(&domain.Client{
+	// Mock client exists and is active (via GetByUserID since ClientID not provided in request)
+	mockClientRepo.On("GetByUserID", ctx, createdBy).Return(&domain.Client{
 		ID:       clientID,
 		IsActive: true,
 	}, nil)
 
+	// Mock employee exists and is active
+	mockEmployeeRepo.On("GetByID", ctx, employeeID).Return(&domain.Employee{
+		ID:        employeeID,
+		FirstName: "Juan",
+		LastName:  "Pérez",
+		IsActive:  true,
+	}, nil)
+
 	// Mock no overlap
-	mockAppointmentRepo.On("CheckOverlap", ctx, "therapist-1", mock.Anything, mock.Anything, (*uuid.UUID)(nil)).Return(false, nil)
+	mockAppointmentRepo.On("CheckOverlap", ctx, employeeID, mock.Anything, mock.Anything, (*uuid.UUID)(nil)).Return(false, nil)
 
 	// Mock create
 	mockAppointmentRepo.On("Create", ctx, mock.AnythingOfType("*domain.Appointment")).Return(nil)
@@ -229,7 +322,7 @@ func TestCreateAppointment_Success(t *testing.T) {
 	mockAppointmentRepo.On("GetByIDWithRelations", ctx, mock.AnythingOfType("uuid.UUID")).Return(&domain.Appointment{
 		ID:              uuid.New(),
 		ClientID:        clientID,
-		TherapistID:     "therapist-1",
+		EmployeeID:      employeeID,
 		Title:           "Consulta",
 		StartTime:       startTime,
 		EndTime:         startTime.Add(60 * time.Minute),
@@ -238,11 +331,12 @@ func TestCreateAppointment_Success(t *testing.T) {
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
-		TherapistID:     "therapist-1",
+		EmployeeID:      employeeID.String(),
 		Title:           "Consulta",
 		Description:     "Primera consulta",
 		StartTime:       startTime,
 		DurationMinutes: 60,
+		// ClientID not provided - simulates client self-booking
 	}
 
 	appointment, err := service.CreateAppointment(ctx, req, createdBy)
@@ -251,26 +345,29 @@ func TestCreateAppointment_Success(t *testing.T) {
 	assert.NotNil(t, appointment)
 	assert.Equal(t, domain.AppointmentStatusPending, appointment.Status)
 	mockClientRepo.AssertExpectations(t)
+	mockEmployeeRepo.AssertExpectations(t)
 	mockAppointmentRepo.AssertExpectations(t)
 }
 
-func TestCreateAppointment_InvalidTherapist(t *testing.T) {
+func TestCreateAppointment_InvalidEmployee(t *testing.T) {
 	mockAppointmentRepo := new(MockAppointmentRepository)
 	mockClientRepo := new(MockClientRepository)
-	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo)
+	mockEmployeeRepo := new(MockEmployeeRepository)
+	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo, mockEmployeeRepo)
 
 	ctx := context.Background()
 	clientID := uuid.New()
 	createdBy := uuid.New()
 	startTime := getValidAppointmentTime()
 
-	mockClientRepo.On("GetByID", ctx, clientID).Return(&domain.Client{
+	// Mock GetByUserID since ClientID not provided
+	mockClientRepo.On("GetByUserID", ctx, createdBy).Return(&domain.Client{
 		ID:       clientID,
 		IsActive: true,
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
-		TherapistID:     "invalid-therapist",
+		EmployeeID:      "invalid-uuid",
 		Title:           "Consulta",
 		StartTime:       startTime,
 		DurationMinutes: 60,
@@ -280,17 +377,19 @@ func TestCreateAppointment_InvalidTherapist(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.Nil(t, appointment)
-	assert.Contains(t, err.Error(), "terapeuta no válido")
+	assert.Contains(t, err.Error(), "employeeId no válido")
 	mockClientRepo.AssertExpectations(t)
 }
 
 func TestCreateAppointment_WeekendRejected(t *testing.T) {
 	mockAppointmentRepo := new(MockAppointmentRepository)
 	mockClientRepo := new(MockClientRepository)
-	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo)
+	mockEmployeeRepo := new(MockEmployeeRepository)
+	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo, mockEmployeeRepo)
 
 	ctx := context.Background()
 	clientID := uuid.New()
+	employeeID := uuid.New()
 	createdBy := uuid.New()
 
 	// Create a Saturday date
@@ -302,13 +401,22 @@ func TestCreateAppointment_WeekendRejected(t *testing.T) {
 	saturday := now.AddDate(0, 0, daysUntilSaturday)
 	saturdayAt10 := time.Date(saturday.Year(), saturday.Month(), saturday.Day(), 10, 0, 0, 0, saturday.Location())
 
-	mockClientRepo.On("GetByID", ctx, clientID).Return(&domain.Client{
+	// Mock GetByUserID since ClientID not provided
+	mockClientRepo.On("GetByUserID", ctx, createdBy).Return(&domain.Client{
 		ID:       clientID,
 		IsActive: true,
 	}, nil)
 
+	// Mock employee exists
+	mockEmployeeRepo.On("GetByID", ctx, employeeID).Return(&domain.Employee{
+		ID:        employeeID,
+		FirstName: "Juan",
+		LastName:  "Pérez",
+		IsActive:  true,
+	}, nil)
+
 	req := domain.CreateAppointmentRequest{
-		TherapistID:     "therapist-1",
+		EmployeeID:      employeeID.String(),
 		Title:           "Consulta",
 		StartTime:       saturdayAt10,
 		DurationMinutes: 60,
@@ -320,47 +428,59 @@ func TestCreateAppointment_WeekendRejected(t *testing.T) {
 	assert.Nil(t, appointment)
 	assert.Contains(t, err.Error(), "de lunes a viernes")
 	mockClientRepo.AssertExpectations(t)
+	mockEmployeeRepo.AssertExpectations(t)
 }
 
 func TestGetAvailableSlots_Success(t *testing.T) {
 	mockAppointmentRepo := new(MockAppointmentRepository)
 	mockClientRepo := new(MockClientRepository)
-	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo)
+	mockEmployeeRepo := new(MockEmployeeRepository)
+	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo, mockEmployeeRepo)
 
 	ctx := context.Background()
-	therapistID := "therapist-1"
+	employeeID := uuid.New()
 
 	// Get next Monday
 	date := getValidAppointmentTime()
 
+	// Mock employee exists and is active
+	mockEmployeeRepo.On("GetByID", ctx, employeeID).Return(&domain.Employee{
+		ID:        employeeID,
+		FirstName: "Juan",
+		LastName:  "Pérez",
+		IsActive:  true,
+	}, nil)
+
 	// Mock existing appointment from 10:00 to 11:00
 	existingAppointment := &domain.Appointment{
-		ID:          uuid.New(),
-		TherapistID: therapistID,
-		StartTime:   time.Date(date.Year(), date.Month(), date.Day(), 10, 0, 0, 0, date.Location()),
-		EndTime:     time.Date(date.Year(), date.Month(), date.Day(), 11, 0, 0, 0, date.Location()),
-		Status:      domain.AppointmentStatusConfirmed,
+		ID:         uuid.New(),
+		EmployeeID: employeeID,
+		StartTime:  time.Date(date.Year(), date.Month(), date.Day(), 10, 0, 0, 0, date.Location()),
+		EndTime:    time.Date(date.Year(), date.Month(), date.Day(), 11, 0, 0, 0, date.Location()),
+		Status:     domain.AppointmentStatusConfirmed,
 	}
 
 	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 9, 0, 0, 0, date.Location())
 	endOfDay := time.Date(date.Year(), date.Month(), date.Day(), 18, 0, 0, 0, date.Location())
 
-	mockAppointmentRepo.On("GetByDateRange", ctx, startOfDay, endOfDay, &therapistID).
+	mockAppointmentRepo.On("GetByDateRange", ctx, startOfDay, endOfDay, &employeeID).
 		Return([]*domain.Appointment{existingAppointment}, nil)
 
-	slots, err := service.GetAvailableSlots(ctx, therapistID, date, 60)
+	slots, err := service.GetAvailableSlots(ctx, employeeID, date, 60)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, slots)
 	// Should have slots before 9:45 (10:00 - 15min buffer) and after 11:15 (11:00 + 15min buffer)
 	assert.Greater(t, len(slots), 0)
 	mockAppointmentRepo.AssertExpectations(t)
+	mockEmployeeRepo.AssertExpectations(t)
 }
 
 func TestConfirmAppointment_Success(t *testing.T) {
 	mockAppointmentRepo := new(MockAppointmentRepository)
 	mockClientRepo := new(MockClientRepository)
-	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo)
+	mockEmployeeRepo := new(MockEmployeeRepository)
+	service := NewAppointmentService(mockAppointmentRepo, mockClientRepo, mockEmployeeRepo)
 
 	ctx := context.Background()
 	appointmentID := uuid.New()

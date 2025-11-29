@@ -17,7 +17,15 @@ import type {
   GetMyAppointmentsResponse,
   GetTherapistsResponse,
   GetAvailableSlotsResponse,
+  GetEmployeesResponse,
 } from '@/types/appointment';
+
+import type {
+  Employee,
+  CreateEmployeeRequest,
+  UpdateEmployeeRequest,
+  ListEmployeesResponse,
+} from '@/types/employee';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
@@ -219,6 +227,110 @@ export const api = {
     },
   },
 
+  employees: {
+    list: async (token: string, page: number = 1, pageSize: number = 50): Promise<ListEmployeesResponse> => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', page.toString());
+      queryParams.append('pageSize', pageSize.toString());
+      
+      const response = await fetchWithAuth(`/employees?${queryParams.toString()}`, token, {
+        method: 'GET',
+      }) as ListEmployeesResponse;
+      
+      // Map backend response to include specialty for backward compatibility
+      if (response.employees) {
+        response.employees = response.employees.map(emp => ({
+          ...emp,
+          specialty: emp.position || emp.specialties?.[0] || ''
+        }));
+      }
+      
+      return response;
+    },
+
+    getById: async (id: string, token: string): Promise<Employee> => {
+      const employee = await fetchWithAuth(`/employees/${id}`, token, {
+        method: 'GET',
+      }) as Employee;
+      
+      // Map backend response to include specialty for backward compatibility
+      return {
+        ...employee,
+        specialty: employee.position || employee.specialties?.[0] || ''
+      };
+    },
+
+    search: async (query: string, token: string, isActive: boolean = true): Promise<Employee[]> => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('search', query);
+      if (isActive) queryParams.append('isActive', 'true');
+      queryParams.append('pageSize', '50');
+      
+      const response = await fetchWithAuth(`/employees?${queryParams.toString()}`, token, {
+        method: 'GET',
+      }) as ListEmployeesResponse;
+      
+      // Map backend response to include specialty for backward compatibility
+      const employees = (response.employees || []).map(emp => ({
+        ...emp,
+        specialty: emp.position || emp.specialties?.[0] || ''
+      }));
+      
+      return employees;
+    },
+
+    create: async (data: CreateEmployeeRequest, token: string): Promise<Employee> => {
+      const employee = await fetchWithAuth('/employees', token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }) as Employee;
+      
+      // Map backend response to include specialty for backward compatibility
+      return {
+        ...employee,
+        specialty: employee.position || employee.specialties?.[0] || ''
+      };
+    },
+
+    update: async (id: string, data: UpdateEmployeeRequest, token: string): Promise<Employee> => {
+      const employee = await fetchWithAuth(`/employees/${id}`, token, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }) as Employee;
+      
+      // Map backend response to include specialty for backward compatibility
+      return {
+        ...employee,
+        specialty: employee.position || employee.specialties?.[0] || ''
+      };
+    },
+
+    delete: async (id: string, token: string): Promise<void> => {
+      return fetchWithAuth(`/employees/${id}`, token, {
+        method: 'DELETE',
+      });
+    },
+
+    // Get active employees for appointment scheduling
+    getActive: async (token: string): Promise<GetEmployeesResponse> => {
+      const queryParams = new URLSearchParams();
+      queryParams.append('isActive', 'true');
+      queryParams.append('pageSize', '100');
+      
+      const response = await fetchWithAuth(`/employees?${queryParams.toString()}`, token, {
+        method: 'GET',
+      }) as ListEmployeesResponse;
+      
+      // Map backend response to include specialty for backward compatibility
+      const employees = (response.employees || []).map(emp => ({
+        ...emp,
+        specialty: emp.position || emp.specialties?.[0] || ''
+      }));
+      
+      return { employees };
+    },
+  },
+
   appointments: {
     // Create a new appointment
     create: async (data: CreateAppointmentRequest, token: string): Promise<Appointment> => {
@@ -275,19 +387,22 @@ export const api = {
       token: string,
       filters?: {
         clientId?: string;
-        therapistId?: string;
+        employeeId?: string; // Changed from therapistId
         status?: string;
         startDate?: string;
         endDate?: string;
         page?: number;
         pageSize?: number;
+        therapistId?: string; // Deprecated: for backward compatibility
       }
     ): Promise<ListAppointmentsResponse> => {
       const queryParams = new URLSearchParams();
       
       if (filters) {
         if (filters.clientId) queryParams.append('clientId', filters.clientId);
-        if (filters.therapistId) queryParams.append('therapistId', filters.therapistId);
+        // Use employeeId if provided, fallback to therapistId for backward compatibility
+        const employeeId = filters.employeeId || filters.therapistId;
+        if (employeeId) queryParams.append('employeeId', employeeId);
         if (filters.status) queryParams.append('status', filters.status);
         if (filters.startDate) queryParams.append('startDate', filters.startDate);
         if (filters.endDate) queryParams.append('endDate', filters.endDate);
@@ -303,22 +418,27 @@ export const api = {
       });
     },
 
-    // Get available therapists
+    // Get available employees for appointments
+    getEmployees: async (token: string): Promise<GetEmployeesResponse> => {
+      return api.employees.getActive(token);
+    },
+
+    // Deprecated: Use getEmployees instead
     getTherapists: async (token: string): Promise<GetTherapistsResponse> => {
       return fetchWithAuth('/appointments/therapists', token, {
         method: 'GET',
       });
     },
 
-    // Get available time slots for a therapist on a specific date
+    // Get available time slots for an employee on a specific date
     getAvailableSlots: async (
       token: string,
-      therapistId: string,
+      employeeId: string, // Changed from therapistId
       date: string, // YYYY-MM-DD format
       duration: 45 | 60
     ): Promise<GetAvailableSlotsResponse> => {
       const queryParams = new URLSearchParams({
-        therapistId,
+        employeeId,
         date,
         duration: duration.toString(),
       });

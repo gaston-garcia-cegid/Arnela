@@ -24,7 +24,7 @@ func NewAppointmentRepository(db *sqlx.DB) repository.AppointmentRepository {
 
 // ✅ Columnas base para SELECT
 const appointmentColumns = `
-    id, client_id, therapist_id, title, description,
+    id, client_id, employee_id, title, description,
     start_time, end_time, duration_minutes, status,
     notes, cancellation_reason, google_calendar_event_id,
     created_by, created_at, updated_at, deleted_at
@@ -33,7 +33,7 @@ const appointmentColumns = `
 func (r *appointmentRepository) Create(ctx context.Context, appointment *domain.Appointment) error {
 	query := `
         INSERT INTO appointments (
-            id, client_id, therapist_id, title, description,
+            id, client_id, employee_id, title, description,
             start_time, end_time, duration_minutes, status,
             notes, created_by, created_at, updated_at
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
@@ -42,7 +42,7 @@ func (r *appointmentRepository) Create(ctx context.Context, appointment *domain.
 	_, err := r.db.ExecContext(ctx, query,
 		appointment.ID,
 		appointment.ClientID,
-		appointment.TherapistID,
+		appointment.EmployeeID,
 		appointment.Title,
 		appointment.Description,
 		appointment.StartTime,
@@ -83,9 +83,8 @@ func (r *appointmentRepository) GetByIDWithRelations(ctx context.Context, id uui
 		return nil, err
 	}
 
-	// Load therapist data (mock)
-	therapist := domain.GetTherapistByID(appointment.TherapistID)
-	appointment.Therapist = therapist
+	// Employee data can be loaded separately if needed
+	// (removed mock therapist loading)
 
 	// Load client data
 	var client domain.Client
@@ -105,7 +104,7 @@ func (r *appointmentRepository) GetByIDWithRelations(ctx context.Context, id uui
 func (r *appointmentRepository) Update(ctx context.Context, appointment *domain.Appointment) error {
 	query := `
 		UPDATE appointments SET
-			therapist_id = $1,
+			employee_id = $1,
 			title = $2,
 			description = $3,
 			start_time = $4,
@@ -120,7 +119,7 @@ func (r *appointmentRepository) Update(ctx context.Context, appointment *domain.
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
-		appointment.TherapistID,
+		appointment.EmployeeID,
 		appointment.Title,
 		appointment.Description,
 		appointment.StartTime,
@@ -198,7 +197,7 @@ func (r *appointmentRepository) Delete(ctx context.Context, id uuid.UUID) error 
 	return nil
 }
 
-func (r *appointmentRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, therapistID *string) ([]*domain.Appointment, error) {
+func (r *appointmentRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, employeeID *uuid.UUID) ([]*domain.Appointment, error) {
 	var appointments []*domain.Appointment
 
 	query := fmt.Sprintf(`
@@ -211,9 +210,9 @@ func (r *appointmentRepository) GetByDateRange(ctx context.Context, startDate, e
 
 	args := []interface{}{startDate, endDate}
 
-	if therapistID != nil {
-		query += " AND therapist_id = $3"
-		args = append(args, *therapistID)
+	if employeeID != nil {
+		query += " AND employee_id = $3"
+		args = append(args, *employeeID)
 	}
 
 	query += " ORDER BY start_time ASC"
@@ -246,10 +245,10 @@ func (r *appointmentRepository) List(ctx context.Context, filters domain.Appoint
 		args = append(args, *filters.ClientID)
 	}
 
-	if filters.TherapistID != nil {
+	if filters.EmployeeID != nil {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("therapist_id = $%d", argCount))
-		args = append(args, *filters.TherapistID)
+		conditions = append(conditions, fmt.Sprintf("employee_id = $%d", argCount))
+		args = append(args, *filters.EmployeeID)
 	}
 
 	if filters.Status != nil {
@@ -297,8 +296,8 @@ func (r *appointmentRepository) ListWithRelations(ctx context.Context, filters d
 
 	// Load relations for each appointment
 	for _, apt := range appointments {
-		therapist := domain.GetTherapistByID(apt.TherapistID)
-		apt.Therapist = therapist
+		// Employee data can be loaded separately if needed
+		// (removed mock therapist loading)
 
 		var client domain.Client
 		clientQuery := `
@@ -328,10 +327,10 @@ func (r *appointmentRepository) Count(ctx context.Context, filters domain.Appoin
 		args = append(args, *filters.ClientID)
 	}
 
-	if filters.TherapistID != nil {
+	if filters.EmployeeID != nil {
 		argCount++
-		conditions = append(conditions, fmt.Sprintf("therapist_id = $%d", argCount))
-		args = append(args, *filters.TherapistID)
+		conditions = append(conditions, fmt.Sprintf("employee_id = $%d", argCount))
+		args = append(args, *filters.EmployeeID)
 	}
 
 	if filters.Status != nil {
@@ -365,11 +364,11 @@ func (r *appointmentRepository) Count(ctx context.Context, filters domain.Appoin
 	return count, nil
 }
 
-func (r *appointmentRepository) CheckOverlap(ctx context.Context, therapistID string, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
+func (r *appointmentRepository) CheckOverlap(ctx context.Context, employeeID uuid.UUID, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
 	query := `
 		SELECT COUNT(*)
 		FROM appointments
-		WHERE therapist_id = $1
+		WHERE employee_id = $1
 		AND deleted_at IS NULL
 		AND status != 'cancelled'
 		AND (
@@ -379,7 +378,7 @@ func (r *appointmentRepository) CheckOverlap(ctx context.Context, therapistID st
 		)
 	`
 
-	args := []interface{}{therapistID, startTime, endTime}
+	args := []interface{}{employeeID, startTime, endTime}
 
 	if excludeID != nil {
 		query += " AND id != $4"
@@ -415,21 +414,21 @@ func (r *appointmentRepository) GetByClientID(ctx context.Context, clientID uuid
 	return appointments, nil
 }
 
-func (r *appointmentRepository) GetByTherapistID(ctx context.Context, therapistID string, page, pageSize int) ([]*domain.Appointment, error) {
+func (r *appointmentRepository) GetByEmployeeID(ctx context.Context, employeeID uuid.UUID, page, pageSize int) ([]*domain.Appointment, error) {
 	var appointments []*domain.Appointment
 
 	query := fmt.Sprintf(`
 		SELECT %s
 		FROM appointments
-		WHERE therapist_id = $1 AND deleted_at IS NULL
+		WHERE employee_id = $1 AND deleted_at IS NULL
 		ORDER BY start_time DESC
 		LIMIT $2 OFFSET $3
 	`, appointmentColumns)
 
 	offset := (page - 1) * pageSize
-	err := r.db.SelectContext(ctx, &appointments, query, therapistID, pageSize, offset)
+	err := r.db.SelectContext(ctx, &appointments, query, employeeID, pageSize, offset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get appointments by therapist ID: %w", err)
+		return nil, fmt.Errorf("failed to get appointments by employee ID: %w", err)
 	}
 
 	return appointments, nil
