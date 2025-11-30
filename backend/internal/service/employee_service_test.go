@@ -24,7 +24,9 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 		Email:       "juan.perez@example.com",
 		Phone:       "612345678",
 		DNI:         "12345678Z",
-		Specialties: []string{"Deportiva", "Traumatología"},
+		Specialty:   "Fisioterapeuta",
+		HireDate:    "2024-01-15",
+		Notes:       "Especialista en deportiva y traumatología",
 		AvatarColor: "#FF5733",
 	}
 
@@ -42,7 +44,8 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 	assert.Equal(t, "612345678", employee.Phone)
 	assert.Equal(t, "12345678Z", employee.DNI)
 	assert.Equal(t, "Fisioterapeuta", employee.Position)
-	assert.Equal(t, 2, len(employee.Specialties))
+	assert.Equal(t, 1, len(employee.Specialties))
+	assert.Equal(t, "Fisioterapeuta", employee.Specialties[0])
 	assert.True(t, employee.IsActive)
 	assert.Equal(t, "#FF5733", employee.AvatarColor)
 	mockRepo.AssertExpectations(t)
@@ -70,6 +73,8 @@ func TestEmployeeService_CreateEmployee_InvalidEmail(t *testing.T) {
 				Email:     tt.email,
 				Phone:     "612345678",
 				DNI:       "12345678Z",
+				Specialty: "Fisioterapeuta",
+				HireDate:  "2024-01-15",
 			}
 			employee, err := service.CreateEmployee(context.Background(), req)
 
@@ -102,6 +107,8 @@ func TestEmployeeService_CreateEmployee_InvalidPhone(t *testing.T) {
 				Email:     "juan@example.com",
 				Phone:     tt.phone,
 				DNI:       "12345678Z",
+				Specialty: "Fisioterapeuta",
+				HireDate:  "2024-01-15",
 			}
 
 			employee, err := service.CreateEmployee(context.Background(), req)
@@ -136,6 +143,8 @@ func TestEmployeeService_CreateEmployee_InvalidDNI(t *testing.T) {
 				Email:     "juan@example.com",
 				Phone:     "612345678",
 				DNI:       tt.dni,
+				Specialty: "Fisioterapeuta",
+				HireDate:  "2024-01-15",
 			}
 			employee, err := service.CreateEmployee(context.Background(), req)
 
@@ -158,6 +167,8 @@ func TestEmployeeService_CreateEmployee_EmailExists(t *testing.T) {
 		Email:     "existing@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
+		Specialty: "Fisioterapeuta",
+		HireDate:  "2024-01-15",
 	}
 
 	mockRepo.On("EmailExists", ctx, "existing@example.com").Return(true, nil)
@@ -182,6 +193,8 @@ func TestEmployeeService_CreateEmployee_DNIExists(t *testing.T) {
 		Email:     "juan@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
+		Specialty: "Fisioterapeuta",
+		HireDate:  "2024-01-15",
 	}
 
 	mockRepo.On("EmailExists", ctx, "juan@example.com").Return(false, nil)
@@ -259,7 +272,7 @@ func TestEmployeeService_UpdateEmployee_Success(t *testing.T) {
 
 	req := UpdateEmployeeRequest{
 		FirstName: "Juan Carlos",
-		Position:  "Fisioterapeuta Senior",
+		Specialty: "Fisioterapeuta Senior",
 	}
 
 	mockRepo.On("GetByID", ctx, employeeID).Return(existingEmployee, nil)
@@ -271,6 +284,7 @@ func TestEmployeeService_UpdateEmployee_Success(t *testing.T) {
 	assert.NotNil(t, employee)
 	assert.Equal(t, "Juan Carlos", employee.FirstName)
 	assert.Equal(t, "Fisioterapeuta Senior", employee.Position)
+	assert.Equal(t, "Fisioterapeuta Senior", employee.Specialties[0])
 	mockRepo.AssertExpectations(t)
 }
 
@@ -369,7 +383,7 @@ func TestEmployeeService_GetEmployeesBySpecialty_Success(t *testing.T) {
 	service := NewEmployeeService(mockRepo, mockUserRepo)
 
 	ctx := context.Background()
-	specialty := "Deportiva"
+	specialty := "Fisioterapeuta"
 	expectedEmployees := []*domain.Employee{
 		{
 			ID:          uuid.New(),
@@ -377,7 +391,7 @@ func TestEmployeeService_GetEmployeesBySpecialty_Success(t *testing.T) {
 			LastName:    "Pérez",
 			Email:       "juan@example.com",
 			Position:    "Fisioterapeuta",
-			Specialties: []string{"Deportiva", "Traumatología"},
+			Specialties: domain.StringArray{"Fisioterapeuta"},
 		},
 	}
 
@@ -388,7 +402,7 @@ func TestEmployeeService_GetEmployeesBySpecialty_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, employees)
 	assert.Equal(t, 1, len(employees))
-	assert.True(t, employees[0].HasSpecialty("Deportiva"))
+	assert.True(t, employees[0].HasSpecialty("Fisioterapeuta"))
 	mockRepo.AssertExpectations(t)
 }
 
@@ -404,6 +418,8 @@ func TestEmployeeService_CreateEmployee_DefaultAvatarColor(t *testing.T) {
 		Email:     "juan@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
+		Specialty: "Fisioterapeuta",
+		HireDate:  "2024-01-15",
 		// no AvatarColor provided -> should get default
 	}
 
