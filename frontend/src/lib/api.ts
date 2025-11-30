@@ -102,6 +102,26 @@ export interface ListClientsResponse {
   total: number;
 }
 
+export interface DashboardStats {
+  clients: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  employees: {
+    total: number;
+    active: number;
+    inactive: number;
+  };
+  appointments: {
+    total: number;
+    pending: number;
+    confirmed: number;
+    completed: number;
+    cancelled: number;
+  };
+}
+
 // Helper function to make authenticated requests with retry logic
 async function fetchWithAuth(
   url: string,
@@ -444,6 +464,14 @@ export const api = {
       });
 
       return fetchWithAuth(`/appointments/available-slots?${queryParams.toString()}`, token, {
+        method: 'GET',
+      });
+    },
+  },
+
+  stats: {
+    getDashboardStats: async (token: string): Promise<DashboardStats> => {
+      return fetchWithAuth('/stats/dashboard', token, {
         method: 'GET',
       });
     },

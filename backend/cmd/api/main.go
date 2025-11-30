@@ -118,18 +118,21 @@ func main() {
 	clientRepo := postgres.NewClientRepository(db)
 	appointmentRepo := postgres.NewAppointmentRepository(db)
 	employeeRepo := postgres.NewEmployeeRepository(db)
+	statsRepo := postgres.NewStatsRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
 	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo, employeeRepo)
 	employeeService := service.NewEmployeeService(employeeRepo, userRepo)
+	statsService := service.NewStatsService(statsRepo)
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
+	statsHandler := handler.NewStatsHandler(statsService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
@@ -230,6 +233,14 @@ func main() {
 			employees.POST("", authMiddleware.RequireRole("admin"), employeeHandler.CreateEmployee)
 			employees.PUT("/:id", authMiddleware.RequireRole("admin"), employeeHandler.UpdateEmployee)
 			employees.DELETE("/:id", authMiddleware.RequireRole("admin"), employeeHandler.DeleteEmployee)
+		}
+
+		// Stats routes (authenticated)
+		stats := v1.Group("/stats")
+		stats.Use(authMiddleware.RequireAuth())
+		{
+			// Admin/Employee only routes
+			stats.GET("/dashboard", authMiddleware.RequireRole("admin", "employee"), statsHandler.GetDashboardStats)
 		}
 	}
 

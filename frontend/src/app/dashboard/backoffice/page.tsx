@@ -7,6 +7,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { api, type Client } from '@/lib/api';
 import { CreateClientModal } from '@/components/backoffice/CreateClientModal';
+import { useStats } from '@/hooks/useStats';
+import { Loader2 } from 'lucide-react';
 
 export default function BackofficeDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -17,6 +19,9 @@ export default function BackofficeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // Use stats hook
+  const { stats, loading: statsLoading } = useStats();
 
   useEffect(() => {
     if (token) {
@@ -74,30 +79,68 @@ export default function BackofficeDashboard() {
           <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Total Clientes</CardTitle>
-              <CardDescription className="text-xs">Clientes registrados</CardDescription>
+              <CardDescription className="text-xs">Clientes registrados (activos)</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-primary">{clients.length}</div>
+              {statsLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <div className="text-3xl font-bold text-primary">
+                    {stats?.clients.total || 0}
+                  </div>
+                  <span className="text-sm text-green-600 font-medium">
+                    ({stats?.clients.active || 0} activos)
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-accent shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Citas Hoy</CardTitle>
-              <CardDescription className="text-xs">Citas programadas para hoy</CardDescription>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Citas Totales</CardTitle>
+              <CardDescription className="text-xs">Todas las citas del sistema</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-accent">0</div>
+              {statsLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <div className="text-3xl font-bold text-accent">
+                    {stats?.appointments.total || 0}
+                  </div>
+                  <div className="flex gap-3 text-xs">
+                    <span className="text-yellow-600">
+                      {stats?.appointments.pending || 0} pendientes
+                    </span>
+                    <span className="text-green-600">
+                      {stats?.appointments.confirmed || 0} confirmadas
+                    </span>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
           <Card className="border-l-4 border-l-secondary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">Empleados</CardTitle>
-              <CardDescription className="text-xs">Personal activo</CardDescription>
+              <CardDescription className="text-xs">Personal del gabinete</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-secondary">-</div>
+              {statsLoading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+              ) : (
+                <div className="flex items-baseline gap-2">
+                  <div className="text-3xl font-bold text-secondary">
+                    {stats?.employees.total || 0}
+                  </div>
+                  <span className="text-sm text-green-600 font-medium">
+                    ({stats?.employees.active || 0} activos)
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
