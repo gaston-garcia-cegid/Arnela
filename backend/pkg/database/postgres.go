@@ -14,7 +14,7 @@ import (
 // NewPostgresDB creates a new PostgreSQL database connection with persistent pool
 func NewPostgresDB(cfg config.DatabaseConfig) (*sqlx.DB, error) {
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s client_encoding=UTF8",
 		cfg.Host,
 		cfg.Port,
 		cfg.User,

@@ -105,8 +105,19 @@ export default function BackofficeDashboard() {
         {/* Clients Table */}
         <Card className="mt-8">
           <CardHeader>
-            <CardTitle>Gestión de Clientes</CardTitle>
-            <CardDescription>Lista de todos los clientes registrados</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Gestión de Clientes</CardTitle>
+                <CardDescription>Lista de todos los clientes registrados</CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => router.push('/dashboard/backoffice/clients')}
+                className="hover:bg-primary/10 hover:text-primary"
+              >
+                Ver Todos →
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -194,8 +205,11 @@ export default function BackofficeDashboard() {
           >
             👥 Gestión de Empleados
           </Button>
-          <Button className="h-20 text-base font-semibold" variant="outline">
-            📊 Reportes
+          <Button 
+            className="h-20 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
+            onClick={() => router.push('/dashboard/backoffice/clients')}
+          >
+            👤 Gestión de Clientes
           </Button>
         </div>
       </main>
