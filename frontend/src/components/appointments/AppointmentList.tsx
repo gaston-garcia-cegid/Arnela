@@ -11,7 +11,7 @@ import {
   getStatusLabel,
   isAppointmentPast,
 } from '@/lib/appointmentUtils';
-import { Calendar, Clock, User, Eye } from 'lucide-react';
+import { Calendar, Clock, User, Eye, Building2 } from 'lucide-react';
 
 interface AppointmentListProps {
   appointments: Appointment[];
@@ -28,7 +28,7 @@ export function AppointmentList({
     <div className="space-y-3">
       {appointments.map((appointment) => {
         const isPast = isAppointmentPast(appointment.startTime);
-        const therapist = appointment.therapist;
+        const employee = appointment.employee || appointment.therapist;
 
         return (
           <Card
@@ -66,10 +66,25 @@ export function AppointmentList({
                         ({appointment.durationMinutes} min)
                       </span>
                     </div>
-                    {therapist && (
+                    {employee && (
                       <div className="flex items-center gap-1.5">
                         <User className="h-4 w-4" />
-                        <span>{therapist.name}</span>
+                        <span>
+                          {'firstName' in employee 
+                            ? `${employee.firstName} ${employee.lastName}`
+                            : employee.name
+                          }
+                        </span>
+                      </div>
+                    )}
+                    {appointment.room && (
+                      <div className="flex items-center gap-1.5">
+                        <Building2 className="h-4 w-4" />
+                        <span>
+                          {appointment.room === 'gabinete_01' && 'Gabinete 01'}
+                          {appointment.room === 'gabinete_02' && 'Gabinete 02'}
+                          {appointment.room === 'gabinete_externo' && 'Gabinete Externo'}
+                        </span>
                       </div>
                     )}
                   </div>

@@ -11,7 +11,7 @@ import {
   getStatusLabel,
   isAppointmentPast,
 } from '@/lib/appointmentUtils';
-import { Calendar, Clock, User, Eye, CheckCircle, Mail, Phone } from 'lucide-react';
+import { Calendar, Clock, User, Eye, CheckCircle, Mail, Phone, Building2 } from 'lucide-react';
 
 interface BackofficeAppointmentListProps {
   appointments: Appointment[];
@@ -28,7 +28,7 @@ export function BackofficeAppointmentList({
     <div className="space-y-3">
       {appointments.map((appointment) => {
         const isPast = isAppointmentPast(appointment.startTime);
-        const therapist = appointment.therapist;
+        const employee = appointment.employee || appointment.therapist;
         const client = appointment.client;
         const canConfirm = appointment.status === 'pending';
 
@@ -57,7 +57,7 @@ export function BackofficeAppointmentList({
                 </div>
 
                 {/* Info Grid */}
-                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
                   {/* Client Info */}
                   {client && (
                     <div className="space-y-1">
@@ -77,6 +77,38 @@ export function BackofficeAppointmentList({
                               {client.phone}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Professional Info */}
+                  {employee && (
+                    <div className="space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground">Profesional</p>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
+                          style={{ backgroundColor: employee.avatarColor }}
+                        >
+                          {'firstName' in employee 
+                            ? `${employee.firstName[0]}${employee.lastName[0]}`
+                            : (employee.name.split(' ')[1]?.[0] || employee.name[0])
+                          }
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">
+                            {'firstName' in employee 
+                              ? `${employee.firstName} ${employee.lastName}`
+                              : employee.name
+                            }
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {'firstName' in employee
+                              ? (employee.position || employee.specialties?.join(', ') || 'Profesional')
+                              : (employee.specialties?.[0] || 'Profesional')
+                            }
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -103,23 +135,17 @@ export function BackofficeAppointmentList({
                     </div>
                   </div>
 
-                  {/* Therapist Info */}
-                  {therapist && (
+                  {/* Room/Office */}
+                  {appointment.room && (
                     <div className="space-y-1">
-                      <p className="text-xs font-medium text-muted-foreground">Terapeuta</p>
+                      <p className="text-xs font-medium text-muted-foreground">Gabinete</p>
                       <div className="flex items-center gap-2">
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0"
-                          style={{ backgroundColor: therapist.avatarColor }}
-                        >
-                          {therapist.name.split(' ')[1]?.[0] || therapist.name[0]}
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">{therapist.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {therapist.specialties[0]}
-                          </p>
-                        </div>
+                        <Building2 className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">
+                          {appointment.room === 'gabinete_01' && 'Gabinete 01'}
+                          {appointment.room === 'gabinete_02' && 'Gabinete 02'}
+                          {appointment.room === 'gabinete_externo' && 'Gabinete Externo'}
+                        </span>
                       </div>
                     </div>
                   )}
