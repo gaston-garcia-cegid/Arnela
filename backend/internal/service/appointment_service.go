@@ -119,12 +119,28 @@ func (s *appointmentService) CreateAppointment(ctx context.Context, req domain.C
 		return nil, err
 	}
 
+	// Validate room
+	room := domain.RoomType(req.Room)
+	if room != domain.RoomGabinete01 && room != domain.RoomGabinete02 && room != domain.RoomExternal {
+		return nil, fmt.Errorf("gabinete inválido, debe ser: gabinete_01, gabinete_02 o gabinete_externo")
+	}
+
+	// Check room availability
+	roomAvailable, err := s.appointmentRepo.CheckRoomAvailability(ctx, room, req.StartTime, endTime, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error al verificar disponibilidad del gabinete: %w", err)
+	}
+	if !roomAvailable {
+		return nil, fmt.Errorf("el gabinete %s no está disponible en el horario seleccionado", req.Room)
+	}
+
 	// Create appointment
 	appointment.ID = uuid.New()
 	appointment.ClientID = client.ID // Use derived client ID
 	appointment.Title = req.Title
 	appointment.Description = req.Description
 	appointment.Status = domain.AppointmentStatusPending
+	appointment.Room = room
 	appointment.CreatedBy = createdBy // User who created the appointment
 	appointment.CreatedAt = time.Now()
 	appointment.UpdatedAt = time.Now()
@@ -200,7 +216,17 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 		appointment.EmployeeID = employeeID
 	}
 
+	// Handle room update
+	if req.Room != "" {
+		room := domain.RoomType(req.Room)
+		if room != domain.RoomGabinete01 && room != domain.RoomGabinete02 && room != domain.RoomExternal {
+			return nil, fmt.Errorf("gabinete inválido, debe ser: gabinete_01, gabinete_02 o gabinete_externo")
+		}
+		appointment.Room = room
+	}
+
 	// Handle time updates
+	timeChanged := false
 	if !req.StartTime.IsZero() || req.DurationMinutes > 0 {
 		newStartTime := appointment.StartTime
 		newDuration := appointment.DurationMinutes
@@ -212,6 +238,7 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 			if newStartTime.Before(time.Now()) {
 				return nil, fmt.Errorf("la cita debe ser en el futuro")
 			}
+			timeChanged = true
 		}
 
 		if req.DurationMinutes > 0 {
@@ -219,6 +246,7 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 				return nil, fmt.Errorf("la duración debe ser 45 o 60 minutos")
 			}
 			newDuration = req.DurationMinutes
+			timeChanged = true
 		}
 
 		newEndTime := newStartTime.Add(time.Duration(newDuration) * time.Minute)
@@ -240,6 +268,17 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 			return nil, err
 		}
 
+		// Check room availability if time or room changed
+		if timeChanged || req.Room != "" {
+			roomAvailable, err := s.appointmentRepo.CheckRoomAvailability(ctx, appointment.Room, newStartTime, newEndTime, &id)
+			if err != nil {
+				return nil, fmt.Errorf("error al verificar disponibilidad del gabinete: %w", err)
+			}
+			if !roomAvailable {
+				return nil, fmt.Errorf("el gabinete %s no está disponible en el horario seleccionado", appointment.Room)
+			}
+		}
+
 		appointment.StartTime = newStartTime
 		appointment.EndTime = newEndTime
 		appointment.DurationMinutes = newDuration
@@ -247,6 +286,15 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 		// Mark as rescheduled if time changed
 		if appointment.Status == domain.AppointmentStatusConfirmed {
 			appointment.Status = domain.AppointmentStatusRescheduled
+		}
+	} else if req.Room != "" {
+		// If only room changed (no time change), still check availability
+		roomAvailable, err := s.appointmentRepo.CheckRoomAvailability(ctx, appointment.Room, appointment.StartTime, appointment.EndTime, &id)
+		if err != nil {
+			return nil, fmt.Errorf("error al verificar disponibilidad del gabinete: %w", err)
+		}
+		if !roomAvailable {
+			return nil, fmt.Errorf("el gabinete %s no está disponible en el horario seleccionado", appointment.Room)
 		}
 	}
 

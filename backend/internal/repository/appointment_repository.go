@@ -46,6 +46,9 @@ type AppointmentRepository interface {
 	// CheckOverlap checks if there's an overlapping appointment for an employee (excluding soft-deleted and current appointment)
 	CheckOverlap(ctx context.Context, employeeID uuid.UUID, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error)
 
+	// CheckRoomAvailability checks if a room is available at the specified time (excluding soft-deleted and current appointment)
+	CheckRoomAvailability(ctx context.Context, room domain.RoomType, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error)
+
 	// UpdateStatus updates only the status of an appointment
 	UpdateStatus(ctx context.Context, id uuid.UUID, status domain.AppointmentStatus) error
 }

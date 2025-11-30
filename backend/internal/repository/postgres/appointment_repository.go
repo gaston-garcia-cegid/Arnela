@@ -25,7 +25,7 @@ func NewAppointmentRepository(db *sqlx.DB) repository.AppointmentRepository {
 // ✅ Columnas base para SELECT
 const appointmentColumns = `
     id, client_id, employee_id, title, description,
-    start_time, end_time, duration_minutes, status,
+    start_time, end_time, duration_minutes, status, room,
     notes, cancellation_reason, google_calendar_event_id,
     created_by, created_at, updated_at, deleted_at
 `
@@ -34,9 +34,9 @@ func (r *appointmentRepository) Create(ctx context.Context, appointment *domain.
 	query := `
         INSERT INTO appointments (
             id, client_id, employee_id, title, description,
-            start_time, end_time, duration_minutes, status,
+            start_time, end_time, duration_minutes, status, room,
             notes, created_by, created_at, updated_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `
 
 	_, err := r.db.ExecContext(ctx, query,
@@ -49,6 +49,7 @@ func (r *appointmentRepository) Create(ctx context.Context, appointment *domain.
 		appointment.EndTime,
 		appointment.DurationMinutes,
 		appointment.Status,
+		appointment.Room,
 		appointment.Notes,
 		appointment.CreatedBy,
 		appointment.CreatedAt,
@@ -111,11 +112,12 @@ func (r *appointmentRepository) Update(ctx context.Context, appointment *domain.
 			end_time = $5,
 			duration_minutes = $6,
 			status = $7,
-			notes = $8,
-			cancellation_reason = $9,
-			google_calendar_event_id = $10,
-			updated_at = $11
-		WHERE id = $12 AND deleted_at IS NULL
+			room = $8,
+			notes = $9,
+			cancellation_reason = $10,
+			google_calendar_event_id = $11,
+			updated_at = $12
+		WHERE id = $13 AND deleted_at IS NULL
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -126,6 +128,7 @@ func (r *appointmentRepository) Update(ctx context.Context, appointment *domain.
 		appointment.EndTime,
 		appointment.DurationMinutes,
 		appointment.Status,
+		appointment.Room,
 		appointment.Notes,
 		appointment.CancellationReason,
 		appointment.GoogleCalendarEventID,
@@ -392,6 +395,37 @@ func (r *appointmentRepository) CheckOverlap(ctx context.Context, employeeID uui
 	}
 
 	return count > 0, nil
+}
+
+func (r *appointmentRepository) CheckRoomAvailability(ctx context.Context, room domain.RoomType, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM appointments
+		WHERE room = $1
+		AND deleted_at IS NULL
+		AND status != 'cancelled'
+		AND (
+			(start_time < $3 AND end_time > $2)
+			OR (start_time >= $2 AND start_time < $3)
+			OR (end_time > $2 AND end_time <= $3)
+		)
+	`
+
+	args := []interface{}{room, startTime, endTime}
+
+	if excludeID != nil {
+		query += " AND id != $4"
+		args = append(args, *excludeID)
+	}
+
+	var count int
+	err := r.db.GetContext(ctx, &count, query, args...)
+	if err != nil {
+		return false, fmt.Errorf("failed to check room availability: %w", err)
+	}
+
+	// If count > 0, room is NOT available (occupied)
+	return count == 0, nil
 }
 
 func (r *appointmentRepository) GetByClientID(ctx context.Context, clientID uuid.UUID, page, pageSize int) ([]*domain.Appointment, error) {

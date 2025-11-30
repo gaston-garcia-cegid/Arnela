@@ -9,6 +9,11 @@ export type AppointmentStatus =
   | 'completed' 
   | 'rescheduled';
 
+export type RoomType = 
+  | 'gabinete_01' 
+  | 'gabinete_02' 
+  | 'gabinete_externo';
+
 // Deprecated: Use Employee instead
 export interface Therapist {
   id: string;
@@ -36,6 +41,7 @@ export interface Appointment {
   endTime: string;   // ISO 8601 date string
   durationMinutes: number;
   status: AppointmentStatus;
+  room: RoomType;
   notes?: string;
   cancellationReason?: string;
   googleCalendarEventId?: string;
@@ -58,6 +64,7 @@ export interface CreateAppointmentRequest {
   description?: string;
   startTime: string; // ISO 8601 date string
   durationMinutes: 45 | 60;
+  room: RoomType;
 }
 
 export interface UpdateAppointmentRequest {
@@ -66,6 +73,7 @@ export interface UpdateAppointmentRequest {
   startTime?: string;
   durationMinutes?: 45 | 60;
   employeeId?: string; // Changed from therapistId
+  room?: RoomType;
 }
 
 export interface ConfirmAppointmentRequest {

@@ -79,6 +79,7 @@ export function CreateAppointmentModalBackoffice({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [duration, setDuration] = useState<45 | 60>(60);
+  const [selectedRoom, setSelectedRoom] = useState<string>('gabinete_01');
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   
@@ -142,6 +143,7 @@ export function CreateAppointmentModalBackoffice({
       description,
       startTime: selectedTime,
       durationMinutes: duration,
+      room: selectedRoom as 'gabinete_01' | 'gabinete_02' | 'gabinete_externo',
     });
 
     if (result) {
@@ -166,6 +168,7 @@ export function CreateAppointmentModalBackoffice({
     setSelectedDate(undefined);
     setSelectedTime('');
     setDuration(60);
+    setSelectedRoom('gabinete_01');
     setTitle('');
     setDescription('');
     setAvailableSlots([]);
@@ -360,6 +363,23 @@ export function CreateAppointmentModalBackoffice({
                 <SelectContent>
                   <SelectItem value="45">45 minutos</SelectItem>
                   <SelectItem value="60">60 minutos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-base font-semibold">Gabinete</Label>
+              <Select
+                value={selectedRoom}
+                onValueChange={setSelectedRoom}
+              >
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="gabinete_01">Gabinete 01</SelectItem>
+                  <SelectItem value="gabinete_02">Gabinete 02</SelectItem>
+                  <SelectItem value="gabinete_externo">Gabinete Externo</SelectItem>
                 </SelectContent>
               </Select>
             </div>

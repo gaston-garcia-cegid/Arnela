@@ -19,6 +19,15 @@ const (
 	AppointmentStatusRescheduled AppointmentStatus = "rescheduled"
 )
 
+// RoomType represents the room/office where the appointment takes place
+type RoomType string
+
+const (
+	RoomGabinete01 RoomType = "gabinete_01"
+	RoomGabinete02 RoomType = "gabinete_02"
+	RoomExternal   RoomType = "gabinete_externo"
+)
+
 // NullableString wraps sql.NullString for custom JSON marshaling
 type NullableString struct {
 	sql.NullString
@@ -61,6 +70,7 @@ type Appointment struct {
 	EndTime               time.Time         `json:"endTime" db:"end_time"`
 	DurationMinutes       int               `json:"durationMinutes" db:"duration_minutes"`
 	Status                AppointmentStatus `json:"status" db:"status"`
+	Room                  RoomType          `json:"room" db:"room"`
 	Notes                 NullableString    `json:"notes" db:"notes"`                                    // ✅ Custom type
 	CancellationReason    NullableString    `json:"cancellationReason" db:"cancellation_reason"`         // ✅ Custom type
 	GoogleCalendarEventID NullableString    `json:"googleCalendarEventId" db:"google_calendar_event_id"` // ✅ Custom type
@@ -114,6 +124,7 @@ type CreateAppointmentRequest struct {
 	Description     string    `json:"description"`
 	StartTime       time.Time `json:"startTime" binding:"required"`
 	DurationMinutes int       `json:"durationMinutes" binding:"required,oneof=45 60"`
+	Room            string    `json:"room" binding:"required,oneof=gabinete_01 gabinete_02 gabinete_externo"`
 }
 
 // UpdateAppointmentRequest represents the request to update an appointment
@@ -123,6 +134,7 @@ type UpdateAppointmentRequest struct {
 	Description     string    `json:"description"`
 	StartTime       time.Time `json:"startTime"`
 	DurationMinutes int       `json:"durationMinutes"`
+	Room            string    `json:"room"`
 }
 
 // CancelAppointmentRequest represents the request to cancel an appointment
