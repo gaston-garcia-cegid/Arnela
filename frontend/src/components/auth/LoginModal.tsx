@@ -71,8 +71,12 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
       // Redirect based on role
       if (response.user.role === 'client') {
         router.push('/dashboard/client');
-      } else if (response.user.role === 'admin' || response.user.role === 'employee') {
+      } else if (response.user.role === 'admin') {
         router.push('/dashboard/backoffice');
+      } else if (response.user.role === 'employee') {
+        // Get employee profile and redirect to their dashboard
+        const employeeProfile = await api.employees.getMyProfile(response.token);
+        router.push(`/dashboard/backoffice/employees/${employeeProfile.id}`);
       }
 
       onClose();

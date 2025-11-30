@@ -258,13 +258,19 @@ export default function EmployeesPage() {
                   )}
                   <div className="flex gap-2 pt-4">
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
                       className="flex-1"
+                      onClick={() => router.push(`/dashboard/backoffice/employees/${employee.id}`)}
+                    >
+                      Ver Dashboard
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => handleEditClick(employee)}
                     >
-                      <Edit2 className="h-4 w-4 mr-1" />
-                      Editar
+                      <Edit2 className="h-4 w-4" />
                     </Button>
                     <Button
                       variant="destructive"

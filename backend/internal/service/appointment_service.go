@@ -155,13 +155,24 @@ func (s *appointmentService) UpdateAppointment(ctx context.Context, id uuid.UUID
 		return nil, fmt.Errorf("la cita no puede ser modificada (ya pasó o está cancelada)")
 	}
 
-	// Validate client owns the appointment
-	client, err := s.clientRepo.GetByUserID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("cliente no encontrado")
+	// Validate permission: client owns the appointment OR employee is assigned to it
+	hasPermission := false
+
+	// Check if user is the client
+	client, clientErr := s.clientRepo.GetByUserID(ctx, userID)
+	if clientErr == nil && appointment.ClientID == client.ID {
+		hasPermission = true
 	}
 
-	if appointment.ClientID != client.ID {
+	// Check if user is the assigned employee
+	if !hasPermission {
+		employee, empErr := s.employeeRepo.GetByUserID(ctx, userID)
+		if empErr == nil && appointment.EmployeeID == employee.ID {
+			hasPermission = true
+		}
+	}
+
+	if !hasPermission {
 		return nil, fmt.Errorf("no tienes permiso para modificar esta cita")
 	}
 

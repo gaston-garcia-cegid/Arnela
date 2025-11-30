@@ -11,6 +11,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // EmployeeService defines the interface for employee business logic
@@ -121,10 +122,32 @@ func (s *employeeService) CreateEmployee(ctx context.Context, req CreateEmployee
 		specialties = domain.StringArray{strings.TrimSpace(req.Specialty)}
 	}
 
-	// Create employee entity
+	// Create user for employee (email as username, DNI as password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.DNI), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	user := &domain.User{
+		ID:           uuid.New(),
+		Email:        strings.ToLower(strings.TrimSpace(req.Email)),
+		PasswordHash: string(hashedPassword),
+		FirstName:    strings.TrimSpace(req.FirstName),
+		LastName:     strings.TrimSpace(req.LastName),
+		Role:         domain.RoleEmployee,
+		IsActive:     true,
+		CreatedAt:    time.Now(),
+		UpdatedAt:    time.Now(),
+	}
+
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		return nil, fmt.Errorf("failed to create user: %w", err)
+	}
+
+	// Create employee entity linked to user
 	employee := &domain.Employee{
 		ID:          uuid.New(),
-		UserID:      req.UserID,
+		UserID:      &user.ID,
 		FirstName:   strings.TrimSpace(req.FirstName),
 		LastName:    strings.TrimSpace(req.LastName),
 		Email:       strings.ToLower(strings.TrimSpace(req.Email)),
@@ -144,6 +167,10 @@ func (s *employeeService) CreateEmployee(ctx context.Context, req CreateEmployee
 
 	// Save to repository
 	if err := s.repo.Create(ctx, employee); err != nil {
+		// Rollback: delete user if employee creation fails
+		if deleteErr := s.userRepo.Delete(ctx, user.ID); deleteErr != nil {
+			fmt.Printf("[ERROR] Failed to rollback user creation: %v\n", deleteErr)
+		}
 		if errors.Is(err, repository.ErrEmailAlreadyExists) {
 			return nil, ErrEmailInUse
 		}

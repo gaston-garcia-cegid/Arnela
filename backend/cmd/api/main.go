@@ -137,6 +137,7 @@ func main() {
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
 	authMiddleware.SetClientRepo(clientRepo)
+	authMiddleware.SetEmployeeRepo(employeeRepo)
 
 	// Setup Gin router
 	if cfg.Server.Environment == "production" {
@@ -209,7 +210,7 @@ func main() {
 			appointments.GET("/available-slots", appointmentHandler.GetAvailableSlots)
 			appointments.POST("", appointmentHandler.CreateAppointment)
 			appointments.GET("/:id", appointmentHandler.GetAppointment)
-			appointments.PUT("/:id", appointmentHandler.UpdateAppointment)
+			appointments.PUT("/:id", authMiddleware.RequireRole("admin", "employee"), appointmentHandler.UpdateAppointment)
 			appointments.POST("/:id/cancel", appointmentHandler.CancelAppointment)
 
 			// Client-specific endpoint
@@ -226,6 +227,7 @@ func main() {
 		{
 			// Public endpoints (clients can see employees and specialties for booking)
 			employees.GET("", employeeHandler.ListEmployees)
+			employees.GET("/me", authMiddleware.RequireRole("employee"), employeeHandler.GetMyEmployee)
 			employees.GET("/:id", employeeHandler.GetEmployee)
 			employees.GET("/specialty/:specialty", employeeHandler.GetEmployeesBySpecialty)
 

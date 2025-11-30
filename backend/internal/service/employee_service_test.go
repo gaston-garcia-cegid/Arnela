@@ -32,6 +32,7 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 
 	mockRepo.On("EmailExists", ctx, "juan.perez@example.com").Return(false, nil)
 	mockRepo.On("DNIExists", ctx, "12345678Z").Return(false, nil)
+	mockUserRepo.On("Create", ctx, mock.AnythingOfType("*domain.User")).Return(nil)
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*domain.Employee")).Return(nil)
 
 	employee, err := service.CreateEmployee(ctx, req)
@@ -48,6 +49,7 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 	assert.Equal(t, "Fisioterapeuta", employee.Specialties[0])
 	assert.True(t, employee.IsActive)
 	assert.Equal(t, "#FF5733", employee.AvatarColor)
+	assert.NotNil(t, employee.UserID) // Verify user was created and linked
 	mockRepo.AssertExpectations(t)
 }
 
@@ -425,6 +427,7 @@ func TestEmployeeService_CreateEmployee_DefaultAvatarColor(t *testing.T) {
 
 	mockRepo.On("EmailExists", ctx, "juan@example.com").Return(false, nil)
 	mockRepo.On("DNIExists", ctx, "12345678Z").Return(false, nil)
+	mockUserRepo.On("Create", ctx, mock.AnythingOfType("*domain.User")).Return(nil)
 	mockRepo.On("Create", ctx, mock.AnythingOfType("*domain.Employee")).Return(nil)
 
 	employee, err := service.CreateEmployee(ctx, req)

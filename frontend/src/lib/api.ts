@@ -331,6 +331,19 @@ export const api = {
       });
     },
 
+    // Get my employee profile (for logged-in employee)
+    getMyProfile: async (token: string): Promise<Employee> => {
+      const employee = await fetchWithAuth('/employees/me', token, {
+        method: 'GET',
+      }) as Employee;
+      
+      // Map backend response to include specialty for backward compatibility
+      return {
+        ...employee,
+        specialty: employee.position || employee.specialties?.[0] || ''
+      };
+    },
+
     // Get active employees for appointment scheduling
     getActive: async (token: string): Promise<GetEmployeesResponse> => {
       const queryParams = new URLSearchParams();

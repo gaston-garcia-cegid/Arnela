@@ -113,6 +113,46 @@ func (h *EmployeeHandler) GetEmployee(c *gin.Context) {
 	c.JSON(http.StatusOK, employee)
 }
 
+// GetMyEmployee retrieves the employee profile for the current logged-in user
+// @Summary      Get my employee profile
+// @Description  Retrieves the employee profile associated with the current user (employee only)
+// @Tags         employees
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} domain.Employee
+// @Failure      401 {object} map[string]string
+// @Failure      404 {object} map[string]string
+// @Router       /api/v1/employees/me [get]
+func (h *EmployeeHandler) GetMyEmployee(c *gin.Context) {
+	userID, exists := c.Get("userID")
+	if !exists {
+		appErr := pkgerrors.NewUnauthorizedError("Usuario no autenticado")
+		pkgerrors.RespondWithAppError(c, appErr)
+		return
+	}
+
+	id, ok := userID.(uuid.UUID)
+	if !ok {
+		appErr := pkgerrors.NewInternalError("Error al obtener ID de usuario")
+		pkgerrors.RespondWithAppError(c, appErr)
+		return
+	}
+
+	employee, err := h.employeeService.GetEmployeeByUserID(c.Request.Context(), id)
+	if err != nil {
+		if err == service.ErrEmployeeNotFound {
+			appErr := pkgerrors.NewNotFoundError("Empleado no encontrado")
+			pkgerrors.RespondWithAppError(c, appErr)
+			return
+		}
+		appErr := pkgerrors.NewInternalError("Error al obtener el empleado")
+		pkgerrors.RespondWithAppError(c, appErr)
+		return
+	}
+
+	c.JSON(http.StatusOK, employee)
+}
+
 // ListEmployees retrieves a paginated list of employees
 // @Summary      List employees
 // @Description  Retrieves a list of employees with pagination (admin/employee)

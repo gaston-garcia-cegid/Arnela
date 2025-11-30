@@ -14,6 +14,7 @@ import (
 type AuthMiddleware struct {
 	tokenManager *jwt.TokenManager
 	clientRepo   repository.ClientRepository
+	employeeRepo repository.EmployeeRepository
 }
 
 // NewAuthMiddleware creates a new AuthMiddleware instance
@@ -21,12 +22,18 @@ func NewAuthMiddleware(tokenManager *jwt.TokenManager) *AuthMiddleware {
 	return &AuthMiddleware{
 		tokenManager: tokenManager,
 		clientRepo:   nil,
+		employeeRepo: nil,
 	}
 }
 
 // SetClientRepo sets the client repository for the middleware
 func (m *AuthMiddleware) SetClientRepo(clientRepo repository.ClientRepository) {
 	m.clientRepo = clientRepo
+}
+
+// SetEmployeeRepo sets the employee repository for the middleware
+func (m *AuthMiddleware) SetEmployeeRepo(employeeRepo repository.EmployeeRepository) {
+	m.employeeRepo = employeeRepo
 }
 
 // RequireAuth ensures the user is authenticated
@@ -76,6 +83,14 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 			client, err := m.clientRepo.GetByUserID(c.Request.Context(), userID)
 			if err == nil && client != nil {
 				c.Set("clientID", client.ID)
+			}
+		}
+
+		// If user is an employee, fetch and set employeeID
+		if claims.Role == "employee" && m.employeeRepo != nil {
+			employee, err := m.employeeRepo.GetByUserID(c.Request.Context(), userID)
+			if err == nil && employee != nil {
+				c.Set("employeeID", employee.ID)
 			}
 		}
 
