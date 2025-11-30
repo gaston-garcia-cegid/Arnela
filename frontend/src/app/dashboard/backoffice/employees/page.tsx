@@ -11,6 +11,7 @@ import { CreateEmployeeModal } from '@/components/backoffice/CreateEmployeeModal
 import { EditEmployeeModal } from '@/components/backoffice/EditEmployeeModal';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { EmployeesTableSkeleton } from '@/components/common/TableSkeletons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -205,14 +206,12 @@ export default function EmployeesPage() {
         )}
 
         {/* Loading State */}
-        {isLoading && (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          </div>
-        )}
-
+        {isLoading ? (
+          <EmployeesTableSkeleton />
+        ) : (
+          <>
         {/* Employees Grid */}
-        {!isLoading && (
+        (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {employees.map((employee) => (
               <Card key={employee.id} className="relative">
@@ -279,10 +278,10 @@ export default function EmployeesPage() {
               </Card>
             ))}
           </div>
-        )}
+        )
 
         {/* Empty State */}
-        {!isLoading && employees.length === 0 && (
+        {employees.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
@@ -295,6 +294,8 @@ export default function EmployeesPage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+        </>
         )}
       </main>
 

@@ -70,6 +70,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
     reset,
   } = useForm<UpdateClientForm>({
     resolver: zodResolver(updateClientSchema),
+    mode: 'onChange',
     defaultValues: {
       firstName: client.firstName,
       lastName: client.lastName,

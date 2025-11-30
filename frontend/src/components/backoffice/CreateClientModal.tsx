@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 
@@ -54,6 +55,7 @@ export function CreateClientModal({
     reset,
   } = useForm<CreateClientForm>({
     resolver: zodResolver(createClientSchema),
+    mode: 'onChange', // Enable real-time validation
   });
 
   const onSubmit = async (data: CreateClientForm) => {
@@ -236,17 +238,8 @@ export function CreateClientModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span className="mr-2">⏳</span>
-                  Creando...
-                </>
-              ) : (
-                <>
-                  <span className="mr-2">✅</span>
-                  Crear Cliente
-                </>
-              )}
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSubmitting ? 'Creando...' : 'Crear Cliente'}
             </Button>
           </div>
         </form>

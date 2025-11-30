@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { ClientsTableSkeleton } from '@/components/common/TableSkeletons';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -180,14 +181,6 @@ export default function ClientsPage() {
   const activeClients = clients.filter((c) => c.isActive).length;
   const inactiveClients = totalClients - activeClients;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -224,6 +217,11 @@ export default function ClientsPage() {
           </Button>
         </div>
 
+      {/* Loading State */}
+      {isLoading ? (
+        <ClientsTableSkeleton />
+      ) : (
+        <>
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -448,6 +446,8 @@ export default function ClientsPage() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+        </>
+      )}
       </main>
     </div>
   );

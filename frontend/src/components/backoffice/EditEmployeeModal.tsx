@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Employee } from '@/types/employee';
@@ -63,6 +64,7 @@ export function EditEmployeeModal({
     setValue,
   } = useForm<UpdateEmployeeForm>({
     resolver: zodResolver(updateEmployeeSchema),
+    mode: 'onChange',
     defaultValues: {
       firstName: employee.firstName,
       lastName: employee.lastName,
@@ -288,6 +290,7 @@ export function EditEmployeeModal({
               Cancelar
             </Button>
             <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
             </Button>
           </div>
