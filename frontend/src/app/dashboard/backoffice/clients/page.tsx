@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -116,9 +117,12 @@ export default function ClientsPage() {
     setFilteredClients(filtered);
   };
 
-  const handleCreateSuccess = () => {
+  const handleCreateSuccess = (client: Client) => {
     loadClients(); // Reload clients after creation
     setIsCreateModalOpen(false);
+    toast.success('Cliente creado exitosamente', {
+      description: `${client.firstName} ${client.lastName} ha sido agregado al sistema`,
+    });
   };
 
   const handleEditClick = (client: Client) => {
@@ -130,6 +134,9 @@ export default function ClientsPage() {
     setClients(clients.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
     setIsEditModalOpen(false);
     setSelectedClient(null);
+    toast.success('Cliente actualizado', {
+      description: `Los datos de ${updatedClient.firstName} ${updatedClient.lastName} han sido actualizados`,
+    });
   };
 
   const handleDeleteClick = (client: Client) => {
@@ -139,13 +146,22 @@ export default function ClientsPage() {
   const handleDeleteConfirm = async () => {
     if (!clientToDelete || !token) return;
 
+    const clientName = `${clientToDelete.firstName} ${clientToDelete.lastName}`;
+
     try {
       await api.clients.delete(clientToDelete.id, token);
       setClients(clients.filter((c) => c.id !== clientToDelete.id));
       setClientToDelete(null);
+      toast.success('Cliente eliminado', {
+        description: `${clientName} ha sido eliminado del sistema`,
+      });
     } catch (err) {
       console.error('Error deleting client:', err);
-      setError(err instanceof Error ? err.message : 'Error al eliminar cliente');
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar cliente';
+      setError(errorMessage);
+      toast.error('Error al eliminar cliente', {
+        description: errorMessage,
+      });
     }
   };
 

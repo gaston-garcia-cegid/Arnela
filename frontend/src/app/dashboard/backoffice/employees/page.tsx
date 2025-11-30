@@ -10,6 +10,7 @@ import { Employee } from '@/types/employee';
 import { CreateEmployeeModal } from '@/components/backoffice/CreateEmployeeModal';
 import { EditEmployeeModal } from '@/components/backoffice/EditEmployeeModal';
 import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -69,6 +70,9 @@ export default function EmployeesPage() {
   const handleCreateSuccess = (employee: Employee) => {
     setEmployees([employee, ...employees]);
     setIsCreateModalOpen(false);
+    toast.success('Empleado creado exitosamente', {
+      description: `${employee.firstName} ${employee.lastName} ha sido agregado al equipo`,
+    });
   };
 
   const handleEditClick = (employee: Employee) => {
@@ -80,6 +84,9 @@ export default function EmployeesPage() {
     setEmployees(employees.map(e => e.id === updatedEmployee.id ? updatedEmployee : e));
     setIsEditModalOpen(false);
     setSelectedEmployee(null);
+    toast.success('Empleado actualizado', {
+      description: `Los datos de ${updatedEmployee.firstName} ${updatedEmployee.lastName} han sido actualizados`,
+    });
   };
 
   const handleDeleteClick = (employee: Employee) => {
@@ -89,13 +96,21 @@ export default function EmployeesPage() {
   const handleDeleteConfirm = async () => {
     if (!employeeToDelete || !token) return;
 
+    const employeeName = `${employeeToDelete.firstName} ${employeeToDelete.lastName}`;
+
     try {
       await api.employees.delete(employeeToDelete.id, token);
       setEmployees(employees.filter(e => e.id !== employeeToDelete.id));
       setEmployeeToDelete(null);
+      toast.success('Empleado eliminado', {
+        description: `${employeeName} ha sido eliminado del sistema`,
+      });
     } catch (err) {
       console.error('Error deleting employee:', err);
-      alert(err instanceof Error ? err.message : 'Error al eliminar empleado');
+      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar empleado';
+      toast.error('Error al eliminar empleado', {
+        description: errorMessage,
+      });
     }
   };
 

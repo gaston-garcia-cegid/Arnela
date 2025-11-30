@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -57,14 +58,24 @@ export function AppointmentDetailsModal({
 
   const handleCancel = async () => {
     if (!cancellationReason.trim()) {
+      toast.error('Motivo requerido', {
+        description: 'Por favor indica el motivo de la cancelación',
+      });
       return;
     }
 
     const success = await cancelAppointment(appointment.id, cancellationReason);
     if (success) {
+      toast.success('Cita cancelada', {
+        description: `La cita ha sido cancelada exitosamente`,
+      });
       setShowCancelDialog(false);
       setCancellationReason('');
       onUpdate();
+    } else {
+      toast.error('Error al cancelar la cita', {
+        description: 'Por favor inténtalo nuevamente',
+      });
     }
   };
 

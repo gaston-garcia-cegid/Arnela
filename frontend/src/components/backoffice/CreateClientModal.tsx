@@ -35,7 +35,7 @@ type CreateClientForm = z.infer<typeof createClientSchema>;
 interface CreateClientModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (client: any) => void; // Accept created client
 }
 
 export function CreateClientModal({
@@ -66,7 +66,7 @@ export function CreateClientModal({
     setError(null);
 
     try {
-      await api.clients.create({
+      const newClient = await api.clients.create({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -78,7 +78,7 @@ export function CreateClientModal({
 
       reset();
       onOpenChange(false);
-      onSuccess();
+      onSuccess(newClient);
     } catch (err: any) {
       console.error('Error creating client:', err);
       setError(err.message || 'Error al crear el cliente');

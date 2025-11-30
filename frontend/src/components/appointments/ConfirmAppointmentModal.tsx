@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -40,8 +41,15 @@ export function ConfirmAppointmentModal({
   const handleConfirm = async () => {
     const result = await confirmAppointment(appointment.id, notes);
     if (result) {
+      toast.success('Cita confirmada exitosamente', {
+        description: `La cita ha sido confirmada correctamente`,
+      });
       setNotes('');
       onSuccess();
+    } else {
+      toast.error('Error al confirmar la cita', {
+        description: 'Por favor inténtalo nuevamente',
+      });
     }
   };
 

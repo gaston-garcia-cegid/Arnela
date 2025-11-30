@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Select,
@@ -144,8 +145,15 @@ export function CreateAppointmentModalBackoffice({
     });
 
     if (result) {
+      toast.success('Cita creada exitosamente', {
+        description: `Cita agendada para ${selectedClient.firstName} ${selectedClient.lastName}`,
+      });
       resetForm();
       onSuccess();
+    } else {
+      toast.error('Error al crear la cita', {
+        description: 'Por favor verifica los datos e inténtalo nuevamente',
+      });
     }
   };
 
