@@ -7,13 +7,13 @@ export interface Employee {
   email: string;
   phone: string;
   dni: string;
-  position: string;        // Backend field
+  position?: string | null;        // Backend field (nullable)
   specialties: string[];   // Backend field (array)
   specialty?: string;      // Computed/frontend convenience field
   avatarColor: string;
   isActive: boolean;
   hireDate?: string;       // ISO 8601 date string (optional from backend)
-  notes?: string;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -33,7 +33,7 @@ import {
   getStatusLabel,
   isAppointmentUpcoming,
 } from '@/lib/appointmentUtils';
-import { Calendar, Clock, User, FileText, X, Loader2, AlertCircle } from 'lucide-react';
+import { Calendar, Clock, User, FileText, X, Loader2, AlertCircle, Building2 } from 'lucide-react';
 
 interface AppointmentDetailsModalProps {
   appointment: Appointment;
@@ -129,26 +129,64 @@ export function AppointmentDetailsModal({
               </div>
             </div>
 
-            {/* Therapist */}
-            {appointment.therapist && (
+            {/* Employee/Therapist */}
+            {(appointment.employee || appointment.therapist) && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <User className="h-4 w-4" />
-                  <span className="font-medium">Terapeuta</span>
+                  <span className="font-medium">Profesional</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                    style={{ backgroundColor: appointment.therapist.avatarColor }}
-                  >
-                    {appointment.therapist.name.split(' ')[1]?.[0] || appointment.therapist.name[0]}
-                  </div>
-                  <div>
-                    <p className="font-medium">{appointment.therapist.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {appointment.therapist.specialties.join(', ')}
-                    </p>
-                  </div>
+                  {appointment.employee ? (
+                    <>
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                        style={{ backgroundColor: appointment.employee.avatarColor }}
+                      >
+                        {appointment.employee.firstName[0]}{appointment.employee.lastName[0]}
+                      </div>
+                      <div>
+                        <p className="font-medium">
+                          {appointment.employee.firstName} {appointment.employee.lastName}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          {appointment.employee.position || appointment.employee.specialties?.join(', ') || 'Profesional'}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                        style={{ backgroundColor: appointment.therapist!.avatarColor }}
+                      >
+                        {appointment.therapist!.name.split(' ')[1]?.[0] || appointment.therapist!.name[0]}
+                      </div>
+                      <div>
+                        <p className="font-medium">{appointment.therapist!.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {appointment.therapist!.specialties.join(', ')}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Room/Office */}
+            {appointment.room && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Building2 className="h-4 w-4" />
+                  <span className="font-medium">Gabinete</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-lg bg-primary/10 text-primary font-medium text-sm border border-primary/20">
+                    {appointment.room === 'gabinete_01' && 'Gabinete 01'}
+                    {appointment.room === 'gabinete_02' && 'Gabinete 02'}
+                    {appointment.room === 'gabinete_externo' && 'Gabinete Externo'}
+                  </span>
                 </div>
               </div>
             )}

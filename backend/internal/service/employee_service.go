@@ -145,6 +145,8 @@ func (s *employeeService) CreateEmployee(ctx context.Context, req CreateEmployee
 	}
 
 	// Create employee entity linked to user
+	position := strings.TrimSpace(req.Specialty)
+	notes := strings.TrimSpace(req.Notes)
 	employee := &domain.Employee{
 		ID:          uuid.New(),
 		UserID:      &user.ID,
@@ -153,10 +155,10 @@ func (s *employeeService) CreateEmployee(ctx context.Context, req CreateEmployee
 		Email:       strings.ToLower(strings.TrimSpace(req.Email)),
 		Phone:       strings.TrimSpace(req.Phone),
 		DNI:         strings.ToUpper(strings.TrimSpace(req.DNI)),
-		Position:    strings.TrimSpace(req.Specialty), // Use specialty as position
+		Position:    &position, // Use specialty as position
 		Specialties: specialties,
 		HireDate:    hireDate,
-		Notes:       strings.TrimSpace(req.Notes),
+		Notes:       &notes,
 		IsActive:    true,
 		AvatarColor: req.AvatarColor,
 	}
@@ -261,7 +263,8 @@ func (s *employeeService) UpdateEmployee(ctx context.Context, id uuid.UUID, req 
 		employee.DNI = strings.ToUpper(strings.TrimSpace(req.DNI))
 	}
 	if req.Specialty != "" {
-		employee.Position = strings.TrimSpace(req.Specialty)
+		position := strings.TrimSpace(req.Specialty)
+		employee.Position = &position
 		employee.Specialties = domain.StringArray{strings.TrimSpace(req.Specialty)}
 	}
 	if req.HireDate != "" {
@@ -272,7 +275,8 @@ func (s *employeeService) UpdateEmployee(ctx context.Context, id uuid.UUID, req 
 		employee.HireDate = &parsedDate
 	}
 	if req.Notes != "" {
-		employee.Notes = strings.TrimSpace(req.Notes)
+		notes := strings.TrimSpace(req.Notes)
+		employee.Notes = &notes
 	}
 	if req.IsActive != nil {
 		employee.IsActive = *req.IsActive

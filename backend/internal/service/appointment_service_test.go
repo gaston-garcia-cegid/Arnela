@@ -103,6 +103,11 @@ func (m *MockAppointmentRepository) UpdateStatus(ctx context.Context, id uuid.UU
 	return args.Error(0)
 }
 
+func (m *MockAppointmentRepository) CheckRoomAvailability(ctx context.Context, room domain.RoomType, startTime, endTime time.Time, excludeID *uuid.UUID) (bool, error) {
+	args := m.Called(ctx, room, startTime, endTime, excludeID)
+	return args.Bool(0), args.Error(1)
+}
+
 // MockClientRepository for testing
 type MockClientRepository struct {
 	mock.Mock
@@ -315,6 +320,9 @@ func TestCreateAppointment_Success(t *testing.T) {
 	// Mock no overlap
 	mockAppointmentRepo.On("CheckOverlap", ctx, employeeID, mock.Anything, mock.Anything, (*uuid.UUID)(nil)).Return(false, nil)
 
+	// Mock room availability (true = available, false = occupied)
+	mockAppointmentRepo.On("CheckRoomAvailability", ctx, domain.RoomGabinete01, mock.Anything, mock.Anything, (*uuid.UUID)(nil)).Return(true, nil)
+
 	// Mock create
 	mockAppointmentRepo.On("Create", ctx, mock.AnythingOfType("*domain.Appointment")).Return(nil)
 
@@ -328,6 +336,7 @@ func TestCreateAppointment_Success(t *testing.T) {
 		EndTime:         startTime.Add(60 * time.Minute),
 		DurationMinutes: 60,
 		Status:          domain.AppointmentStatusPending,
+		Room:            "gabinete_01",
 	}, nil)
 
 	req := domain.CreateAppointmentRequest{
@@ -336,6 +345,7 @@ func TestCreateAppointment_Success(t *testing.T) {
 		Description:     "Primera consulta",
 		StartTime:       startTime,
 		DurationMinutes: 60,
+		Room:            "gabinete_01",
 		// ClientID not provided - simulates client self-booking
 	}
 
@@ -371,6 +381,7 @@ func TestCreateAppointment_InvalidEmployee(t *testing.T) {
 		Title:           "Consulta",
 		StartTime:       startTime,
 		DurationMinutes: 60,
+		Room:            "gabinete_01",
 	}
 
 	appointment, err := service.CreateAppointment(ctx, req, createdBy)
@@ -420,6 +431,7 @@ func TestCreateAppointment_WeekendRejected(t *testing.T) {
 		Title:           "Consulta",
 		StartTime:       saturdayAt10,
 		DurationMinutes: 60,
+		Room:            "gabinete_01",
 	}
 
 	appointment, err := service.CreateAppointment(ctx, req, createdBy)

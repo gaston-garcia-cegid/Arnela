@@ -66,11 +66,11 @@ type Employee struct {
 	Phone       string      `json:"phone" db:"phone"`
 	DNI         string      `json:"dni" db:"dni"`
 	DateOfBirth *time.Time  `json:"dateOfBirth,omitempty" db:"date_of_birth"`
-	Position    string      `json:"position" db:"position"`
+	Position    *string     `json:"position,omitempty" db:"position"`
 	Specialties StringArray `json:"specialties" db:"specialties"`
 	IsActive    bool        `json:"isActive" db:"is_active"`
 	HireDate    *time.Time  `json:"hireDate,omitempty" db:"hire_date"`
-	Notes       string      `json:"notes,omitempty" db:"notes"`
+	Notes       *string     `json:"notes,omitempty" db:"notes"`
 	AvatarColor string      `json:"avatarColor" db:"avatar_color"`
 	CreatedAt   time.Time   `json:"createdAt" db:"created_at"`
 	UpdatedAt   time.Time   `json:"updatedAt" db:"updated_at"`

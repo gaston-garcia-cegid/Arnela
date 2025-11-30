@@ -84,8 +84,22 @@ func (r *appointmentRepository) GetByIDWithRelations(ctx context.Context, id uui
 		return nil, err
 	}
 
-	// Employee data can be loaded separately if needed
-	// (removed mock therapist loading)
+	// Load employee data
+	var employee domain.Employee
+	employeeQuery := `
+        SELECT id, user_id, first_name, last_name, email, phone, dni,
+               date_of_birth, position, specialties, is_active, hire_date, notes,
+               avatar_color, created_at, updated_at
+        FROM employees
+        WHERE id = $1 AND deleted_at IS NULL
+    `
+	err = r.db.GetContext(ctx, &employee, employeeQuery, appointment.EmployeeID)
+	if err != nil {
+		// Log error but don't fail the whole request
+		fmt.Printf("Warning: failed to load employee %s: %v\n", appointment.EmployeeID, err)
+	} else {
+		appointment.Employee = &employee
+	}
 
 	// Load client data
 	var client domain.Client
@@ -299,9 +313,24 @@ func (r *appointmentRepository) ListWithRelations(ctx context.Context, filters d
 
 	// Load relations for each appointment
 	for _, apt := range appointments {
-		// Employee data can be loaded separately if needed
-		// (removed mock therapist loading)
+		// Load employee data
+		var employee domain.Employee
+		employeeQuery := `
+			SELECT id, user_id, first_name, last_name, email, phone, dni,
+			       date_of_birth, position, specialties, is_active, hire_date, notes,
+			       avatar_color, created_at, updated_at
+			FROM employees
+			WHERE id = $1 AND deleted_at IS NULL
+		`
+		err = r.db.GetContext(ctx, &employee, employeeQuery, apt.EmployeeID)
+		if err != nil {
+			// Log error but don't fail the whole request
+			fmt.Printf("Warning: failed to load employee %s: %v\n", apt.EmployeeID, err)
+		} else {
+			apt.Employee = &employee
+		}
 
+		// Load client data
 		var client domain.Client
 		clientQuery := `
 			SELECT id, user_id, email, first_name, last_name, phone, dni

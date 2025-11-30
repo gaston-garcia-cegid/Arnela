@@ -12,6 +12,12 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+// Helper variables for pointer fields in tests
+var (
+	position1 = "Fisioterapeuta"
+	position2 = "Osteópata"
+)
+
 func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 	mockRepo := new(mocks.MockEmployeeRepository)
 	mockUserRepo := new(mocks.MockUserRepository)
@@ -44,7 +50,8 @@ func TestEmployeeService_CreateEmployee_Success(t *testing.T) {
 	assert.Equal(t, "juan.perez@example.com", employee.Email)
 	assert.Equal(t, "612345678", employee.Phone)
 	assert.Equal(t, "12345678Z", employee.DNI)
-	assert.Equal(t, "Fisioterapeuta", employee.Position)
+	assert.NotNil(t, employee.Position)
+	assert.Equal(t, "Fisioterapeuta", *employee.Position)
 	assert.Equal(t, 1, len(employee.Specialties))
 	assert.Equal(t, "Fisioterapeuta", employee.Specialties[0])
 	assert.True(t, employee.IsActive)
@@ -222,7 +229,7 @@ func TestEmployeeService_GetEmployee_Success(t *testing.T) {
 		FirstName: "Juan",
 		LastName:  "Pérez",
 		Email:     "juan@example.com",
-		Position:  "Fisioterapeuta",
+		Position:  &position1,
 	}
 
 	mockRepo.On("GetByID", ctx, employeeID).Return(expectedEmployee, nil)
@@ -268,7 +275,7 @@ func TestEmployeeService_UpdateEmployee_Success(t *testing.T) {
 		Email:     "juan@example.com",
 		Phone:     "612345678",
 		DNI:       "12345678Z",
-		Position:  "Fisioterapeuta",
+		Position:  &position1,
 		IsActive:  true,
 	}
 
@@ -285,7 +292,8 @@ func TestEmployeeService_UpdateEmployee_Success(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, employee)
 	assert.Equal(t, "Juan Carlos", employee.FirstName)
-	assert.Equal(t, "Fisioterapeuta Senior", employee.Position)
+	assert.NotNil(t, employee.Position)
+	assert.Equal(t, "Fisioterapeuta Senior", *employee.Position)
 	assert.Equal(t, "Fisioterapeuta Senior", employee.Specialties[0])
 	mockRepo.AssertExpectations(t)
 }
@@ -356,14 +364,14 @@ func TestEmployeeService_ListEmployees_Success(t *testing.T) {
 			FirstName: "Juan",
 			LastName:  "Pérez",
 			Email:     "juan@example.com",
-			Position:  "Fisioterapeuta",
+			Position:  &position1,
 		},
 		{
 			ID:        uuid.New(),
 			FirstName: "María",
 			LastName:  "García",
 			Email:     "maria@example.com",
-			Position:  "Osteópata",
+			Position:  &position2,
 		},
 	}
 
@@ -392,7 +400,7 @@ func TestEmployeeService_GetEmployeesBySpecialty_Success(t *testing.T) {
 			FirstName:   "Juan",
 			LastName:    "Pérez",
 			Email:       "juan@example.com",
-			Position:    "Fisioterapeuta",
+			Position:    &position1,
 			Specialties: domain.StringArray{"Fisioterapeuta"},
 		},
 	}
