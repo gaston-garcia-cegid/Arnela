@@ -32,6 +32,7 @@ import { Search, UserPlus, Mail, Phone, MapPin, Edit, Trash2, Loader2 } from 'lu
 export default function ClientsPage() {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
+  const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -148,6 +149,11 @@ export default function ClientsPage() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
   // Get unique cities for filter
   const uniqueCities = Array.from(
     new Set(clients.map((c) => c.city).filter(Boolean))
@@ -167,18 +173,40 @@ export default function ClientsPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 p-6">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Clientes</h1>
-          <p className="text-muted-foreground">Administra todos los clientes del sistema</p>
+      <header className="border-b bg-card shadow-sm">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={() => router.push('/dashboard/backoffice')}>
+              ← Volver
+            </Button>
+            <h1 className="text-xl font-semibold">Gestión de Clientes</h1>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <Button variant="outline" onClick={handleLogout}>
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)} size="lg">
-          <UserPlus className="mr-2 h-5 w-5" />
-          Nuevo Cliente
-        </Button>
-      </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="container mx-auto p-6 space-y-6">
+        {/* Page Title Section */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-bold">Clientes</h2>
+            <p className="text-muted-foreground">Administra todos los clientes del sistema</p>
+          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)} size="lg">
+            <UserPlus className="mr-2 h-5 w-5" />
+            Nuevo Cliente
+          </Button>
+        </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -361,49 +389,50 @@ export default function ClientsPage() {
         )}
       </div>
 
-      {/* Modals */}
-      <CreateClientModal
-        open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
-        onSuccess={handleCreateSuccess}
-      />
-
-      {selectedClient && (
-        <EditClientModal
-          isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedClient(null);
-          }}
-          onSuccess={handleEditSuccess}
-          client={selectedClient}
+        {/* Modals */}
+        <CreateClientModal
+          open={isCreateModalOpen}
+          onOpenChange={setIsCreateModalOpen}
+          onSuccess={handleCreateSuccess}
         />
-      )}
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente al cliente{' '}
-              <span className="font-semibold">
-                {clientToDelete?.firstName} {clientToDelete?.lastName}
-              </span>
-              . Esta acción no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteConfirm}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Eliminar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {selectedClient && (
+          <EditClientModal
+            isOpen={isEditModalOpen}
+            onClose={() => {
+              setIsEditModalOpen(false);
+              setSelectedClient(null);
+            }}
+            onSuccess={handleEditSuccess}
+            client={selectedClient}
+          />
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta acción eliminará permanentemente al cliente{' '}
+                <span className="font-semibold">
+                  {clientToDelete?.firstName} {clientToDelete?.lastName}
+                </span>
+                . Esta acción no se puede deshacer.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteConfirm}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Eliminar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </main>
     </div>
   );
 }

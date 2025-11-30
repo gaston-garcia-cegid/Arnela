@@ -26,6 +26,7 @@ import type { Therapist } from '@/types/appointment';
 
 export default function BackofficeAppointmentsPage() {
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
   const [confirmingAppointmentId, setConfirmingAppointmentId] = useState<string | null>(null);
@@ -147,6 +148,11 @@ export default function BackofficeAppointmentsPage() {
     loadAppointments();
   };
 
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  };
+
   const handleClearFilters = () => {
     setStatusFilter('all');
     setTherapistFilter('all');
@@ -168,28 +174,38 @@ export default function BackofficeAppointmentsPage() {
       <header className="border-b bg-card shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push('/dashboard/backoffice')}
-            >
+            <Button variant="ghost" onClick={() => router.push('/dashboard/backoffice')}>
               ← Volver
             </Button>
-            <h1 className="text-lg font-bold text-primary md:text-xl">Gestión de Citas</h1>
+            <h1 className="text-xl font-semibold">Gestión de Citas</h1>
           </div>
-          <Button
-            onClick={() => setCreateModalOpen(true)}
-            size="default"
-            className="gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Nueva Cita
-          </Button>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {user?.firstName} {user?.lastName}
+            </span>
+            <Button variant="outline" onClick={handleLogout}>
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       </header>
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
+        {/* Page Title Section */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-3xl font-bold">Citas</h2>
+            <p className="text-muted-foreground">
+              Gestiona todas las citas del sistema
+            </p>
+          </div>
+          <Button onClick={() => setCreateModalOpen(true)} size="lg" className="gap-2">
+            <Calendar className="h-5 w-5" />
+            Nueva Cita
+          </Button>
+        </div>
+
         {/* Error Alert */}
         {error && (
           <Alert variant="destructive" className="mb-6">
