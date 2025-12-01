@@ -90,7 +90,7 @@ export default function ClientsPage() {
   const applyFilters = () => {
     let filtered = [...clients];
 
-    // Search filter (nombre, email, DNI, teléfono)
+    // Search filter (nombre, email, DNI/CIF, teléfono)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -98,7 +98,7 @@ export default function ClientsPage() {
           client.firstName.toLowerCase().includes(query) ||
           client.lastName.toLowerCase().includes(query) ||
           client.email.toLowerCase().includes(query) ||
-          client.dni?.toLowerCase().includes(query) ||
+          client.dniCif?.toLowerCase().includes(query) ||
           client.phone?.toLowerCase().includes(query)
       );
     }

@@ -69,8 +69,7 @@ export interface Client {
   lastName: string;
   email: string;
   phone: string;
-  nif: string;
-  dni?: string;
+  dniCif: string;
   address?: string;
   city?: string;
   postalCode?: string;
@@ -87,8 +86,7 @@ export interface CreateClientRequest {
   lastName: string;
   email: string;
   phone: string;
-  nif: string;
-  dni?: string;
+  dniCif: string;
   address?: string;
   city?: string;
   postalCode?: string;

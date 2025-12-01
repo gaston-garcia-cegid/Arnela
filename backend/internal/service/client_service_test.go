@@ -29,12 +29,12 @@ func TestClientService_CreateClient(t *testing.T) {
 				LastName:    "Pérez",
 				Email:       "juan.perez@example.com",
 				Phone:       "612345678",
-				DNI:         "12345678Z",
+				DNICIF:      "12345678Z",
 				DateOfBirth: &dob,
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
 				m.On("EmailExists", mock.Anything, "juan.perez@example.com", mock.Anything).Return(false, nil)
-				m.On("DNIExists", mock.Anything, "12345678Z", mock.Anything).Return(false, nil)
+				m.On("DNICIFExists", mock.Anything, "12345678Z", mock.Anything).Return(false, nil)
 				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Client")).Return(nil)
 			},
 			expectedError: "",
@@ -46,7 +46,7 @@ func TestClientService_CreateClient(t *testing.T) {
 				LastName:  "García",
 				Email:     "existing@example.com",
 				Phone:     "612345678",
-				DNI:       "87654321X",
+				DNICIF:    "87654321X",
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
 				m.On("EmailExists", mock.Anything, "existing@example.com", mock.Anything).Return(true, nil)
@@ -54,19 +54,19 @@ func TestClientService_CreateClient(t *testing.T) {
 			expectedError: "email already registered",
 		},
 		{
-			name: "DNI already exists",
+			name: "DNI/CIF already exists",
 			request: CreateClientRequest{
 				FirstName: "Carlos",
 				LastName:  "López",
 				Email:     "carlos@example.com",
 				Phone:     "612345678",
-				DNI:       "12345678Z",
+				DNICIF:    "12345678Z",
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
 				m.On("EmailExists", mock.Anything, "carlos@example.com", mock.Anything).Return(false, nil)
-				m.On("DNIExists", mock.Anything, "12345678Z", mock.Anything).Return(true, nil)
+				m.On("DNICIFExists", mock.Anything, "12345678Z", mock.Anything).Return(true, nil)
 			},
-			expectedError: "DNI already registered",
+			expectedError: "DNI/CIF already registered",
 		},
 		// TODO: Refactor service to validate formats BEFORE creating user
 		// These tests are currently skipped due to service bug where validations run after user creation
@@ -156,7 +156,7 @@ func TestClientService_GetClient(t *testing.T) {
 		LastName:  "Pérez",
 		Email:     "juan@example.com",
 		Phone:     "+34612345678",
-		DNI:       "12345678Z",
+		DNICIF:    "12345678Z",
 		IsActive:  true,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

@@ -178,7 +178,7 @@ export default function BackofficeDashboard() {
                     <tr className="border-b">
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Nombre</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Email</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">NIF</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">DNI/CIF</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Teléfono</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Estado</th>
                       <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Acciones</th>
@@ -196,7 +196,7 @@ export default function BackofficeDashboard() {
                           {client.firstName} {client.lastName}
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{client.email}</td>
-                        <td className="px-4 py-3 text-sm font-mono">{client.nif}</td>
+                        <td className="px-4 py-3 text-sm font-mono">{client.dniCif}</td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{client.phone}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${

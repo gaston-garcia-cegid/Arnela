@@ -51,24 +51,14 @@ func (s *clientService) CreateClient(ctx context.Context, req CreateClientReques
 		return nil, fmt.Errorf("email already registered as user")
 	}
 
-	if req.DNI != "" {
-		if exists, err := s.clientRepo.DNIExists(ctx, req.DNI, nil); err != nil {
-			return nil, fmt.Errorf("failed to check DNI existence: %w", err)
-		} else if exists {
-			return nil, fmt.Errorf("DNI already registered")
-		}
+	if exists, err := s.clientRepo.DNICIFExists(ctx, req.DNICIF, nil); err != nil {
+		return nil, fmt.Errorf("failed to check DNI/CIF existence: %w", err)
+	} else if exists {
+		return nil, fmt.Errorf("DNI/CIF already registered")
 	}
 
-	if req.NIF != "" {
-		if exists, err := s.clientRepo.NIFExists(ctx, req.NIF, nil); err != nil {
-			return nil, fmt.Errorf("failed to check NIF existence: %w", err)
-		} else if exists {
-			return nil, fmt.Errorf("NIF already registered")
-		}
-	}
-
-	// Crear usuario con DNI como contraseña
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.DNI), bcrypt.DefaultCost)
+	// Crear usuario con DNI/CIF como contraseña
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.DNICIF), bcrypt.DefaultCost)
 	if err != nil {
 		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
@@ -99,8 +89,7 @@ func (s *clientService) CreateClient(ctx context.Context, req CreateClientReques
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Phone:     req.Phone,
-		DNI:       req.DNI,
-		NIF:       req.NIF,
+		DNICIF:    req.DNICIF,
 		Notes:     req.Notes,
 		IsActive:  true,
 		CreatedAt: time.Now(),
@@ -159,21 +148,13 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 	if req.Phone != nil {
 		client.Phone = *req.Phone
 	}
-	if req.DNI != nil {
-		if exists, err := s.clientRepo.DNIExists(ctx, *req.DNI, &client.ID); err != nil {
-			return nil, fmt.Errorf("failed to check DNI existence: %w", err)
-		} else if exists && *req.DNI != client.DNI {
-			return nil, fmt.Errorf("DNI already registered")
+	if req.DNICIF != nil {
+		if exists, err := s.clientRepo.DNICIFExists(ctx, *req.DNICIF, &client.ID); err != nil {
+			return nil, fmt.Errorf("failed to check DNI/CIF existence: %w", err)
+		} else if exists && *req.DNICIF != client.DNICIF {
+			return nil, fmt.Errorf("DNI/CIF already registered")
 		}
-		client.DNI = *req.DNI
-	}
-	if req.NIF != nil {
-		if exists, err := s.clientRepo.NIFExists(ctx, *req.NIF, &client.ID); err != nil {
-			return nil, fmt.Errorf("failed to check NIF existence: %w", err)
-		} else if exists && *req.NIF != client.NIF {
-			return nil, fmt.Errorf("NIF already registered")
-		}
-		client.NIF = *req.NIF
+		client.DNICIF = *req.DNICIF
 	}
 	if req.Address != nil {
 		// ✅ Usar helper para actualizar address

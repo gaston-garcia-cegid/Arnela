@@ -16,8 +16,7 @@ type Client struct {
 	FirstName string    `json:"firstName" db:"first_name"`
 	LastName  string    `json:"lastName" db:"last_name"`
 	Phone     string    `json:"phone" db:"phone"`
-	DNI       string    `json:"dni" db:"dni"`
-	NIF       string    `json:"nif" db:"nif"`
+	DNICIF    string    `json:"dniCif" db:"dni_cif"`
 
 	// ✅ Address fields flattened with explicit db tags
 	AddressStreet     string `json:"-" db:"address_street"`

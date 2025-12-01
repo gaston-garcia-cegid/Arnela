@@ -240,7 +240,7 @@ export function CreateAppointmentModalBackoffice({
                       {selectedClient.firstName} {selectedClient.lastName}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      DNI: {selectedClient.dni || selectedClient.nif}
+                      DNI/CIF: {selectedClient.dniCif}
                     </p>
                   </div>
                   <Button
@@ -280,7 +280,7 @@ export function CreateAppointmentModalBackoffice({
                             {client.firstName} {client.lastName}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            DNI: {client.dni || client.nif}
+                            DNI/CIF: {client.dniCif}
                           </p>
                         </div>
                       </div>
@@ -485,7 +485,7 @@ export function CreateAppointmentModalBackoffice({
               <div className="grid gap-2">
                 <p className="text-sm">
                   <strong className="font-semibold">Cliente:</strong>{' '}
-                  {selectedClient?.firstName} {selectedClient?.lastName} (DNI: {selectedClient?.dni || selectedClient?.nif})
+                  {selectedClient?.firstName} {selectedClient?.lastName} (DNI/CIF: {selectedClient?.dniCif})
                 </p>
                 <p className="text-sm">
                   <strong className="font-semibold">Profesional:</strong>{' '}

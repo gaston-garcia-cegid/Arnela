@@ -28,17 +28,11 @@ const updateClientSchema = z.object({
   phone: z
     .string()
     .regex(/^[+]?[0-9\s-]{9,}$/, 'Formato de teléfono inválido (ej: 612345678 o +34612345678)'),
-  dni: z
+  dniCif: z
     .string()
     .regex(
       /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-      'DNI inválido (formato: 12345678Z)'
-    ),
-  nif: z
-    .string()
-    .regex(
-      /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-      'NIF inválido (formato: 12345678Z)'
+      'DNI/CIF inválido (formato: 12345678Z)'
     ),
   city: z.string().optional(),
   province: z.string().optional(),
@@ -76,8 +70,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
       lastName: client.lastName,
       email: client.email,
       phone: client.phone || '',
-      dni: client.dni || '',
-      nif: client.nif || client.dni || '',
+      dniCif: client.dniCif || '',
       city: client.city || '',
       province: client.province || '',
       postalCode: client.postalCode || '',
@@ -94,8 +87,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
         lastName: client.lastName,
         email: client.email,
         phone: client.phone || '',
-        dni: client.dni || '',
-        nif: client.nif || client.dni || '',
+        dniCif: client.dniCif || '',
         city: client.city || '',
         province: client.province || '',
         postalCode: client.postalCode || '',
@@ -123,8 +115,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
-        dni: data.dni,
-        nif: data.nif,
+        dniCif: data.dniCif,
         address: data.address || '',
         city: data.city || '',
         province: data.province || '',
@@ -210,22 +201,12 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
                 {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="dni">
-                    DNI <span className="text-red-500">*</span>
-                  </Label>
-                  <Input id="dni" {...register('dni')} placeholder="12345678Z" />
-                  {errors.dni && <p className="text-xs text-red-500">{errors.dni.message}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="nif">
-                    NIF <span className="text-red-500">*</span>
-                  </Label>
-                  <Input id="nif" {...register('nif')} placeholder="12345678Z" />
-                  {errors.nif && <p className="text-xs text-red-500">{errors.nif.message}</p>}
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="dniCif">
+                  DNI/CIF <span className="text-red-500">*</span>
+                </Label>
+                <Input id="dniCif" {...register('dniCif')} placeholder="12345678Z" />
+                {errors.dniCif && <p className="text-xs text-red-500">{errors.dniCif.message}</p>}
               </div>
             </div>
           </div>

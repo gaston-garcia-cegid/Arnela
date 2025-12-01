@@ -18,8 +18,8 @@ type ClientRepository interface {
 	// GetByEmail retrieves a client by email (excluding soft-deleted)
 	GetByEmail(ctx context.Context, email string) (*domain.Client, error)
 
-	// GetByDNI retrieves a client by DNI (excluding soft-deleted)
-	GetByDNI(ctx context.Context, dni string) (*domain.Client, error)
+	// GetByDNICIF retrieves a client by DNI/CIF (excluding soft-deleted)
+	GetByDNICIF(ctx context.Context, dniCif string) (*domain.Client, error)
 
 	// GetByUserID retrieves a client by associated user ID (excluding soft-deleted)
 	GetByUserID(ctx context.Context, userID uuid.UUID) (*domain.Client, error)
@@ -39,19 +39,13 @@ type ClientRepository interface {
 	// EmailExists checks if an email is already registered (excluding soft-deleted)
 	EmailExists(ctx context.Context, email string, excludeID *uuid.UUID) (bool, error)
 
-	// NIFExists checks if a NIF is already registered (excluding soft-deleted)
-	NIFExists(ctx context.Context, nif string, excludeID *uuid.UUID) (bool, error)
-
-	// DNIExists checks if a DNI is already registered (excluding soft-deleted)
-	DNIExists(ctx context.Context, dni string, excludeID *uuid.UUID) (bool, error)
-
-	// GetByNIF retrieves a client by NIF (excluding soft-deleted)
-	GetByNIF(ctx context.Context, nif string) (*domain.Client, error)
+	// DNICIFExists checks if a DNI/CIF is already registered (excluding soft-deleted)
+	DNICIFExists(ctx context.Context, dniCif string, excludeID *uuid.UUID) (bool, error)
 }
 
 // ClientFilters represents filters for listing clients
 type ClientFilters struct {
-	Search   string // Search in name, email, phone, DNI
+	Search   string // Search in name, email, phone, DNI/CIF
 	IsActive *bool  // Filter by active status
 	City     string // Filter by city
 	Province string // Filter by province

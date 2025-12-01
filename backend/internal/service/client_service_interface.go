@@ -32,8 +32,7 @@ type CreateClientRequest struct {
 	LastName    string         `json:"lastName" binding:"required"`
 	Email       string         `json:"email" binding:"required,email"`
 	Phone       string         `json:"phone" binding:"required"`
-	NIF         string         `json:"nif" binding:"required"`
-	DNI         string         `json:"dni" binding:"required"`
+	DNICIF      string         `json:"dniCif" binding:"required"`
 	DateOfBirth *string        `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
 	Address     domain.Address `json:"address"`
 	City        string         `json:"city,omitempty"`
@@ -49,8 +48,7 @@ type UpdateClientRequest struct {
 	LastName    *string         `json:"lastName,omitempty"`
 	Email       *string         `json:"email,omitempty" binding:"omitempty,email"`
 	Phone       *string         `json:"phone,omitempty"`
-	NIF         *string         `json:"nif,omitempty"`
-	DNI         *string         `json:"dni,omitempty"`
+	DNICIF      *string         `json:"dniCif,omitempty"`
 	DateOfBirth *string         `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
 	Address     *domain.Address `json:"address,omitempty"`
 	City        *string         `json:"city,omitempty"`

@@ -142,8 +142,8 @@ func (m *MockClientRepository) GetByEmail(ctx context.Context, email string) (*d
 	return args.Get(0).(*domain.Client), args.Error(1)
 }
 
-func (m *MockClientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Client, error) {
-	args := m.Called(ctx, dni)
+func (m *MockClientRepository) GetByDNICIF(ctx context.Context, dnicif string) (*domain.Client, error) {
+	args := m.Called(ctx, dnicif)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
@@ -178,22 +178,9 @@ func (m *MockClientRepository) EmailExists(ctx context.Context, email string, ex
 	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockClientRepository) NIFExists(ctx context.Context, nif string, excludeID *uuid.UUID) (bool, error) {
-	args := m.Called(ctx, nif, excludeID)
+func (m *MockClientRepository) DNICIFExists(ctx context.Context, dnicif string, excludeID *uuid.UUID) (bool, error) {
+	args := m.Called(ctx, dnicif, excludeID)
 	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockClientRepository) DNIExists(ctx context.Context, dni string, excludeID *uuid.UUID) (bool, error) {
-	args := m.Called(ctx, dni, excludeID)
-	return args.Bool(0), args.Error(1)
-}
-
-func (m *MockClientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Client, error) {
-	args := m.Called(ctx, nif)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*domain.Client), args.Error(1)
 }
 
 // MockEmployeeRepository for testing

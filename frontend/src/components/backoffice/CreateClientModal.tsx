@@ -18,7 +18,7 @@ import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 
-// Validation for Spanish NIF/DNI format
+// Validation for Spanish DNI/CIF format
 const spanishIdRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i;
 
 const createClientSchema = z.object({
@@ -26,8 +26,7 @@ const createClientSchema = z.object({
   lastName: z.string().min(1, 'Los apellidos son obligatorios'),
   email: z.string().email('Email inválido'),
   phone: z.string().min(9, 'Teléfono inválido').regex(/^[+]?[0-9\s-]{9,}$/, 'Formato de teléfono inválido'),
-  nif: z.string().regex(spanishIdRegex, 'NIF inválido (ej: 12345678A)'),
-  dni: z.string().optional(),
+  dniCif: z.string().regex(spanishIdRegex, 'DNI/CIF inválido (ej: 12345678A)'),
   address: z.string().optional(),
 });
 
@@ -73,8 +72,7 @@ export function CreateClientModal({
         lastName: data.lastName,
         email: data.email,
         phone: data.phone,
-        nif: data.nif.toUpperCase(),
-        dni: data.dni?.toUpperCase(),
+        dniCif: data.dniCif.toUpperCase(),
         address: data.address,
       }, token);
 
@@ -174,43 +172,25 @@ export function CreateClientModal({
               )}
             </div>
 
-            {/* NIF */}
+            {/* DNI/CIF */}
             <div className="space-y-2">
-              <Label htmlFor="nif">
-                NIF <span className="text-destructive">*</span>
+              <Label htmlFor="dniCif">
+                DNI/CIF <span className="text-destructive">*</span>
               </Label>
               <Input
-                id="nif"
-                {...register('nif')}
+                id="dniCif"
+                {...register('dniCif')}
                 placeholder="Ej: 12345678A"
                 maxLength={9}
                 disabled={isSubmitting}
               />
-              {errors.nif && (
-                <p className="text-sm text-destructive">{errors.nif.message}</p>
+              {errors.dniCif && (
+                <p className="text-sm text-destructive">{errors.dniCif.message}</p>
               )}
               <p className="text-xs text-muted-foreground">
-                NIF es el identificador fiscal (obligatorio)
+                DNI o CIF (identificador fiscal obligatorio)
               </p>
             </div>
-          </div>
-
-          {/* DNI - Optional */}
-          <div className="space-y-2">
-            <Label htmlFor="dni">DNI (Opcional)</Label>
-            <Input
-              id="dni"
-              {...register('dni')}
-              placeholder="Ej: 87654321B"
-              maxLength={9}
-              disabled={isSubmitting}
-            />
-            {errors.dni && (
-              <p className="text-sm text-destructive">{errors.dni.message}</p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              DNI es el documento nacional de identidad (opcional si difiere del NIF)
-            </p>
           </div>
 
           {/* Address - Optional */}

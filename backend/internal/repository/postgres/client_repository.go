@@ -24,7 +24,7 @@ func NewClientRepository(db *sqlx.DB) repository.ClientRepository {
 
 // ✅ Constante con columnas comunes para SELECT
 const clientColumns = `
-    id, user_id, email, first_name, last_name, phone, dni, nif,
+    id, user_id, email, first_name, last_name, phone, dni_cif,
     address_street, address_city, address_province, address_postal_code, address_country,
     notes, is_active, created_at, updated_at, deleted_at
 `
@@ -32,10 +32,10 @@ const clientColumns = `
 func (r *clientRepository) Create(ctx context.Context, client *domain.Client) error {
 	query := `
 		INSERT INTO clients (
-			id, user_id, email, first_name, last_name, phone, dni, nif,
+			id, user_id, email, first_name, last_name, phone, dni_cif,
 			address_street, address_city, address_province, address_postal_code, address_country,
 			notes, is_active, created_at, updated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 	`
 	_, err := r.db.ExecContext(ctx, query,
 		client.ID,
@@ -44,8 +44,7 @@ func (r *clientRepository) Create(ctx context.Context, client *domain.Client) er
 		client.FirstName,
 		client.LastName,
 		client.Phone,
-		client.DNI,
-		client.NIF,
+		client.DNICIF,
 		client.AddressStreet,
 		client.AddressCity,
 		client.AddressProvince,
@@ -104,31 +103,16 @@ func (r *clientRepository) GetByUserID(ctx context.Context, userID uuid.UUID) (*
 	return &client, nil
 }
 
-func (r *clientRepository) GetByDNI(ctx context.Context, dni string) (*domain.Client, error) {
+func (r *clientRepository) GetByDNICIF(ctx context.Context, dnicif string) (*domain.Client, error) {
 	var client domain.Client
-	query := fmt.Sprintf(`SELECT %s FROM clients WHERE dni = $1 AND deleted_at IS NULL`, clientColumns)
+	query := fmt.Sprintf(`SELECT %s FROM clients WHERE dni_cif = $1 AND deleted_at IS NULL`, clientColumns)
 
-	err := r.db.GetContext(ctx, &client, query, dni)
+	err := r.db.GetContext(ctx, &client, query, dnicif)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, fmt.Errorf("client not found")
 		}
-		return nil, fmt.Errorf("failed to get client by DNI: %w", err)
-	}
-
-	return &client, nil
-}
-
-func (r *clientRepository) GetByNIF(ctx context.Context, nif string) (*domain.Client, error) {
-	var client domain.Client
-	query := fmt.Sprintf(`SELECT %s FROM clients WHERE nif = $1 AND deleted_at IS NULL`, clientColumns)
-
-	err := r.db.GetContext(ctx, &client, query, nif)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("client not found")
-		}
-		return nil, fmt.Errorf("failed to get client by NIF: %w", err)
+		return nil, fmt.Errorf("failed to get client by DNI/CIF: %w", err)
 	}
 
 	return &client, nil
@@ -143,17 +127,16 @@ func (r *clientRepository) Update(ctx context.Context, client *domain.Client) er
 			first_name = $3,
 			last_name = $4,
 			phone = $5,
-			dni = $6,
-			nif = $7,
-			address_street = $8,
-			address_city = $9,
-			address_province = $10,
-			address_postal_code = $11,
-			address_country = $12,
-			notes = $13,
-			is_active = $14,
-			updated_at = $15
-		WHERE id = $16 AND deleted_at IS NULL
+			dni_cif = $6,
+			address_street = $7,
+			address_city = $8,
+			address_province = $9,
+			address_postal_code = $10,
+			address_country = $11,
+			notes = $12,
+			is_active = $13,
+			updated_at = $14
+		WHERE id = $15 AND deleted_at IS NULL
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -162,8 +145,7 @@ func (r *clientRepository) Update(ctx context.Context, client *domain.Client) er
 		client.FirstName,
 		client.LastName,
 		client.Phone,
-		client.DNI,
-		client.NIF,
+		client.DNICIF,
 		client.AddressStreet,
 		client.AddressCity,
 		client.AddressProvince,
@@ -232,7 +214,7 @@ func (r *clientRepository) List(ctx context.Context, filters repository.ClientFi
 			last_name ILIKE $%d OR
 			email ILIKE $%d OR
 			phone ILIKE $%d OR
-			dni ILIKE $%d
+			dni_cif ILIKE $%d
 		)`, argCount, argCount, argCount, argCount, argCount))
 		args = append(args, searchPattern)
 	}
@@ -288,7 +270,7 @@ func (r *clientRepository) Count(ctx context.Context, filters repository.ClientF
 			last_name ILIKE $%d OR
 			email ILIKE $%d OR
 			phone ILIKE $%d OR
-			dni ILIKE $%d
+			dni_cif ILIKE $%d
 		)`, argCount, argCount, argCount, argCount, argCount))
 		args = append(args, searchPattern)
 	}
@@ -345,10 +327,10 @@ func (r *clientRepository) EmailExists(ctx context.Context, email string, exclud
 	return exists, nil
 }
 
-// NIFExists checks if a NIF is already registered
-func (r *clientRepository) NIFExists(ctx context.Context, nif string, excludeID *uuid.UUID) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE nif = $1 AND deleted_at IS NULL`
-	args := []interface{}{nif}
+// DNICIFExists checks if a DNI/CIF is already registered
+func (r *clientRepository) DNICIFExists(ctx context.Context, dnicif string, excludeID *uuid.UUID) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE dni_cif = $1 AND deleted_at IS NULL`
+	args := []interface{}{dnicif}
 
 	if excludeID != nil {
 		query += " AND id != $2"
@@ -360,28 +342,7 @@ func (r *clientRepository) NIFExists(ctx context.Context, nif string, excludeID 
 	var exists bool
 	err := r.db.GetContext(ctx, &exists, query, args...)
 	if err != nil {
-		return false, fmt.Errorf("failed to check NIF existence: %w", err)
-	}
-
-	return exists, nil
-}
-
-// DNIExists checks if a DNI is already registered
-func (r *clientRepository) DNIExists(ctx context.Context, dni string, excludeID *uuid.UUID) (bool, error) {
-	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE dni = $1 AND dni != '' AND deleted_at IS NULL`
-	args := []interface{}{dni}
-
-	if excludeID != nil {
-		query += " AND id != $2"
-		args = append(args, *excludeID)
-	}
-
-	query += ")"
-
-	var exists bool
-	err := r.db.GetContext(ctx, &exists, query, args...)
-	if err != nil {
-		return false, fmt.Errorf("failed to check DNI existence: %w", err)
+		return false, fmt.Errorf("failed to check DNI/CIF existence: %w", err)
 	}
 
 	return exists, nil
