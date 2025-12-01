@@ -16,8 +16,10 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/middleware"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository/postgres"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/cache"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/database"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/queue"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -110,6 +112,36 @@ func main() {
 		}
 	}()
 
+	// Initialize Redis
+	log.Println("[DEBUG] Connecting to Redis...")
+	redisClient, err := cache.NewRedisClient(
+		cfg.Redis.GetRedisAddress(),
+		cfg.Redis.Password,
+		cfg.Redis.DB,
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to Redis: %v", err)
+	}
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			log.Printf("[WARN] Error closing Redis connection: %v", err)
+		}
+		log.Println("Redis connection closed successfully")
+	}()
+
+	// Initialize Cache Service
+	cacheService := cache.NewCacheService(redisClient.Client)
+	log.Println("✓ Cache service initialized")
+	// Note: cacheService will be used in future sprints for repository caching
+	_ = cacheService // Prevent unused variable error
+
+	// Initialize Task Queue Worker Pool
+	log.Println("[DEBUG] Starting task queue worker pool...")
+	workerPool := queue.NewWorkerPool(redisClient.Client, 5) // 5 workers
+	workerPool.Start()
+	defer workerPool.Stop()
+	log.Println("✓ Worker pool started with 5 workers")
+
 	// Initialize JWT token manager
 	tokenManager := jwt.NewTokenManager(cfg.JWT.Secret, "arnela-api")
 
@@ -157,18 +189,31 @@ func main() {
 
 	// Health check endpoint
 	router.GET("/health", func(c *gin.Context) {
+		// Check database
+		dbHealthy := true
 		if err := database.HealthCheck(db); err != nil {
-			c.JSON(http.StatusServiceUnavailable, gin.H{
-				"status":   "unhealthy",
-				"database": "disconnected",
-				"error":    err.Error(),
-			})
-			return
+			dbHealthy = false
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"status":   "healthy",
-			"database": "connected",
+		// Check Redis
+		redisHealthy := true
+		ctx := context.Background()
+		if err := redisClient.Client.Ping(ctx).Err(); err != nil {
+			redisHealthy = false
+		}
+
+		// Overall health status
+		overallHealthy := dbHealthy && redisHealthy
+		statusCode := http.StatusOK
+		if !overallHealthy {
+			statusCode = http.StatusServiceUnavailable
+		}
+
+		c.JSON(statusCode, gin.H{
+			"status":   map[bool]string{true: "healthy", false: "unhealthy"}[overallHealthy],
+			"database": map[bool]string{true: "connected", false: "disconnected"}[dbHealthy],
+			"redis":    map[bool]string{true: "connected", false: "disconnected"}[redisHealthy],
+			"workers":  workerPool.GetStats(),
 		})
 	})
 

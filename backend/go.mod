@@ -3,6 +3,7 @@ module github.com/gaston-garcia-cegid/arnela/backend
 go 1.25.3
 
 require (
+	github.com/alicebob/miniredis/v2 v2.35.0
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang-jwt/jwt/v5 v5.3.0
@@ -18,6 +19,8 @@ require (
 	github.com/swaggo/swag v1.8.12
 	golang.org/x/crypto v0.44.0
 )
+
+require github.com/yuin/gopher-lua v1.1.1 // indirect
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
