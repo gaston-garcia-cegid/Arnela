@@ -7,34 +7,34 @@
    ============================================ */
 
 @theme {
-  /* Paleta de colores cálida */
-  --color-background: #fdf8f6;           /* Marfil cálido - fondo principal */
-  --color-foreground: #a44c2e;            /* Terracota oscuro - texto principal */
+  /* Nueva paleta de colores - Suave y profesional con buen contraste */
+  --color-background: #f4e4ec;           /* Rosa muy claro (244, 228, 236) - fondo principal */
+  --color-foreground: #1a202c;            /* Gris muy oscuro - texto principal (mejor contraste) */
   
-  --color-primary: #a44c2e;               /* Terracota oscuro - botones y énfasis */
-  --color-primary-foreground: #fdf8f6;    /* Marfil para texto en primary */
+  --color-primary: #4a9fb8;               /* Azul medio oscurecido - botones y énfasis (más contraste) */
+  --color-primary-foreground: #ffffff;    /* Blanco para texto en primary */
   
-  --color-secondary: #a4d4e4;             /* Azul claro - acentos suaves */
-  --color-secondary-foreground: #a44c2e;  /* Terracota para texto en secondary */
+  --color-secondary: #e89b8f;             /* Coral oscurecido (más contraste que el original) */
+  --color-secondary-foreground: #1a202c;  /* Gris muy oscuro para texto en secondary */
   
-  --color-accent: #fbd4cc;                /* Rosa pálido - highlights y hover */
-  --color-accent-foreground: #a44c2e;     /* Terracota para texto en accent */
+  --color-accent: #52c9c9;                /* Turquesa medio - highlights y hover (más visible) */
+  --color-accent-foreground: #1a202c;     /* Gris muy oscuro para texto en accent */
   
-  --color-card: #fdf8f6;                  /* Marfil para cards */
-  --color-card-foreground: #a44c2e;       /* Terracota para texto en cards */
+  --color-card: #ffffff;                  /* Blanco para cards */
+  --color-card-foreground: #1a202c;       /* Gris muy oscuro para texto en cards */
   
-  --color-muted: #f4e4ec;                 /* Rosa muy pálido - fondos secundarios */
-  --color-muted-foreground: #8a6b5e;      /* Marrón medio para texto muted */
+  --color-muted: #e0f0f5;                 /* Azul muy claro - fondos secundarios (más suave) */
+  --color-muted-foreground: #2d3748;      /* Gris oscuro para texto muted (mejor contraste) */
   
-  --color-destructive: #d32f2f;           /* Rojo para errores */
+  --color-destructive: #dc2626;           /* Rojo para errores */
   --color-destructive-foreground: #ffffff; /* Blanco para texto en destructive */
   
-  --color-border: #e8d5cd;                /* Border suave y cálido */
-  --color-input: #fdf8f6;                 /* Marfil para inputs */
-  --color-ring: #a44c2e;                  /* Terracota para focus ring */
+  --color-border: #c0e0e7;                /* Border suave azulado */
+  --color-input: #ffffff;                 /* Blanco para inputs */
+  --color-ring: #4a9fb8;                  /* Azul medio para focus ring */
   
-  --color-popover: #fdf8f6;               /* Marfil para popovers */
-  --color-popover-foreground: #a44c2e;    /* Terracota para texto en popovers */
+  --color-popover: #ffffff;               /* Blanco para popovers */
+  --color-popover-foreground: #1a202c;    /* Gris muy oscuro para texto en popovers */
   
   /* Border Radius */
   --radius-lg: 0.5rem;
@@ -59,9 +59,9 @@
     @apply bg-black/60 backdrop-blur-sm;
   }
   
-  /* Overlay cálido para Hero y fondos especiales */
+  /* Overlay suave para Hero y fondos especiales */
   .bg-overlay-warm {
-    background: linear-gradient(135deg, #fbd4cccc 0%, #f4e4ecb3 50%, #a4d4e4cc 100%);
+    background: linear-gradient(135deg, #a4d4e3cc 0%, #fbd4ccb3 50%, #d4fbfbcc 100%);
     mix-blend-mode: multiply;
   }
 }
