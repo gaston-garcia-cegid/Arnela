@@ -13,6 +13,9 @@ type InvoiceStatus string
 const (
 	InvoiceStatusPaid   InvoiceStatus = "paid"   // Cobrado
 	InvoiceStatusUnpaid InvoiceStatus = "unpaid" // No Cobrado
+
+	// FixedVATRate is the fixed VAT rate of 21% for all invoices
+	FixedVATRate float64 = 0.21
 )
 
 // Invoice represents a billing invoice for services rendered
@@ -22,6 +25,7 @@ type Invoice struct {
 	ClientID      uuid.UUID     `json:"clientId" db:"client_id"`
 	AppointmentID *uuid.UUID    `json:"appointmentId,omitempty" db:"appointment_id"` // Nullable for manual invoices
 	IssueDate     time.Time     `json:"issueDate" db:"issue_date"`
+	DueDate       time.Time     `json:"dueDate" db:"due_date"` // Payment due date
 	Description   string        `json:"description" db:"description"`
 	BaseAmount    float64       `json:"baseAmount" db:"base_amount"`   // Base imponible (sin IVA)
 	VATRate       float64       `json:"vatRate" db:"vat_rate"`         // 21% by default

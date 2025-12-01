@@ -51,6 +51,12 @@ func (e *Expense) HasAttachment() bool {
 	return e.AttachmentPath != ""
 }
 
+// ExpenseCategoryWithChildren represents a category with its subcategories
+type ExpenseCategoryWithChildren struct {
+	ExpenseCategory
+	Children []*ExpenseCategory `json:"children,omitempty"`
+}
+
 // Custom errors
 var (
 	ErrInvalidSupplier      = errors.NewValidationError("supplier name is required", nil)
