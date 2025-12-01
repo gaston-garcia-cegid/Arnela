@@ -152,6 +152,11 @@ func main() {
 	employeeRepo := postgres.NewEmployeeRepository(db)
 	statsRepo := postgres.NewStatsRepository(db)
 
+	// Billing repositories
+	invoiceRepo := postgres.NewInvoiceRepository(db)
+	expenseRepo := postgres.NewExpenseRepository(db)
+	expenseCategoryRepo := postgres.NewExpenseCategoryRepository(db)
+
 	// Initialize services
 	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
@@ -159,12 +164,24 @@ func main() {
 	employeeService := service.NewEmployeeService(employeeRepo, userRepo)
 	statsService := service.NewStatsService(statsRepo)
 
+	// Billing services
+	invoiceService := service.NewInvoiceService(invoiceRepo, clientRepo)
+	expenseService := service.NewExpenseService(expenseRepo, expenseCategoryRepo)
+	expenseCategoryService := service.NewExpenseCategoryService(expenseCategoryRepo)
+	billingStatsService := service.NewBillingStatsService(invoiceRepo, expenseRepo, expenseCategoryRepo)
+
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
 	statsHandler := handler.NewStatsHandler(statsService)
+
+	// Billing handlers
+	invoiceHandler := handler.NewInvoiceHandler(invoiceService)
+	expenseHandler := handler.NewExpenseHandler(expenseService)
+	expenseCategoryHandler := handler.NewExpenseCategoryHandler(expenseCategoryService)
+	billingStatsHandler := handler.NewBillingStatsHandler(billingStatsService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
@@ -288,6 +305,57 @@ func main() {
 		{
 			// Admin/Employee only routes
 			stats.GET("/dashboard", authMiddleware.RequireRole("admin", "employee"), statsHandler.GetDashboardStats)
+		}
+
+		// Billing routes (authenticated)
+		billing := v1.Group("/billing")
+		billing.Use(authMiddleware.RequireAuth())
+		billing.Use(authMiddleware.RequireRole("admin", "employee")) // All billing features require admin/employee
+		{
+			// Invoice routes
+			invoices := billing.Group("/invoices")
+			{
+				invoices.POST("", invoiceHandler.CreateInvoice)
+				invoices.GET("", invoiceHandler.ListInvoices)
+				invoices.GET("/:id", invoiceHandler.GetInvoice)
+				invoices.GET("/number/:number", invoiceHandler.GetInvoiceByNumber)
+				invoices.PUT("/:id", invoiceHandler.UpdateInvoice)
+				invoices.DELETE("/:id", invoiceHandler.DeleteInvoice)
+				invoices.POST("/:id/mark-paid", invoiceHandler.MarkInvoiceAsPaid)
+				invoices.GET("/client/:clientId", invoiceHandler.GetClientInvoices)
+				invoices.GET("/unpaid", invoiceHandler.GetUnpaidInvoices)
+			}
+
+			// Expense routes
+			expenses := billing.Group("/expenses")
+			{
+				expenses.POST("", expenseHandler.CreateExpense)
+				expenses.GET("", expenseHandler.ListExpenses)
+				expenses.GET("/:id", expenseHandler.GetExpense)
+				expenses.PUT("/:id", expenseHandler.UpdateExpense)
+				expenses.DELETE("/:id", expenseHandler.DeleteExpense)
+				expenses.GET("/category/:categoryId", expenseHandler.GetExpensesByCategory)
+				expenses.GET("/supplier/:supplier", expenseHandler.GetExpensesBySupplier)
+			}
+
+			// Expense Category routes
+			expenseCategories := billing.Group("/expense-categories")
+			{
+				expenseCategories.POST("", expenseCategoryHandler.CreateExpenseCategory)
+				expenseCategories.GET("", expenseCategoryHandler.ListExpenseCategories)
+				expenseCategories.GET("/tree", expenseCategoryHandler.GetCategoryTree)
+				expenseCategories.GET("/parents", expenseCategoryHandler.GetParentCategories)
+				expenseCategories.PUT("/:id", expenseCategoryHandler.UpdateExpenseCategory)
+				expenseCategories.DELETE("/:id", expenseCategoryHandler.DeleteExpenseCategory)
+				expenseCategories.GET("/:id/subcategories", expenseCategoryHandler.GetSubcategories)
+				expenseCategories.GET("/:id", expenseCategoryHandler.GetExpenseCategory)
+			}
+
+			// Billing Stats routes
+			billing.GET("/dashboard", billingStatsHandler.GetDashboardStats)
+			billing.GET("/revenue-by-month", billingStatsHandler.GetRevenueByMonth)
+			billing.GET("/expenses-by-category", billingStatsHandler.GetExpensesByCategory)
+			billing.GET("/balance", billingStatsHandler.GetBalance)
 		}
 	}
 
