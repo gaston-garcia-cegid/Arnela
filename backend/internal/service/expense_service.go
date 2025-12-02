@@ -14,27 +14,31 @@ import (
 // CreateExpenseRequest represents the request to create an expense
 type CreateExpenseRequest struct {
 	ExpenseDate     time.Time  `json:"expenseDate" binding:"required"`
-	SupplierInvoice string     `json:"supplierInvoice,omitempty"`
+	SupplierInvoice *string    `json:"supplierInvoice,omitempty"`
 	Supplier        string     `json:"supplier" binding:"required"`
 	Amount          float64    `json:"amount" binding:"required,gt=0"`
 	CategoryID      uuid.UUID  `json:"categoryId" binding:"required"`
 	SubcategoryID   *uuid.UUID `json:"subcategoryId,omitempty"`
 	HasInvoice      bool       `json:"hasInvoice"`
-	AttachmentPath  string     `json:"attachmentPath,omitempty"`
-	Notes           string     `json:"notes,omitempty"`
+	AttachmentPath  *string    `json:"attachmentPath,omitempty"`
+	Description     *string    `json:"description,omitempty"`
+	PaymentMethod   *string    `json:"paymentMethod,omitempty"`
+	Notes           *string    `json:"notes,omitempty"`
 }
 
 // UpdateExpenseRequest represents the request to update an expense
 type UpdateExpenseRequest struct {
 	ExpenseDate     time.Time  `json:"expenseDate" binding:"required"`
-	SupplierInvoice string     `json:"supplierInvoice,omitempty"`
+	SupplierInvoice *string    `json:"supplierInvoice,omitempty"`
 	Supplier        string     `json:"supplier" binding:"required"`
 	Amount          float64    `json:"amount" binding:"required,gt=0"`
 	CategoryID      uuid.UUID  `json:"categoryId" binding:"required"`
 	SubcategoryID   *uuid.UUID `json:"subcategoryId,omitempty"`
 	HasInvoice      bool       `json:"hasInvoice"`
-	AttachmentPath  string     `json:"attachmentPath,omitempty"`
-	Notes           string     `json:"notes,omitempty"`
+	AttachmentPath  *string    `json:"attachmentPath,omitempty"`
+	Description     *string    `json:"description,omitempty"`
+	PaymentMethod   *string    `json:"paymentMethod,omitempty"`
+	Notes           *string    `json:"notes,omitempty"`
 }
 
 // ExpenseService handles expense business logic
@@ -122,6 +126,8 @@ func (s *expenseService) CreateExpense(ctx context.Context, req *CreateExpenseRe
 		SubcategoryID:   req.SubcategoryID,
 		HasInvoice:      req.HasInvoice,
 		AttachmentPath:  req.AttachmentPath,
+		Description:     req.Description,
+		PaymentMethod:   req.PaymentMethod,
 		Notes:           req.Notes,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
@@ -199,6 +205,8 @@ func (s *expenseService) UpdateExpense(ctx context.Context, id uuid.UUID, req *U
 	expense.SubcategoryID = req.SubcategoryID
 	expense.HasInvoice = req.HasInvoice
 	expense.AttachmentPath = req.AttachmentPath
+	expense.Description = req.Description
+	expense.PaymentMethod = req.PaymentMethod
 	expense.Notes = req.Notes
 	expense.UpdatedAt = time.Now()
 

@@ -11,8 +11,9 @@ import (
 type ExpenseCategory struct {
 	ID          uuid.UUID  `json:"id" db:"id"`
 	Name        string     `json:"name" db:"name"`
-	Description string     `json:"description,omitempty" db:"description"`
-	ParentID    *uuid.UUID `json:"parentId,omitempty" db:"parent_id"` // Null for categories, set for subcategories
+	Code        string     `json:"code" db:"code"`
+	Description *string    `json:"description,omitempty" db:"description"` // Nullable
+	ParentID    *uuid.UUID `json:"parentId,omitempty" db:"parent_id"`      // Null for categories, set for subcategories
 	IsActive    bool       `json:"isActive" db:"is_active"`
 	SortOrder   int        `json:"sortOrder" db:"sort_order"` // For ordering in UI
 	CreatedAt   time.Time  `json:"createdAt" db:"created_at"`

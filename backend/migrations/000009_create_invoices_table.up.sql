@@ -5,6 +5,7 @@ CREATE TABLE invoices (
     client_id UUID NOT NULL REFERENCES clients(id) ON DELETE RESTRICT,
     appointment_id UUID REFERENCES appointments(id) ON DELETE SET NULL,
     issue_date DATE NOT NULL,
+    due_date DATE NOT NULL,
     description TEXT NOT NULL,
     base_amount DECIMAL(10,2) NOT NULL, -- Base imponible (sin IVA)
     vat_rate DECIMAL(5,2) NOT NULL DEFAULT 21.00, -- IVA rate (21% by default)

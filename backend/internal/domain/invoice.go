@@ -27,16 +27,17 @@ type Invoice struct {
 	IssueDate     time.Time     `json:"issueDate" db:"issue_date"`
 	DueDate       time.Time     `json:"dueDate" db:"due_date"` // Payment due date
 	Description   string        `json:"description" db:"description"`
-	BaseAmount    float64       `json:"baseAmount" db:"base_amount"`   // Base imponible (sin IVA)
-	VATRate       float64       `json:"vatRate" db:"vat_rate"`         // 21% by default
-	VATAmount     float64       `json:"vatAmount" db:"vat_amount"`     // Calculated: BaseAmount * 0.21
-	TotalAmount   float64       `json:"totalAmount" db:"total_amount"` // BaseAmount + VATAmount
-	Status        InvoiceStatus `json:"status" db:"status"`            // paid/unpaid
-	PaymentMethod string        `json:"paymentMethod,omitempty" db:"payment_method"`
+	BaseAmount    float64       `json:"baseAmount" db:"base_amount"`                 // Base imponible (sin IVA)
+	VATRate       float64       `json:"vatRate" db:"vat_rate"`                       // 21% by default
+	VATAmount     float64       `json:"vatAmount" db:"vat_amount"`                   // Calculated: BaseAmount * 0.21
+	TotalAmount   float64       `json:"totalAmount" db:"total_amount"`               // BaseAmount + VATAmount
+	Status        InvoiceStatus `json:"status" db:"status"`                          // paid/unpaid
+	PaymentMethod *string       `json:"paymentMethod,omitempty" db:"payment_method"` // Nullable payment method
 	Notes         string        `json:"notes,omitempty" db:"notes"`
-	PDFPath       string        `json:"pdfPath,omitempty" db:"pdf_path"` // Path to generated PDF
+	PDFPath       *string       `json:"pdfPath,omitempty" db:"pdf_path"` // Path to generated PDF (nullable)
 	CreatedAt     time.Time     `json:"createdAt" db:"created_at"`
 	UpdatedAt     time.Time     `json:"updatedAt" db:"updated_at"`
+	DeletedAt     *time.Time    `json:"-" db:"deleted_at"` // Soft delete timestamp
 
 	// Relationships (populated via joins, not stored in DB)
 	Client      *Client      `json:"client,omitempty" db:"-"`

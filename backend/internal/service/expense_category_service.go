@@ -14,7 +14,8 @@ import (
 // CreateExpenseCategoryRequest represents the request to create an expense category
 type CreateExpenseCategoryRequest struct {
 	Name        string     `json:"name" binding:"required"`
-	Description string     `json:"description,omitempty"`
+	Code        string     `json:"code" binding:"required"`
+	Description *string    `json:"description,omitempty"`
 	ParentID    *uuid.UUID `json:"parentId,omitempty"` // Null for parent categories
 	SortOrder   int        `json:"sortOrder"`
 }
@@ -22,7 +23,8 @@ type CreateExpenseCategoryRequest struct {
 // UpdateExpenseCategoryRequest represents the request to update an expense category
 type UpdateExpenseCategoryRequest struct {
 	Name        string     `json:"name" binding:"required"`
-	Description string     `json:"description,omitempty"`
+	Code        string     `json:"code" binding:"required"`
+	Description *string    `json:"description,omitempty"`
 	ParentID    *uuid.UUID `json:"parentId,omitempty"`
 	IsActive    bool       `json:"isActive"`
 	SortOrder   int        `json:"sortOrder"`
@@ -98,6 +100,7 @@ func (s *expenseCategoryService) CreateCategory(ctx context.Context, req *Create
 	category := &domain.ExpenseCategory{
 		ID:          uuid.New(),
 		Name:        req.Name,
+		Code:        req.Code,
 		Description: req.Description,
 		ParentID:    req.ParentID,
 		IsActive:    true,
@@ -200,6 +203,7 @@ func (s *expenseCategoryService) UpdateCategory(ctx context.Context, id uuid.UUI
 
 	// Update fields
 	category.Name = req.Name
+	category.Code = req.Code
 	category.Description = req.Description
 	category.ParentID = req.ParentID
 	category.IsActive = req.IsActive

@@ -1,20 +1,106 @@
 basePath: /api/v1
 definitions:
-  domain.Client:
+  domain.Address:
     properties:
-      address:
-        type: string
       city:
+        type: string
+      country:
+        type: string
+      postalCode:
+        type: string
+      province:
+        type: string
+      street:
+        type: string
+    type: object
+  domain.Appointment:
+    properties:
+      cancellationReason:
+        allOf:
+        - $ref: '#/definitions/domain.NullableString'
+        description: ✅ Custom type
+      client:
+        $ref: '#/definitions/domain.Client'
+      clientId:
         type: string
       createdAt:
         type: string
-      dateOfBirth:
+      createdBy:
         type: string
       deletedAt:
-        description: Soft delete
+        $ref: '#/definitions/sql.NullTime'
+      description:
         type: string
-      dni:
-        description: Spanish National ID (DNI/NIE) - Optional
+      durationMinutes:
+        type: integer
+      employee:
+        allOf:
+        - $ref: '#/definitions/domain.Employee'
+        description: Relations (not in DB)
+      employeeId:
+        type: string
+      endTime:
+        type: string
+      googleCalendarEventId:
+        allOf:
+        - $ref: '#/definitions/domain.NullableString'
+        description: ✅ Custom type
+      id:
+        type: string
+      notes:
+        allOf:
+        - $ref: '#/definitions/domain.NullableString'
+        description: ✅ Custom type
+      room:
+        $ref: '#/definitions/domain.RoomType'
+      startTime:
+        type: string
+      status:
+        $ref: '#/definitions/domain.AppointmentStatus'
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  domain.AppointmentStats:
+    properties:
+      cancelled:
+        type: integer
+      completed:
+        type: integer
+      confirmed:
+        type: integer
+      pending:
+        type: integer
+      total:
+        type: integer
+    type: object
+  domain.AppointmentStatus:
+    enum:
+    - pending
+    - confirmed
+    - cancelled
+    - completed
+    - rescheduled
+    type: string
+    x-enum-varnames:
+    - AppointmentStatusPending
+    - AppointmentStatusConfirmed
+    - AppointmentStatusCancelled
+    - AppointmentStatusCompleted
+    - AppointmentStatusRescheduled
+  domain.CancelAppointmentRequest:
+    properties:
+      reason:
+        type: string
+    required:
+    - reason
+    type: object
+  domain.Client:
+    properties:
+      createdAt:
+        type: string
+      dniCif:
         type: string
       email:
         type: string
@@ -26,23 +112,320 @@ definitions:
         type: boolean
       lastName:
         type: string
-      lastVisit:
+      notes:
         type: string
-      nif:
-        description: Spanish Tax ID (NIF) - Required
+      phone:
+        type: string
+      updatedAt:
+        type: string
+      userId:
+        type: string
+    type: object
+  domain.ClientStats:
+    properties:
+      active:
+        type: integer
+      inactive:
+        type: integer
+      total:
+        type: integer
+    type: object
+  domain.ConfirmAppointmentRequest:
+    properties:
+      notes:
+        type: string
+    type: object
+  domain.CreateAppointmentRequest:
+    properties:
+      clientId:
+        description: 'Optional: For admin/employee creating appointments for others'
+        type: string
+      description:
+        type: string
+      durationMinutes:
+        enum:
+        - 45
+        - 60
+        type: integer
+      employeeId:
+        type: string
+      room:
+        enum:
+        - gabinete_01
+        - gabinete_02
+        - gabinete_externo
+        type: string
+      startTime:
+        type: string
+      title:
+        type: string
+    required:
+    - durationMinutes
+    - employeeId
+    - room
+    - startTime
+    - title
+    type: object
+  domain.DashboardStats:
+    properties:
+      appointments:
+        $ref: '#/definitions/domain.AppointmentStats'
+      clients:
+        $ref: '#/definitions/domain.ClientStats'
+      employees:
+        $ref: '#/definitions/domain.EmployeeStats'
+    type: object
+  domain.Employee:
+    properties:
+      avatarColor:
+        type: string
+      createdAt:
+        type: string
+      dateOfBirth:
+        type: string
+      deletedAt:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      hireDate:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      lastName:
         type: string
       notes:
         type: string
       phone:
         type: string
-      postalCode:
+      position:
         type: string
-      province:
-        type: string
+      specialties:
+        items:
+          type: string
+        type: array
       updatedAt:
         type: string
       userId:
-        description: 'Optional: if client has login access'
+        type: string
+    type: object
+  domain.EmployeeStats:
+    properties:
+      active:
+        type: integer
+      inactive:
+        type: integer
+      total:
+        type: integer
+    type: object
+  domain.Expense:
+    properties:
+      amount:
+        description: Importe total
+        type: number
+      attachmentPath:
+        description: PDF path (si existe)
+        type: string
+      category:
+        allOf:
+        - $ref: '#/definitions/domain.ExpenseCategory'
+        description: Relationships (populated via joins, not stored in DB)
+      categoryId:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      expenseDate:
+        type: string
+      hasInvoice:
+        description: Si/No
+        type: boolean
+      id:
+        type: string
+      notes:
+        type: string
+      paymentMethod:
+        type: string
+      subcategory:
+        $ref: '#/definitions/domain.ExpenseCategory'
+      subcategoryId:
+        description: Nullable
+        type: string
+      supplier:
+        description: Nombre del proveedor
+        type: string
+      supplierInvoice:
+        description: Nº Factura emisor (opcional)
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  domain.ExpenseCategory:
+    properties:
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      parent:
+        allOf:
+        - $ref: '#/definitions/domain.ExpenseCategory'
+        description: Relationships (populated via joins, not stored in DB)
+      parentId:
+        description: Null for categories, set for subcategories
+        type: string
+      sortOrder:
+        description: For ordering in UI
+        type: integer
+      subcategories:
+        items:
+          $ref: '#/definitions/domain.ExpenseCategory'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  domain.ExpenseCategoryWithChildren:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/domain.ExpenseCategory'
+        type: array
+      createdAt:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      parent:
+        allOf:
+        - $ref: '#/definitions/domain.ExpenseCategory'
+        description: Relationships (populated via joins, not stored in DB)
+      parentId:
+        description: Null for categories, set for subcategories
+        type: string
+      sortOrder:
+        description: For ordering in UI
+        type: integer
+      subcategories:
+        items:
+          $ref: '#/definitions/domain.ExpenseCategory'
+        type: array
+      updatedAt:
+        type: string
+    type: object
+  domain.Invoice:
+    properties:
+      appointment:
+        $ref: '#/definitions/domain.Appointment'
+      appointmentId:
+        description: Nullable for manual invoices
+        type: string
+      baseAmount:
+        description: Base imponible (sin IVA)
+        type: number
+      client:
+        allOf:
+        - $ref: '#/definitions/domain.Client'
+        description: Relationships (populated via joins, not stored in DB)
+      clientId:
+        type: string
+      createdAt:
+        type: string
+      description:
+        type: string
+      dueDate:
+        description: Payment due date
+        type: string
+      id:
+        type: string
+      invoiceNumber:
+        description: F_2025_0001
+        type: string
+      issueDate:
+        type: string
+      notes:
+        type: string
+      paymentMethod:
+        type: string
+      pdfPath:
+        description: Path to generated PDF
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/domain.InvoiceStatus'
+        description: paid/unpaid
+      totalAmount:
+        description: BaseAmount + VATAmount
+        type: number
+      updatedAt:
+        type: string
+      vatAmount:
+        description: 'Calculated: BaseAmount * 0.21'
+        type: number
+      vatRate:
+        description: 21% by default
+        type: number
+    type: object
+  domain.InvoiceStatus:
+    enum:
+    - paid
+    - unpaid
+    type: string
+    x-enum-comments:
+      InvoiceStatusPaid: Cobrado
+      InvoiceStatusUnpaid: No Cobrado
+    x-enum-descriptions:
+    - Cobrado
+    - No Cobrado
+    x-enum-varnames:
+    - InvoiceStatusPaid
+    - InvoiceStatusUnpaid
+  domain.NullableString:
+    properties:
+      string:
+        type: string
+      valid:
+        description: Valid is true if String is not NULL
+        type: boolean
+    type: object
+  domain.RoomType:
+    enum:
+    - gabinete_01
+    - gabinete_02
+    - gabinete_externo
+    type: string
+    x-enum-varnames:
+    - RoomGabinete01
+    - RoomGabinete02
+    - RoomExternal
+  domain.UpdateAppointmentRequest:
+    properties:
+      description:
+        type: string
+      durationMinutes:
+        type: integer
+      employeeId:
+        type: string
+      room:
+        type: string
+      startTime:
+        type: string
+      title:
         type: string
     type: object
   domain.User:
@@ -74,12 +457,40 @@ definitions:
     - RoleAdmin
     - RoleEmployee
     - RoleClient
+  handler.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  handler.PaginatedResponse:
+    properties:
+      data: {}
+      page:
+        type: integer
+      pageSize:
+        type: integer
+      total:
+        type: integer
+      totalPages:
+        type: integer
+    type: object
   service.AuthResponse:
     properties:
       token:
         type: string
       user:
         $ref: '#/definitions/domain.User'
+    type: object
+  service.CategoryExpense:
+    properties:
+      categoryId:
+        type: string
+      categoryName:
+        type: string
+      percentage:
+        type: number
+      total:
+        type: number
     type: object
   service.ClientListResponse:
     properties:
@@ -99,21 +510,19 @@ definitions:
   service.CreateClientRequest:
     properties:
       address:
-        type: string
+        $ref: '#/definitions/domain.Address'
       city:
         type: string
       dateOfBirth:
         description: 'Format: YYYY-MM-DD'
         type: string
-      dni:
+      dniCif:
         type: string
       email:
         type: string
       firstName:
         type: string
       lastName:
-        type: string
-      nif:
         type: string
       notes:
         type: string
@@ -126,11 +535,145 @@ definitions:
       userId:
         type: string
     required:
+    - dniCif
     - email
     - firstName
     - lastName
-    - nif
     - phone
+    type: object
+  service.CreateEmployeeRequest:
+    properties:
+      avatarColor:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      hireDate:
+        description: ISO 8601 date string
+        type: string
+      lastName:
+        type: string
+      notes:
+        description: Optional notes
+        type: string
+      phone:
+        type: string
+      specialty:
+        description: Single specialty, converted to array internally
+        type: string
+      userId:
+        type: string
+    required:
+    - dni
+    - email
+    - firstName
+    - hireDate
+    - lastName
+    - phone
+    - specialty
+    type: object
+  service.CreateExpenseCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      parentId:
+        description: Null for parent categories
+        type: string
+      sortOrder:
+        type: integer
+    required:
+    - name
+    type: object
+  service.CreateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      attachmentPath:
+        type: string
+      categoryId:
+        type: string
+      expenseDate:
+        type: string
+      hasInvoice:
+        type: boolean
+      notes:
+        type: string
+      subcategoryId:
+        type: string
+      supplier:
+        type: string
+      supplierInvoice:
+        type: string
+    required:
+    - amount
+    - categoryId
+    - expenseDate
+    - supplier
+    type: object
+  service.CreateInvoiceRequest:
+    properties:
+      appointmentId:
+        type: string
+      baseAmount:
+        type: number
+      clientId:
+        type: string
+      dueDate:
+        type: string
+      issueDate:
+        type: string
+      notes:
+        type: string
+    required:
+    - baseAmount
+    - clientId
+    - dueDate
+    - issueDate
+    type: object
+  service.DashboardStats:
+    properties:
+      balance:
+        type: number
+      expensesByCategory:
+        items:
+          $ref: '#/definitions/service.CategoryExpense'
+        type: array
+      recentInvoices:
+        items:
+          $ref: '#/definitions/service.InvoiceSummary'
+        type: array
+      revenueByMonth:
+        items:
+          $ref: '#/definitions/service.MonthlyRevenue'
+        type: array
+      totalExpenses:
+        type: number
+      totalRevenue:
+        type: number
+      unpaidAmount:
+        type: number
+      unpaidInvoices:
+        type: integer
+    type: object
+  service.InvoiceSummary:
+    properties:
+      clientId:
+        type: string
+      id:
+        type: string
+      invoiceNumber:
+        type: string
+      issueDate:
+        type: string
+      status:
+        type: string
+      totalAmount:
+        type: number
     type: object
   service.LoginRequest:
     properties:
@@ -141,6 +684,13 @@ definitions:
     required:
     - email
     - password
+    type: object
+  service.MonthlyRevenue:
+    properties:
+      month:
+        type: string
+      revenue:
+        type: number
     type: object
   service.RegisterRequest:
     properties:
@@ -164,13 +714,13 @@ definitions:
   service.UpdateClientRequest:
     properties:
       address:
-        type: string
+        $ref: '#/definitions/domain.Address'
       city:
         type: string
       dateOfBirth:
         description: 'Format: YYYY-MM-DD'
         type: string
-      dni:
+      dniCif:
         type: string
       email:
         type: string
@@ -180,8 +730,6 @@ definitions:
         type: boolean
       lastName:
         type: string
-      nif:
-        type: string
       notes:
         type: string
       phone:
@@ -190,6 +738,96 @@ definitions:
         type: string
       province:
         type: string
+    type: object
+  service.UpdateEmployeeRequest:
+    properties:
+      avatarColor:
+        type: string
+      dni:
+        type: string
+      email:
+        type: string
+      firstName:
+        type: string
+      hireDate:
+        description: ISO 8601 date string
+        type: string
+      isActive:
+        type: boolean
+      lastName:
+        type: string
+      notes:
+        description: Optional notes
+        type: string
+      phone:
+        type: string
+      specialty:
+        description: Single specialty
+        type: string
+    type: object
+  service.UpdateExpenseCategoryRequest:
+    properties:
+      description:
+        type: string
+      isActive:
+        type: boolean
+      name:
+        type: string
+      parentId:
+        type: string
+      sortOrder:
+        type: integer
+    required:
+    - name
+    type: object
+  service.UpdateExpenseRequest:
+    properties:
+      amount:
+        type: number
+      attachmentPath:
+        type: string
+      categoryId:
+        type: string
+      expenseDate:
+        type: string
+      hasInvoice:
+        type: boolean
+      notes:
+        type: string
+      subcategoryId:
+        type: string
+      supplier:
+        type: string
+      supplierInvoice:
+        type: string
+    required:
+    - amount
+    - categoryId
+    - expenseDate
+    - supplier
+    type: object
+  service.UpdateInvoiceRequest:
+    properties:
+      baseAmount:
+        type: number
+      dueDate:
+        type: string
+      issueDate:
+        type: string
+      notes:
+        type: string
+    required:
+    - baseAmount
+    - dueDate
+    - issueDate
+    type: object
+  sql.NullTime:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -204,7 +842,388 @@ info:
   title: Arnela CRM/CMS API
   version: "1.0"
 paths:
-  /clients:
+  /api/v1/appointments:
+    get:
+      description: Lists all appointments with optional filters (admin/employee only)
+      parameters:
+      - description: Filter by client ID
+        in: query
+        name: clientId
+        type: string
+      - description: Filter by employee ID
+        in: query
+        name: employeeId
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by start date (RFC3339)
+        in: query
+        name: startDate
+        type: string
+      - description: Filter by end date (RFC3339)
+        in: query
+        name: endDate
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List all appointments
+      tags:
+      - appointments
+    post:
+      consumes:
+      - application/json
+      description: Creates a new appointment (pending status)
+      parameters:
+      - description: Appointment data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new appointment
+      tags:
+      - appointments
+  /api/v1/appointments/{id}:
+    get:
+      description: Retrieves an appointment's information
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get appointment by ID
+      tags:
+      - appointments
+    put:
+      consumes:
+      - application/json
+      description: Updates an appointment (client can only update their own)
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update appointment
+      tags:
+      - appointments
+  /api/v1/appointments/{id}/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels an appointment
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Cancellation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CancelAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Cancel appointment
+      tags:
+      - appointments
+  /api/v1/appointments/{id}/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Confirms a pending appointment (admin/employee only)
+      parameters:
+      - description: Appointment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Confirmation data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.ConfirmAppointmentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Appointment'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Confirm appointment
+      tags:
+      - appointments
+  /api/v1/appointments/available-slots:
+    get:
+      description: Returns available time slots for a therapist on a specific date
+      parameters:
+      - description: Employee ID (UUID)
+        in: query
+        name: employeeId
+        required: true
+        type: string
+      - description: Date (YYYY-MM-DD)
+        in: query
+        name: date
+        required: true
+        type: string
+      - description: Duration in minutes (45 or 60)
+        in: query
+        name: duration
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get available slots
+      tags:
+      - appointments
+  /api/v1/appointments/me:
+    get:
+      description: Retrieves all appointments for the authenticated client
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get my appointments
+      tags:
+      - appointments
+  /api/v1/appointments/therapists:
+    get:
+      deprecated: true
+      description: Returns all available employees (use /api/v1/employees instead)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get therapists (deprecated)
+      tags:
+      - appointments
+  /api/v1/clients:
     get:
       description: Retrieves a paginated list of clients with optional filters (admin/employee
         only)
@@ -312,7 +1331,7 @@ paths:
       summary: Create a new client
       tags:
       - clients
-  /clients/{id}:
+  /api/v1/clients/{id}:
     delete:
       description: Soft-deletes a client (admin only)
       parameters:
@@ -457,7 +1476,7 @@ paths:
       summary: Update client
       tags:
       - clients
-  /clients/me:
+  /api/v1/clients/me:
     get:
       description: Retrieves the authenticated client's information (client role only)
       produces:
@@ -484,6 +1503,328 @@ paths:
       summary: Get my client info
       tags:
       - clients
+  /api/v1/employees:
+    get:
+      description: Retrieves a list of employees with pagination (admin/employee)
+      parameters:
+      - default: 10
+        description: Limit
+        in: query
+        name: limit
+        type: integer
+      - default: 0
+        description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: List employees
+      tags:
+      - employees
+    post:
+      consumes:
+      - application/json
+      description: Creates a new employee/therapist (admin only)
+      parameters:
+      - description: Employee data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Create a new employee
+      tags:
+      - employees
+  /api/v1/employees/{id}:
+    delete:
+      description: Soft-deletes an employee (admin only)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Delete employee
+      tags:
+      - employees
+    get:
+      description: Retrieves an employee's information (admin/employee)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get employee by ID
+      tags:
+      - employees
+    put:
+      consumes:
+      - application/json
+      description: Updates an employee's information (admin only)
+      parameters:
+      - description: Employee ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Employee update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateEmployeeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Employee'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "409":
+          description: Conflict
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Update employee
+      tags:
+      - employees
+  /api/v1/employees/me:
+    get:
+      description: Retrieves the employee profile associated with the current user
+        (employee only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Employee'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get my employee profile
+      tags:
+      - employees
+  /api/v1/employees/specialty/{specialty}:
+    get:
+      description: Retrieves employees with a specific specialty (admin/employee/client)
+      parameters:
+      - description: Specialty name
+        in: path
+        name: specialty
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Employee'
+            type: array
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get employees by specialty
+      tags:
+      - employees
+  /api/v1/stats/dashboard:
+    get:
+      description: Retrieves aggregated statistics for clients, employees, and appointments
+        (admin/employee only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.DashboardStats'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - BearerAuth: []
+      summary: Get dashboard statistics
+      tags:
+      - stats
   /auth/login:
     post:
       consumes:
@@ -585,6 +1926,833 @@ paths:
       summary: Register a new user
       tags:
       - auth
+  /billing/balance:
+    get:
+      description: Calculate the balance for a given period
+      parameters:
+      - description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: balance value
+          schema:
+            additionalProperties:
+              format: float64
+              type: number
+            type: object
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get balance (revenue - expenses)
+      tags:
+      - billing-stats
+  /billing/dashboard:
+    get:
+      description: Retrieve comprehensive billing statistics for the dashboard
+      parameters:
+      - default: first day of current month
+        description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - default: today
+        description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/service.DashboardStats'
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get billing dashboard statistics
+      tags:
+      - billing-stats
+  /billing/expense-categories:
+    get:
+      description: Get all active expense categories (flat list)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ExpenseCategory'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: List all expense categories
+      tags:
+      - expense-categories
+    post:
+      consumes:
+      - application/json
+      description: Create a new expense category or subcategory
+      parameters:
+      - description: Category creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateExpenseCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.ExpenseCategory'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new expense category
+      tags:
+      - expense-categories
+  /billing/expense-categories/{id}:
+    delete:
+      description: Delete an expense category (cascade deletes subcategories)
+      parameters:
+      - description: Category ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Category deleted successfully
+        "400":
+          description: Invalid ID or has associated expenses
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an expense category
+      tags:
+      - expense-categories
+    get:
+      description: Retrieve an expense category by its ID
+      parameters:
+      - description: Category ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ExpenseCategory'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an expense category by ID
+      tags:
+      - expense-categories
+    put:
+      consumes:
+      - application/json
+      description: Update an existing expense category
+      parameters:
+      - description: Category ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Category update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateExpenseCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.ExpenseCategory'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an expense category
+      tags:
+      - expense-categories
+  /billing/expense-categories/{id}/subcategories:
+    get:
+      description: Retrieve all subcategories belonging to a parent category
+      parameters:
+      - description: Parent Category ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ExpenseCategory'
+            type: array
+        "400":
+          description: Invalid parent ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Parent category not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get subcategories for a parent category
+      tags:
+      - expense-categories
+  /billing/expense-categories/parents:
+    get:
+      description: Get all parent expense categories (categories without parent_id)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ExpenseCategory'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get parent categories only
+      tags:
+      - expense-categories
+  /billing/expense-categories/tree:
+    get:
+      description: Get the hierarchical tree of categories with their subcategories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.ExpenseCategoryWithChildren'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get expense category tree
+      tags:
+      - expense-categories
+  /billing/expenses:
+    get:
+      description: Get a paginated list of expenses with optional filters
+      parameters:
+      - description: Category ID (UUID)
+        in: query
+        name: categoryId
+        type: string
+      - description: Subcategory ID (UUID)
+        in: query
+        name: subcategoryId
+        type: string
+      - description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      - description: Has invoice (true/false)
+        in: query
+        name: hasInvoice
+        type: boolean
+      - description: Supplier name (partial match)
+        in: query
+        name: supplier
+        type: string
+      - description: Search in supplier, invoice, notes
+        in: query
+        name: search
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.PaginatedResponse'
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List expenses
+      tags:
+      - expenses
+    post:
+      consumes:
+      - application/json
+      description: Create a new expense with category and subcategory validation
+      parameters:
+      - description: Expense creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Expense'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new expense
+      tags:
+      - expenses
+  /billing/expenses-by-category:
+    get:
+      description: Retrieve expenses breakdown by category with percentages
+      parameters:
+      - description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/service.CategoryExpense'
+            type: array
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get expenses grouped by category
+      tags:
+      - billing-stats
+  /billing/expenses/{id}:
+    delete:
+      description: Soft delete an expense
+      parameters:
+      - description: Expense ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Expense deleted successfully
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an expense
+      tags:
+      - expenses
+    get:
+      description: Retrieve an expense by its ID
+      parameters:
+      - description: Expense ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Expense'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an expense by ID
+      tags:
+      - expenses
+    put:
+      consumes:
+      - application/json
+      description: Update an existing expense with validation
+      parameters:
+      - description: Expense ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Expense update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateExpenseRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Expense'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Expense not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an expense
+      tags:
+      - expenses
+  /billing/expenses/category/{categoryId}:
+    get:
+      description: Retrieve all expenses for a specific category
+      parameters:
+      - description: Category ID (UUID)
+        in: path
+        name: categoryId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Expense'
+            type: array
+        "400":
+          description: Invalid category ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Category not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get expenses by category
+      tags:
+      - expenses
+  /billing/expenses/supplier/{supplier}:
+    get:
+      description: Retrieve all expenses for a specific supplier
+      parameters:
+      - description: Supplier name
+        in: path
+        name: supplier
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Expense'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get expenses by supplier
+      tags:
+      - expenses
+  /billing/invoices:
+    get:
+      description: Get a paginated list of invoices with optional filters
+      parameters:
+      - description: Invoice status (paid/unpaid)
+        in: query
+        name: status
+        type: string
+      - description: Client ID (UUID)
+        in: query
+        name: clientId
+        type: string
+      - description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      - description: Search in invoice number
+        in: query
+        name: search
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handler.PaginatedResponse'
+        "400":
+          description: Invalid query parameters
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: List invoices
+      tags:
+      - invoices
+    post:
+      consumes:
+      - application/json
+      description: Create a new invoice with automatic VAT calculation (21%)
+      parameters:
+      - description: Invoice creation request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.CreateInvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Invoice'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Create a new invoice
+      tags:
+      - invoices
+  /billing/invoices/{id}:
+    delete:
+      description: Soft delete an invoice (cannot delete paid invoices)
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "204":
+          description: Invoice deleted successfully
+        "400":
+          description: Invalid ID or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete an invoice
+      tags:
+      - invoices
+    get:
+      description: Retrieve an invoice by its ID
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Invoice'
+        "400":
+          description: Invalid ID format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an invoice by ID
+      tags:
+      - invoices
+    put:
+      consumes:
+      - application/json
+      description: Update an existing invoice (cannot update paid invoices)
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invoice update request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/service.UpdateInvoiceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Invoice'
+        "400":
+          description: Invalid request or validation error
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update an invoice
+      tags:
+      - invoices
+  /billing/invoices/{id}/mark-paid:
+    post:
+      description: Update invoice status to paid
+      parameters:
+      - description: Invoice ID (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Invoice'
+        "400":
+          description: Invalid ID or already paid
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Mark an invoice as paid
+      tags:
+      - invoices
+  /billing/invoices/client/{clientId}:
+    get:
+      description: Retrieve all invoices for a specific client
+      parameters:
+      - description: Client ID (UUID)
+        in: path
+        name: clientId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Invoice'
+            type: array
+        "400":
+          description: Invalid client ID
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+        "404":
+          description: Client not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get all invoices for a client
+      tags:
+      - invoices
+  /billing/invoices/number/{invoiceNumber}:
+    get:
+      description: Retrieve an invoice by its invoice number (e.g., F_2025_0001)
+      parameters:
+      - description: Invoice Number (F_YYYY_NNNN)
+        in: path
+        name: invoiceNumber
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Invoice'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get an invoice by invoice number
+      tags:
+      - invoices
+  /billing/invoices/unpaid:
+    get:
+      description: Retrieve all invoices with unpaid status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Invoice'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Get all unpaid invoices
+      tags:
+      - invoices
+  /billing/revenue-by-month:
+    get:
+      description: Retrieve monthly revenue data for charts
+      parameters:
+      - description: From date (YYYY-MM-DD)
+        in: query
+        name: fromDate
+        type: string
+      - description: To date (YYYY-MM-DD)
+        in: query
+        name: toDate
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/service.MonthlyRevenue'
+            type: array
+        "400":
+          description: Invalid date format
+          schema:
+            $ref: '#/definitions/handler.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get revenue grouped by month
+      tags:
+      - billing-stats
 securityDefinitions:
   BearerAuth:
     description: Type "Bearer" followed by a space and JWT token.

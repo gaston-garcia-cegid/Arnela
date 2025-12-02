@@ -11,18 +11,19 @@ import (
 type Expense struct {
 	ID              uuid.UUID  `json:"id" db:"id"`
 	ExpenseDate     time.Time  `json:"expenseDate" db:"expense_date"`
-	SupplierInvoice string     `json:"supplierInvoice,omitempty" db:"supplier_invoice"` // Nº Factura emisor (opcional)
+	SupplierInvoice *string    `json:"supplierInvoice,omitempty" db:"supplier_invoice"` // Nº Factura emisor (nullable)
 	Supplier        string     `json:"supplier" db:"supplier"`                          // Nombre del proveedor
 	Amount          float64    `json:"amount" db:"amount"`                              // Importe total
 	CategoryID      uuid.UUID  `json:"categoryId" db:"category_id"`
 	SubcategoryID   *uuid.UUID `json:"subcategoryId,omitempty" db:"subcategory_id"`   // Nullable
 	HasInvoice      bool       `json:"hasInvoice" db:"has_invoice"`                   // Si/No
-	AttachmentPath  string     `json:"attachmentPath,omitempty" db:"attachment_path"` // PDF path (si existe)
-	Description     string     `json:"description,omitempty" db:"description"`
-	PaymentMethod   string     `json:"paymentMethod,omitempty" db:"payment_method"`
-	Notes           string     `json:"notes,omitempty" db:"notes"`
+	AttachmentPath  *string    `json:"attachmentPath,omitempty" db:"attachment_path"` // PDF path (nullable)
+	Description     *string    `json:"description,omitempty" db:"description"`        // Nullable
+	PaymentMethod   *string    `json:"paymentMethod,omitempty" db:"payment_method"`   // Nullable
+	Notes           *string    `json:"notes,omitempty" db:"notes"`                    // Nullable
 	CreatedAt       time.Time  `json:"createdAt" db:"created_at"`
 	UpdatedAt       time.Time  `json:"updatedAt" db:"updated_at"`
+	DeletedAt       *time.Time `json:"-" db:"deleted_at"` // Soft delete timestamp
 
 	// Relationships (populated via joins, not stored in DB)
 	Category    *ExpenseCategory `json:"category,omitempty" db:"-"`
@@ -48,7 +49,7 @@ func (e *Expense) Validate() error {
 
 // HasAttachment returns true if the expense has an attached invoice PDF
 func (e *Expense) HasAttachment() bool {
-	return e.AttachmentPath != ""
+	return e.AttachmentPath != nil && *e.AttachmentPath != ""
 }
 
 // ExpenseCategoryWithChildren represents a category with its subcategories

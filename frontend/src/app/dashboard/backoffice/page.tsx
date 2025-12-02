@@ -67,14 +67,14 @@ export default function BackofficeDashboard() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold">
-            Bienvenido, {user?.firstName} {user?.lastName}
-          </h2>
-          <p className="text-muted-foreground">Panel de administración</p>
-        </div>
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold">
+          Bienvenido, {user?.firstName} {user?.lastName}
+        </h2>
+        <p className="text-muted-foreground">Panel de administración</p>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-3 md:gap-6">
+      <div className="grid gap-4 md:grid-cols-3 md:gap-6">
           {/* Stats Cards */}
           <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
@@ -253,6 +253,12 @@ export default function BackofficeDashboard() {
             onClick={() => router.push('/dashboard/backoffice/clients')}
           >
             👤 Gestión de Clientes
+          </Button>
+          <Button 
+            className="h-20 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => router.push('/dashboard/backoffice/billing')}
+          >
+            💶 Facturación
           </Button>
         </div>
       </main>

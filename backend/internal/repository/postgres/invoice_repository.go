@@ -27,10 +27,10 @@ func NewInvoiceRepository(db *sqlx.DB) repository.InvoiceRepository {
 func (r *invoiceRepository) Create(ctx context.Context, invoice *domain.Invoice) error {
 	query := `
 		INSERT INTO invoices (
-			id, invoice_number, client_id, appointment_id, issue_date, due_date,
+			id, invoice_number, client_id, appointment_id, issue_date, due_date, description,
 			base_amount, vat_rate, vat_amount, total_amount, status, notes, created_at, updated_at
 		) VALUES (
-			:id, :invoice_number, :client_id, :appointment_id, :issue_date, :due_date,
+			:id, :invoice_number, :client_id, :appointment_id, :issue_date, :due_date, :description,
 			:base_amount, :vat_rate, :vat_amount, :total_amount, :status, :notes, :created_at, :updated_at
 		)`
 
@@ -170,6 +170,7 @@ func (r *invoiceRepository) Update(ctx context.Context, invoice *domain.Invoice)
 			appointment_id = :appointment_id,
 			issue_date = :issue_date,
 			due_date = :due_date,
+			description = :description,
 			base_amount = :base_amount,
 			vat_rate = :vat_rate,
 			vat_amount = :vat_amount,

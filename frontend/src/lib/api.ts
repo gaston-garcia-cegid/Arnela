@@ -27,6 +27,24 @@ import type {
   ListEmployeesResponse,
 } from '@/types/employee';
 
+import type {
+  Invoice,
+  CreateInvoiceRequest,
+  UpdateInvoiceRequest,
+  Expense,
+  CreateExpenseRequest,
+  UpdateExpenseRequest,
+  ExpenseCategory,
+  CreateExpenseCategoryRequest,
+  UpdateExpenseCategoryRequest,
+  BillingDashboardStats,
+  RevenueByMonth,
+  ExpensesByCategory,
+  InvoiceFilters,
+  ExpenseFilters,
+  PaginatedResponse,
+} from '@/types/billing';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 // Types matching backend responses
@@ -487,4 +505,382 @@ export const api = {
       });
     },
   },
+
+  billing: {
+    // ============================================
+    // Invoice Operations
+    // ============================================
+    invoices: {
+      /**
+       * Creates a new invoice with automatic VAT calculation
+       * @param data Invoice creation data including client, dates, and amounts
+       * @param token Authorization token
+       * @returns Created invoice with calculated totals
+       */
+      create: async (data: CreateInvoiceRequest, token: string): Promise<Invoice> => {
+        return fetchWithAuth('/billing/invoices', token, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Retrieves paginated list of invoices with optional filters
+       * @param token Authorization token
+       * @param filters Optional filters for client, status, date range, pagination
+       * @returns Paginated invoice list
+       */
+      list: async (token: string, filters?: InvoiceFilters): Promise<PaginatedResponse<Invoice>> => {
+        if (!filters) {
+          return fetchWithAuth('/billing/invoices', token, { method: 'GET' });
+        }
+
+        const queryParams = buildQueryParams(filters);
+        return fetchWithAuth(`/billing/invoices?${queryParams}`, token, { method: 'GET' });
+      },
+
+      /**
+       * Gets a single invoice by ID
+       * @param id Invoice UUID
+       * @param token Authorization token
+       * @returns Invoice details
+       */
+      getById: async (id: string, token: string): Promise<Invoice> => {
+        return fetchWithAuth(`/billing/invoices/${id}`, token, { method: 'GET' });
+      },
+
+      /**
+       * Gets a single invoice by invoice number
+       * @param invoiceNumber Invoice number (e.g., F_2025_0001)
+       * @param token Authorization token
+       * @returns Invoice details
+       */
+      getByNumber: async (invoiceNumber: string, token: string): Promise<Invoice> => {
+        return fetchWithAuth(`/billing/invoices/number/${invoiceNumber}`, token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets all invoices for a specific client
+       * @param clientId Client UUID
+       * @param token Authorization token
+       * @returns Array of client's invoices
+       */
+      getByClient: async (clientId: string, token: string): Promise<Invoice[]> => {
+        return fetchWithAuth(`/billing/invoices/client/${clientId}`, token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets all unpaid invoices
+       * @param token Authorization token
+       * @returns Array of unpaid invoices
+       */
+      getUnpaid: async (token: string): Promise<Invoice[]> => {
+        return fetchWithAuth('/billing/invoices/unpaid', token, { method: 'GET' });
+      },
+
+      /**
+       * Updates an existing invoice
+       * @param id Invoice UUID
+       * @param data Updated invoice data
+       * @param token Authorization token
+       * @returns Updated invoice with recalculated totals
+       */
+      update: async (
+        id: string,
+        data: UpdateInvoiceRequest,
+        token: string
+      ): Promise<Invoice> => {
+        return fetchWithAuth(`/billing/invoices/${id}`, token, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Marks an invoice as paid
+       * @param id Invoice UUID
+       * @param token Authorization token
+       * @returns Updated invoice with paid status
+       */
+      markAsPaid: async (id: string, token: string): Promise<Invoice> => {
+        return fetchWithAuth(`/billing/invoices/${id}/mark-paid`, token, {
+          method: 'POST',
+        });
+      },
+
+      /**
+       * Soft deletes an invoice (sets deleted_at timestamp)
+       * @param id Invoice UUID
+       * @param token Authorization token
+       */
+      delete: async (id: string, token: string): Promise<void> => {
+        return fetchWithAuth(`/billing/invoices/${id}`, token, { method: 'DELETE' });
+      },
+    },
+
+    // ============================================
+    // Expense Operations
+    // ============================================
+    expenses: {
+      /**
+       * Creates a new expense record
+       * @param data Expense data including supplier, amount, and category
+       * @param token Authorization token
+       * @returns Created expense
+       */
+      create: async (data: CreateExpenseRequest, token: string): Promise<Expense> => {
+        return fetchWithAuth('/billing/expenses', token, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Retrieves paginated list of expenses with optional filters
+       * @param token Authorization token
+       * @param filters Optional filters for category, date range, invoice status
+       * @returns Paginated expense list
+       */
+      list: async (token: string, filters?: ExpenseFilters): Promise<PaginatedResponse<Expense>> => {
+        if (!filters) {
+          return fetchWithAuth('/billing/expenses', token, { method: 'GET' });
+        }
+
+        const queryParams = buildQueryParams(filters);
+        return fetchWithAuth(`/billing/expenses?${queryParams}`, token, { method: 'GET' });
+      },
+
+      /**
+       * Gets a single expense by ID
+       * @param id Expense UUID
+       * @param token Authorization token
+       * @returns Expense details with populated category
+       */
+      getById: async (id: string, token: string): Promise<Expense> => {
+        return fetchWithAuth(`/billing/expenses/${id}`, token, { method: 'GET' });
+      },
+
+      /**
+       * Updates an existing expense
+       * @param id Expense UUID
+       * @param data Updated expense data
+       * @param token Authorization token
+       * @returns Updated expense
+       */
+      update: async (
+        id: string,
+        data: UpdateExpenseRequest,
+        token: string
+      ): Promise<Expense> => {
+        return fetchWithAuth(`/billing/expenses/${id}`, token, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Soft deletes an expense (sets deleted_at timestamp)
+       * @param id Expense UUID
+       * @param token Authorization token
+       */
+      delete: async (id: string, token: string): Promise<void> => {
+        return fetchWithAuth(`/billing/expenses/${id}`, token, { method: 'DELETE' });
+      },
+    },
+
+    // ============================================
+    // Expense Category Operations
+    // ============================================
+    categories: {
+      /**
+       * Creates a new expense category (parent or subcategory)
+       * @param data Category data with name, code, and optional parentId
+       * @param token Authorization token
+       * @returns Created category
+       */
+      create: async (
+        data: CreateExpenseCategoryRequest,
+        token: string
+      ): Promise<ExpenseCategory> => {
+        return fetchWithAuth('/billing/expense-categories', token, {
+          method: 'POST',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Gets all categories (flat list)
+       * @param token Authorization token
+       * @returns Array of all categories
+       */
+      list: async (token: string): Promise<ExpenseCategory[]> => {
+        return fetchWithAuth('/billing/expense-categories', token, { method: 'GET' });
+      },
+
+      /**
+       * Gets hierarchical tree of all categories with their subcategories
+       * @param token Authorization token
+       * @returns Array of parent categories with nested subcategories
+       */
+      getTree: async (token: string): Promise<ExpenseCategory[]> => {
+        return fetchWithAuth('/billing/expense-categories/tree', token, { method: 'GET' });
+      },
+
+      /**
+       * Gets only parent categories (no subcategories)
+       * @param token Authorization token
+       * @returns Array of parent categories
+       */
+      getParents: async (token: string): Promise<ExpenseCategory[]> => {
+        return fetchWithAuth('/billing/expense-categories/parents', token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets a single category by ID
+       * @param id Category UUID
+       * @param token Authorization token
+       * @returns Category details
+       */
+      getById: async (id: string, token: string): Promise<ExpenseCategory> => {
+        return fetchWithAuth(`/billing/expense-categories/${id}`, token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets all subcategories of a parent category
+       * @param parentId Parent category UUID
+       * @param token Authorization token
+       * @returns Array of subcategories
+       */
+      getSubcategories: async (parentId: string, token: string): Promise<ExpenseCategory[]> => {
+        return fetchWithAuth(
+          `/billing/expense-categories/${parentId}/subcategories`,
+          token,
+          { method: 'GET' }
+        );
+      },
+
+      /**
+       * Updates an existing category
+       * @param id Category UUID
+       * @param data Updated category data
+       * @param token Authorization token
+       * @returns Updated category
+       */
+      update: async (
+        id: string,
+        data: UpdateExpenseCategoryRequest,
+        token: string
+      ): Promise<ExpenseCategory> => {
+        return fetchWithAuth(`/billing/expense-categories/${id}`, token, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+        });
+      },
+
+      /**
+       * Deletes a category (cannot delete if it has expenses or subcategories)
+       * @param id Category UUID
+       * @param token Authorization token
+       */
+      delete: async (id: string, token: string): Promise<void> => {
+        return fetchWithAuth(`/billing/expense-categories/${id}`, token, {
+          method: 'DELETE',
+        });
+      },
+    },
+
+    // ============================================
+    // Billing Statistics & Reports
+    // ============================================
+    stats: {
+      /**
+       * Gets comprehensive billing dashboard statistics
+       * @param token Authorization token
+       * @returns Dashboard stats with totals and counts
+       */
+      getDashboard: async (token: string): Promise<BillingDashboardStats> => {
+        return fetchWithAuth('/billing/dashboard', token, { method: 'GET' });
+      },
+
+      /**
+       * Gets revenue breakdown by month for a specific year
+       * @param token Authorization token
+       * @param year Year to filter (e.g., 2025)
+       * @returns Array of monthly revenue data
+       */
+      getRevenueByMonth: async (token: string, year: number): Promise<RevenueByMonth[]> => {
+        const queryParams = new URLSearchParams({ year: year.toString() });
+        return fetchWithAuth(`/billing/revenue-by-month?${queryParams}`, token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets expense breakdown by category
+       * @param token Authorization token
+       * @param year Optional year filter
+       * @returns Array of expense totals per category
+       */
+      getExpensesByCategory: async (
+        token: string,
+        year?: number
+      ): Promise<ExpensesByCategory[]> => {
+        if (!year) {
+          return fetchWithAuth('/billing/expenses-by-category', token, { method: 'GET' });
+        }
+
+        const queryParams = new URLSearchParams({ year: year.toString() });
+        return fetchWithAuth(`/billing/expenses-by-category?${queryParams}`, token, {
+          method: 'GET',
+        });
+      },
+
+      /**
+       * Gets current balance (total revenue - total expenses)
+       * @param token Authorization token
+       * @returns Balance data with revenue and expense totals
+       */
+      getBalance: async (
+        token: string
+      ): Promise<{ balance: number; totalRevenue: number; totalExpenses: number }> => {
+        return fetchWithAuth('/billing/balance', token, { method: 'GET' });
+      },
+    },
+  },
 };
+
+// ============================================
+// Helper Functions
+// ============================================
+
+/**
+ * Builds URL query parameters from filter object
+ * Applies early return pattern for cleaner code
+ * @param filters Object with optional filter parameters
+ * @returns URL-encoded query string
+ */
+function buildQueryParams(filters: Record<string, any>): string {
+  const params = new URLSearchParams();
+
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null) continue;
+    if (value === '') continue;
+    
+    // Handle arrays and objects properly
+    if (typeof value === 'object') {
+      params.append(key, JSON.stringify(value));
+    } else {
+      params.append(key, String(value));
+    }
+  }
+
+  return params.toString();
+}

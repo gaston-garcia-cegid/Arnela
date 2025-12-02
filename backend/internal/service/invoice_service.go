@@ -18,15 +18,17 @@ type CreateInvoiceRequest struct {
 	IssueDate     time.Time  `json:"issueDate" binding:"required"`
 	DueDate       time.Time  `json:"dueDate" binding:"required"`
 	BaseAmount    float64    `json:"baseAmount" binding:"required,gt=0"`
+	Description   string     `json:"description" binding:"required"`
 	Notes         string     `json:"notes,omitempty"`
 }
 
 // UpdateInvoiceRequest represents the request to update an invoice
 type UpdateInvoiceRequest struct {
-	IssueDate  time.Time `json:"issueDate" binding:"required"`
-	DueDate    time.Time `json:"dueDate" binding:"required"`
-	BaseAmount float64   `json:"baseAmount" binding:"required,gt=0"`
-	Notes      string    `json:"notes,omitempty"`
+	IssueDate   time.Time `json:"issueDate" binding:"required"`
+	DueDate     time.Time `json:"dueDate" binding:"required"`
+	BaseAmount  float64   `json:"baseAmount" binding:"required,gt=0"`
+	Description string    `json:"description" binding:"required"`
+	Notes       string    `json:"notes,omitempty"`
 }
 
 // InvoiceService handles invoice business logic
@@ -107,6 +109,7 @@ func (s *invoiceService) CreateInvoice(ctx context.Context, req *CreateInvoiceRe
 		AppointmentID: req.AppointmentID,
 		IssueDate:     req.IssueDate,
 		DueDate:       req.DueDate,
+		Description:   req.Description,
 		BaseAmount:    req.BaseAmount,
 		VATRate:       domain.FixedVATRate,
 		Status:        domain.InvoiceStatusUnpaid,
@@ -178,6 +181,7 @@ func (s *invoiceService) UpdateInvoice(ctx context.Context, id uuid.UUID, req *U
 	// Update fields
 	invoice.IssueDate = req.IssueDate
 	invoice.DueDate = req.DueDate
+	invoice.Description = req.Description
 	invoice.BaseAmount = req.BaseAmount
 	invoice.Notes = req.Notes
 	invoice.UpdatedAt = time.Now()
