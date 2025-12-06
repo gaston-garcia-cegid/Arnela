@@ -34,9 +34,17 @@ export default function BackofficeLayout({
                 {user?.role === "admin" ? "👤 Administrador" : "👤 Empleado"}
               </p>
             </div>
-            <Button onClick={handleLogout} variant="outline" size="sm">
-              Cerrar sesión
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-medium text-foreground">
+                  {user?.firstName} {user?.lastName}
+                </p>
+                <p className="text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+              <Button onClick={handleLogout} variant="outline" size="sm">
+                Cerrar sesión
+              </Button>
+            </div>
           </div>
         </header>
 
