@@ -28,6 +28,7 @@ import {
   Check,
   X,
   Plus,
+  Building2,
 } from 'lucide-react';
 
 export default function EmployeeDashboardPage() {
@@ -433,6 +434,14 @@ export default function EmployeeDashboardPage() {
                               <Clock className="h-3 w-3" />
                               {formatTime(appointment.startTime)} ({appointment.durationMinutes} min)
                             </span>
+                            {appointment.room && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3" />
+                                {appointment.room === 'gabinete_01' && 'Gabinete 01'}
+                                {appointment.room === 'gabinete_02' && 'Gabinete 02'}
+                                {appointment.room === 'gabinete_externo' && 'Gabinete Externo'}
+                              </span>
+                            )}
                           </div>
                           {appointment.notes && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{appointment.notes}</p>
@@ -515,6 +524,14 @@ export default function EmployeeDashboardPage() {
                           <span>{formatDate(appointment.startTime)}</span>
                           <span>{formatTime(appointment.startTime)}</span>
                           <span>{appointment.durationMinutes} min</span>
+                          {appointment.room && (
+                            <span className="flex items-center gap-1">
+                              <Building2 className="h-3 w-3" />
+                              {appointment.room === 'gabinete_01' && 'Gabinete 01'}
+                              {appointment.room === 'gabinete_02' && 'Gabinete 02'}
+                              {appointment.room === 'gabinete_externo' && 'Gabinete Externo'}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

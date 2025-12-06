@@ -17,16 +17,25 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { logError } from '@/lib/logger';
+import { validateDNIorCIF, validateEmail, validatePhone } from '@/lib/validators';
 
-// Validation for Spanish DNI/CIF format
-const spanishIdRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i;
-
+// Custom Zod validators using centralized validators
 const createClientSchema = z.object({
   firstName: z.string().min(1, 'El nombre es obligatorio'),
   lastName: z.string().min(1, 'Los apellidos son obligatorios'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().min(9, 'Teléfono inválido').regex(/^[+]?[0-9\s-]{9,}$/, 'Formato de teléfono inválido'),
-  dniCif: z.string().regex(spanishIdRegex, 'DNI/CIF inválido (ej: 12345678A)'),
+  email: z.string().refine(
+    (val) => validateEmail(val).isValid,
+    { message: 'Formato de email inválido' }
+  ),
+  phone: z.string().refine(
+    (val) => validatePhone(val).isValid,
+    { message: 'Formato de teléfono inválido (ej: 612345678)' }
+  ),
+  dniCif: z.string().refine(
+    (val) => validateDNIorCIF(val).isValid,
+    { message: 'DNI/NIE/CIF inválido. Formato: 12345678Z (DNI) o A12345678 (CIF)' }
+  ),
   address: z.string().optional(),
 });
 
@@ -80,7 +89,7 @@ export function CreateClientModal({
       onOpenChange(false);
       onSuccess(newClient);
     } catch (err: any) {
-      console.error('Error creating client:', err);
+      logError('Error creating client', err, { component: 'CreateClientModal' });
       setError(err.message || 'Error al crear el cliente');
     } finally {
       setIsSubmitting(false);

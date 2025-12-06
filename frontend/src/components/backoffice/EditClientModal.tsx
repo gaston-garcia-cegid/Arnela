@@ -20,23 +20,30 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api, type Client } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
+import { logError } from '@/lib/logger';
+import { validateDNIorCIF, validateEmail, validatePhone, validatePostalCode } from '@/lib/validators';
 
 const updateClientSchema = z.object({
   firstName: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   lastName: z.string().min(2, 'El apellido debe tener al menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  phone: z
-    .string()
-    .regex(/^[+]?[0-9\s-]{9,}$/, 'Formato de teléfono inválido (ej: 612345678 o +34612345678)'),
-  dniCif: z
-    .string()
-    .regex(
-      /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i,
-      'DNI/CIF inválido (formato: 12345678Z)'
-    ),
+  email: z.string().refine(
+    (val) => validateEmail(val).isValid,
+    { message: 'Formato de email inválido' }
+  ),
+  phone: z.string().refine(
+    (val) => validatePhone(val).isValid,
+    { message: 'Formato de teléfono inválido (ej: 612345678)' }
+  ),
+  dniCif: z.string().refine(
+    (val) => validateDNIorCIF(val).isValid,
+    { message: 'DNI/NIE/CIF inválido' }
+  ),
   city: z.string().optional(),
   province: z.string().optional(),
-  postalCode: z.string().optional(),
+  postalCode: z.string().optional().refine(
+    (val) => !val || validatePostalCode(val).isValid,
+    { message: 'Código postal inválido' }
+  ),
   address: z.string().optional(),
   notes: z.string().optional(),
   isActive: z.boolean(),
@@ -128,7 +135,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
       onSuccess(updatedClient);
       onClose();
     } catch (err: any) {
-      console.error('Error updating client:', err);
+      logError('Error updating client', err, { component: 'EditClientModal', clientId: client.id });
       setError(err.message || 'Error al actualizar el cliente');
     } finally {
       setIsSubmitting(false);

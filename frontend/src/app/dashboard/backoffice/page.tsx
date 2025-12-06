@@ -23,11 +23,29 @@ export default function BackofficeDashboard() {
   // Use stats hook
   const { stats, loading: statsLoading } = useStats();
 
+  // Redirect employees to their personal dashboard
   useEffect(() => {
-    if (token) {
+    if (user?.role === 'employee') {
+      // Get employee profile and redirect to their dashboard
+      const redirectToEmployeeDashboard = async () => {
+        if (!token) return;
+        try {
+          const employeeProfile = await api.employees.getMyProfile(token);
+          router.push(`/dashboard/backoffice/employees/${employeeProfile.id}`);
+        } catch (err) {
+          console.error('Error loading employee profile:', err);
+        }
+      };
+      redirectToEmployeeDashboard();
+      return; // Don't load admin data
+    }
+  }, [user, token, router]);
+
+  useEffect(() => {
+    if (token && user?.role !== 'employee') {
       loadClients();
     }
-  }, [token]);
+  }, [token, user]);
 
   const loadClients = async () => {
     if (!token) return;
@@ -47,6 +65,15 @@ export default function BackofficeDashboard() {
     logout();
     router.push('/');
   };
+
+  // Show loading while redirecting employee
+  if (user?.role === 'employee') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -184,8 +211,8 @@ export default function BackofficeDashboard() {
                         <td className="px-4 py-3 text-sm text-muted-foreground">{client.phone}</td>
                         <td className="px-4 py-3 text-sm">
                           <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${client.isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'bg-muted text-muted-foreground'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-muted text-muted-foreground'
                             }`}>
                             {client.isActive ? '✓ Activo' : '✗ Inactivo'}
                           </span>

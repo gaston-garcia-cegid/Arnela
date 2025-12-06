@@ -20,6 +20,7 @@ import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Employee } from '@/types/employee';
+import { logError } from '@/lib/logger';
 
 // Validation for Spanish DNI format
 const spanishDniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i;
@@ -119,7 +120,7 @@ export function EditEmployeeModal({
       onClose();
       onSuccess(updatedEmployee);
     } catch (err: any) {
-      console.error('Error updating employee:', err);
+      logError('Error updating employee', err, { component: 'EditEmployeeModal', employeeId: employee.id });
       setError(err.message || 'Error al actualizar el empleado');
     } finally {
       setIsSubmitting(false);
@@ -168,7 +169,7 @@ export function EditEmployeeModal({
           {/* Personal Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información Personal</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">Nombre *</Label>
@@ -212,7 +213,7 @@ export function EditEmployeeModal({
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información de Contacto</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -243,7 +244,7 @@ export function EditEmployeeModal({
           {/* Professional Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información Profesional</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="specialty">Especialidad *</Label>
               <Input

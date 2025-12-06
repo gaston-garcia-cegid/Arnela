@@ -23,6 +23,7 @@ import { ConfirmAppointmentModal } from '@/components/appointments/ConfirmAppoin
 import { CreateAppointmentModalBackoffice } from '@/components/appointments/CreateAppointmentModalBackoffice';
 import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import type { Therapist } from '@/types/appointment';
+import { api } from '@/lib/api';
 
 export default function BackofficeAppointmentsPage() {
   const user = useAuthStore((state) => state.user);
@@ -36,11 +37,12 @@ export default function BackofficeAppointmentsPage() {
   const [therapistFilter, setTherapistFilter] = useState<string>('all');
   const [startDateFilter, setStartDateFilter] = useState<string>('');
   const [endDateFilter, setEndDateFilter] = useState<string>('');
+  const [employeeId, setEmployeeId] = useState<string | null>(null);
 
   const {
     loading,
     error,
-    listAllAppointments,  // ✅ Changed from getMyAppointments
+    listAllAppointments,
     getAppointment,
     getTherapists,
   } = useAppointments();
@@ -61,6 +63,23 @@ export default function BackofficeAppointmentsPage() {
     }
   }, [user, router]);
 
+  // Get employee ID if user is employee
+  useEffect(() => {
+    const loadEmployeeId = async () => {
+      if (user?.role === 'employee') {
+        try {
+          const token = useAuthStore.getState().token;
+          if (!token) return;
+          const employeeProfile = await api.employees.getMyProfile(token);
+          setEmployeeId(employeeProfile.id);
+        } catch (err) {
+          console.error('Error loading employee profile:', err);
+        }
+      }
+    };
+    loadEmployeeId();
+  }, [user]);
+
   // Load therapists on mount
   useEffect(() => {
     loadTherapists();
@@ -68,8 +87,12 @@ export default function BackofficeAppointmentsPage() {
 
   // Load appointments when filters or pagination change
   useEffect(() => {
+    // Only load appointments after we have employeeId (if employee role)
+    if (user?.role === 'employee' && !employeeId) {
+      return; // Wait for employeeId to be loaded
+    }
     loadAppointments();
-  }, [pagination.page, statusFilter, therapistFilter, startDateFilter, endDateFilter]);
+  }, [pagination.page, statusFilter, therapistFilter, startDateFilter, endDateFilter, employeeId, user]);
 
   const loadTherapists = async () => {
     const data = await getTherapists();
@@ -77,12 +100,12 @@ export default function BackofficeAppointmentsPage() {
   };
 
   const loadAppointments = async () => {
-    // ✅ Build filters object with proper structure
+    // Build filters object with proper structure
     const filters: {
       page: number;
       pageSize: number;
       status?: string;
-      therapistId?: string;
+      employeeId?: string;
       startDate?: string;
       endDate?: string;
     } = {
@@ -90,12 +113,16 @@ export default function BackofficeAppointmentsPage() {
       pageSize: pagination.pageSize,
     };
 
-    if (statusFilter !== 'all') {
-      filters.status = statusFilter;
+    // If employee role, ALWAYS filter by their employeeId
+    if (user?.role === 'employee' && employeeId) {
+      filters.employeeId = employeeId;
+    } else if (therapistFilter !== 'all') {
+      // For admins, use the therapist filter
+      filters.employeeId = therapistFilter;
     }
 
-    if (therapistFilter !== 'all') {
-      filters.therapistId = therapistFilter;
+    if (statusFilter !== 'all') {
+      filters.status = statusFilter;
     }
 
     if (startDateFilter) {
@@ -108,7 +135,6 @@ export default function BackofficeAppointmentsPage() {
       filters.endDate = endDate.toISOString();
     }
 
-    // ✅ Use listAllAppointments instead of getMyAppointments
     const response = await listAllAppointments(filters);
     if (response) {
       setAppointments(response.appointments);
@@ -175,9 +201,13 @@ export default function BackofficeAppointmentsPage() {
         {/* Page Title Section */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-3xl font-bold">Citas</h2>
+            <h2 className="text-3xl font-bold">
+              {user?.role === 'employee' ? 'Mis Citas' : 'Citas'}
+            </h2>
             <p className="text-muted-foreground">
-              Gestiona todas las citas del sistema
+              {user?.role === 'employee'
+                ? 'Gestiona tus citas asignadas'
+                : 'Gestiona todas las citas del sistema'}
             </p>
           </div>
           <Button onClick={() => setCreateModalOpen(true)} size="lg" className="gap-2">

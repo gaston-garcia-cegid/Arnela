@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type DashboardStats } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { logError } from '@/lib/logger';
 
 interface UseStatsReturn {
   stats: DashboardStats | null;
@@ -32,7 +33,7 @@ export function useStats(): UseStatsReturn {
       const data = await api.stats.getDashboardStats(token);
       setStats(data);
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      logError('Error fetching dashboard stats', err, { component: 'useStats' });
       setError(err instanceof Error ? err.message : 'Error al cargar estadísticas');
     } finally {
       setLoading(false);

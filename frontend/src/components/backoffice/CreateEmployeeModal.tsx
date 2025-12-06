@@ -19,6 +19,7 @@ import { Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { Employee } from '@/types/employee';
+import { logError } from '@/lib/logger';
 
 // Validation for Spanish DNI format
 const spanishDniRegex = /^[0-9]{8}[TRWAGMYFPDXBNJZSQVHLCKE]$/i;
@@ -89,7 +90,7 @@ export function CreateEmployeeModal({
       onClose();
       onSuccess(employee);
     } catch (err: any) {
-      console.error('Error creating employee:', err);
+      logError('Error creating employee', err, { component: 'CreateEmployeeModal' });
       setError(err.message || 'Error al crear el empleado');
     } finally {
       setIsSubmitting(false);
@@ -123,7 +124,7 @@ export function CreateEmployeeModal({
           {/* Personal Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información Personal</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">Nombre *</Label>
@@ -167,7 +168,7 @@ export function CreateEmployeeModal({
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información de Contacto</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email *</Label>
               <Input
@@ -198,7 +199,7 @@ export function CreateEmployeeModal({
           {/* Professional Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información Profesional</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="specialty">Especialidad *</Label>
               <Input
