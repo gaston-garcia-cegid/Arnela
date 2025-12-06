@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
+import { toast } from 'sonner';
 import type { CreateInvoiceRequest } from "@/types/billing";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -31,7 +33,7 @@ export default function NewInvoicePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      alert("No estás autenticado");
+      toast.error("No estás autenticado", { description: "Por favor, inicia sesión nuevamente" });
       return;
     }
     try {
@@ -42,10 +44,11 @@ export default function NewInvoicePage() {
         dueDate: new Date(formData.dueDate).toISOString(),
       };
       await api.billing.invoices.create(payload, token);
+      toast.success('Factura creada correctamente');
       router.push("/dashboard/backoffice/billing/invoices");
     } catch (error) {
-      console.error("Error creating invoice:", error);
-      alert("Error al crear la factura");
+      logError('Error creating invoice', error, { component: 'NewInvoicePage' });
+      toast.error("Error al crear la factura", { description: error instanceof Error ? error.message : '' });
     } finally {
       setLoading(false);
     }

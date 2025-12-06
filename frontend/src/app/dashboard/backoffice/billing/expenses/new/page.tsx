@@ -17,6 +17,8 @@ import {
 } from "@/components/ui/select";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
+import { toast } from 'sonner';
 import type { CreateExpenseRequest, ExpenseCategory } from "@/types/billing";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
@@ -53,7 +55,7 @@ export default function NewExpensePage() {
       const response = await api.billing.categories.getParents(token);
       setCategories(response);
     } catch (error) {
-      console.error("Error loading categories:", error);
+      logError('Error loading categories', error, { component: 'NewExpensePage' });
     }
   };
 
@@ -63,7 +65,7 @@ export default function NewExpensePage() {
       const response = await api.billing.categories.getSubcategories(parentId, token);
       setSubcategories(response);
     } catch (error) {
-      console.error("Error loading subcategories:", error);
+      logError('Error loading subcategories', error, { component: 'NewExpensePage' });
       setSubcategories([]);
     }
   };
@@ -71,7 +73,7 @@ export default function NewExpensePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token) {
-      alert("No estás autenticado");
+      toast.error("No estás autenticado");
       return;
     }
     try {
@@ -81,10 +83,11 @@ export default function NewExpensePage() {
         expenseDate: new Date(formData.expenseDate).toISOString(),
       };
       await api.billing.expenses.create(payload, token);
+      toast.success('Gasto creado correctamente');
       router.push("/dashboard/backoffice/billing/expenses");
     } catch (error) {
-      console.error("Error creating expense:", error);
-      alert("Error al crear el gasto");
+      logError('Error creating expense', error, { component: 'NewExpensePage' });
+      toast.error("Error al crear el gasto");
     } finally {
       setLoading(false);
     }

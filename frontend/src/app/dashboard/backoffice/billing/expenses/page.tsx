@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
+import { toast } from 'sonner';
 import type { Expense, ExpenseFilters, PaginatedResponse, ExpenseCategory } from "@/types/billing";
 import { Plus, FileCheck, FileX } from "lucide-react";
 import Link from "next/link";
@@ -57,7 +59,7 @@ export default function ExpensesPage() {
       const response = await api.billing.categories.getParents(token);
       setCategories(response);
     } catch (error) {
-      console.error("Error loading categories:", error);
+      logError('Error loading categories', error, { component: 'ExpensesPage' });
     }
   };
 
@@ -68,7 +70,8 @@ export default function ExpensesPage() {
       const response = await api.billing.expenses.list(token, filters);
       setExpenses(response);
     } catch (error) {
-      console.error("Error loading expenses:", error);
+      logError('Error loading expenses', error, { component: 'ExpensesPage' });
+      toast.error('Error al cargar gastos');
     } finally {
       setLoading(false);
     }
@@ -134,8 +137,8 @@ export default function ExpensesPage() {
                 filters.hasInvoice === undefined
                   ? "all"
                   : filters.hasInvoice
-                  ? "yes"
-                  : "no"
+                    ? "yes"
+                    : "no"
               }
               onValueChange={(value) =>
                 setFilters({

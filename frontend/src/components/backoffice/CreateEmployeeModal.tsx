@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -85,6 +86,10 @@ export function CreateEmployeeModal({
         hireDate: data.hireDate,
         notes: data.notes,
       }, token);
+
+      toast.success('Empleado creado', {
+        description: `${employee.firstName} ${employee.lastName} agregado al equipo`
+      });
 
       reset();
       onClose();

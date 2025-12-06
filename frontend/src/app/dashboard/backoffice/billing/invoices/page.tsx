@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
+import { toast } from 'sonner';
 import type { Invoice, InvoiceFilters, PaginatedResponse } from "@/types/billing";
 import { Plus, Search, Eye, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
@@ -54,7 +56,8 @@ export default function InvoicesPage() {
       const response = await api.billing.invoices.list(token, filters);
       setInvoices(response);
     } catch (error) {
-      console.error("Error loading invoices:", error);
+      logError('Error loading invoices', error, { component: 'InvoicesPage' });
+      toast.error('Error al cargar facturas');
     } finally {
       setLoading(false);
     }
@@ -75,9 +78,11 @@ export default function InvoicesPage() {
     if (!token) return;
     try {
       await api.billing.invoices.markAsPaid(id, token);
+      toast.success('Factura marcada como cobrada');
       loadInvoices();
     } catch (error) {
-      console.error("Error marking invoice as paid:", error);
+      logError('Error marking invoice as paid', error, { component: 'InvoicesPage', invoiceId: id });
+      toast.error('Error al marcar factura como cobrada');
     }
   };
 

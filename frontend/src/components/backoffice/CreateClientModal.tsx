@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,10 @@ export function CreateClientModal({
         dniCif: data.dniCif.toUpperCase(),
         address: data.address,
       }, token);
+
+      toast.success('Cliente creado', {
+        description: `${newClient.firstName} ${newClient.lastName} agregado al sistema`
+      });
 
       reset();
       onOpenChange(false);

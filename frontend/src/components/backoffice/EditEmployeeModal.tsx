@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -116,6 +117,10 @@ export function EditEmployeeModal({
         notes: data.notes,
         isActive: data.isActive,
       }, token);
+
+      toast.success('Empleado actualizado', {
+        description: 'Datos actualizados correctamente'
+      });
 
       onClose();
       onSuccess(updatedEmployee);

@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/select";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
+import { toast } from 'sonner';
 import type { ExpenseCategory, CreateExpenseCategoryRequest } from "@/types/billing";
 import { Plus, FolderOpen, Folder, Edit, Trash2 } from "lucide-react";
 
@@ -48,7 +50,7 @@ export default function CategoriesPage() {
       const response = await api.billing.categories.getTree(token);
       setCategories(response);
     } catch (error) {
-      console.error("Error loading categories:", error);
+      logError('Error loading categories', error, { component: 'CategoriesPage' });
     } finally {
       setLoading(false);
     }
@@ -61,10 +63,11 @@ export default function CategoriesPage() {
       await api.billing.categories.create(formData, token);
       setDialogOpen(false);
       setFormData({ name: "", code: "", description: "", sortOrder: 0 });
+      toast.success('Categoría creada correctamente');
       loadCategories();
     } catch (error) {
-      console.error("Error creating category:", error);
-      alert("Error al crear la categoría");
+      logError('Error creating category', error, { component: 'CategoriesPage' });
+      toast.error("Error al crear la categoría");
     }
   };
 
@@ -73,10 +76,11 @@ export default function CategoriesPage() {
     if (!token) return;
     try {
       await api.billing.categories.delete(id, token);
+      toast.success('Categoría eliminada');
       loadCategories();
     } catch (error) {
-      console.error("Error deleting category:", error);
-      alert("Error al eliminar la categoría");
+      logError('Error deleting category', error, { component: 'CategoriesPage', categoryId: id });
+      toast.error("Error al eliminar la categoría");
     }
   };
 
@@ -86,9 +90,8 @@ export default function CategoriesPage() {
     return (
       <div key={category.id}>
         <div
-          className={`flex items-center justify-between p-4 border-b hover:bg-accent transition-colors ${
-            level > 0 ? "ml-8 border-l-2 border-l-primary/20" : ""
-          }`}
+          className={`flex items-center justify-between p-4 border-b hover:bg-accent transition-colors ${level > 0 ? "ml-8 border-l-2 border-l-primary/20" : ""
+            }`}
         >
           <div className="flex items-center gap-3">
             {hasSubcategories ? (
