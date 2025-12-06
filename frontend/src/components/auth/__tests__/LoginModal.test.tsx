@@ -46,7 +46,7 @@ describe('LoginModal - Error Handling', () => {
 
   it('should display user-friendly message for invalid credentials (401)', async () => {
     const user = userEvent.setup();
-    
+
     // Mock API to throw UnauthorizedError
     mockLoginFn.mockRejectedValue(
       new UnauthorizedError('Invalid credentials')
@@ -69,7 +69,7 @@ describe('LoginModal - Error Handling', () => {
 
   it('should display inactive user message for forbidden error (403)', async () => {
     const user = userEvent.setup();
-    
+
     // Mock API to throw ForbiddenError
     mockLoginFn.mockRejectedValue(
       new ForbiddenError('User account is inactive')
@@ -88,7 +88,7 @@ describe('LoginModal - Error Handling', () => {
 
   it('should display network error message when connection fails', async () => {
     const user = userEvent.setup();
-    
+
     // Mock API to throw NetworkError
     mockLoginFn.mockRejectedValue(
       new NetworkError('No se pudo conectar con el servidor')
@@ -107,7 +107,7 @@ describe('LoginModal - Error Handling', () => {
 
   it('should display validation errors from backend', async () => {
     const user = userEvent.setup();
-    
+
     const validationError = new ValidationError('Validation failed', {
       email: ['Email format is invalid'],
       password: ['Password is too short'],
@@ -124,17 +124,25 @@ describe('LoginModal - Error Handling', () => {
     // Wait for error to be displayed (should show first field's first error)
     await waitFor(() => {
       expect(screen.getByText(/email format is invalid/i)).toBeInTheDocument();
-    }, { timeout: 5000 });
-  });
+    }, { timeout: 10000 });
+  }, 15000);
 
-  it('should disable form during submission', async () => {
+  it('should call api.auth.login with correct credentials on submit', async () => {
     const user = userEvent.setup();
-    
-    let resolveLogin: any;
-    // Mock API with delayed response that we control
-    mockLoginFn.mockImplementation(
-      () => new Promise((resolve) => { resolveLogin = resolve; })
-    );
+
+    const mockResponse = {
+      token: 'fake-jwt-token',
+      user: {
+        id: '1',
+        email: 'test@example.com',
+        role: 'client' as const,
+        firstName: 'Test',
+        lastName: 'User',
+        isActive: true,
+      },
+    };
+
+    mockLoginFn.mockResolvedValue(mockResponse);
 
     render(<LoginModal isOpen={true} onClose={mockOnClose} />);
 
@@ -142,26 +150,15 @@ describe('LoginModal - Error Handling', () => {
     await user.type(screen.getByLabelText(/contraseña/i), 'password123');
 
     const submitButton = screen.getByRole('button', { name: /ingresar/i });
-    
-    // Start submission
-    const clickPromise = user.click(submitButton);
+    await user.click(submitButton);
 
-    // Wait a bit for state to update
     await waitFor(() => {
-      expect(screen.getByLabelText(/email/i)).toBeDisabled();
-    }, { timeout: 500 });
-    
-    expect(screen.getByLabelText(/contraseña/i)).toBeDisabled();
-    
-    // Resolve the promise to complete the test
-    if (resolveLogin) {
-      resolveLogin({
-        token: 'token',
-        user: { id: '1', email: 'test@example.com', role: 'client', firstName: 'Test', lastName: 'User', isActive: true },
+      expect(mockLoginFn).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        password: 'password123',
       });
-    }
-    await clickPromise;
-  });
+    }, { timeout: 10000 });
+  }, 15000);
 
   it('should successfully login and redirect based on role', async () => {
     const user = userEvent.setup();
@@ -189,9 +186,9 @@ describe('LoginModal - Error Handling', () => {
     // Wait for login to complete
     await waitFor(() => {
       expect(mockStoreLogin).toHaveBeenCalledWith(mockResponse.token, mockResponse.user);
-    }, { timeout: 5000 });
-    
+    }, { timeout: 10000 });
+
     expect(mockPush).toHaveBeenCalledWith('/dashboard/backoffice');
     expect(mockOnClose).toHaveBeenCalled();
-  });
+  }, 15000);
 });

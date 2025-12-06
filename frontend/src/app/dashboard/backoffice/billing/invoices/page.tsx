@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 import type { Invoice, InvoiceFilters, PaginatedResponse } from "@/types/billing";
 import { Plus, Search, Eye, CheckCircle, XCircle } from "lucide-react";
 import Link from "next/link";
+import { ClientNameDisplay } from "@/components/billing/ClientNameDisplay";
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -195,7 +196,9 @@ export default function InvoicesPage() {
                   <TableCell className="font-medium">
                     {invoice.invoiceNumber}
                   </TableCell>
-                  <TableCell>{invoice.clientId.substring(0, 8)}...</TableCell>
+                  <TableCell>
+                    <ClientNameDisplay clientId={invoice.clientId} />
+                  </TableCell>
                   <TableCell>{formatDate(invoice.issueDate)}</TableCell>
                   <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                   <TableCell className="max-w-[200px] truncate">

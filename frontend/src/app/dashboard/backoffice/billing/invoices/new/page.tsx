@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import type { CreateInvoiceRequest } from "@/types/billing";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
+import { ClientSelector } from "@/components/billing/ClientSelector";
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -93,15 +94,12 @@ export default function NewInvoicePage() {
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div>
-                    <Label htmlFor="clientId">ID Cliente *</Label>
-                    <Input
-                      id="clientId"
-                      required
+                    <Label htmlFor="clientId">Cliente *</Label>
+                    <ClientSelector
                       value={formData.clientId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, clientId: e.target.value })
+                      onSelect={(clientId) =>
+                        setFormData({ ...formData, clientId })
                       }
-                      placeholder="UUID del cliente"
                     />
                   </div>
                   <div>
