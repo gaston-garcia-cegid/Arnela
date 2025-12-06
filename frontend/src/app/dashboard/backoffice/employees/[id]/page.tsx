@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import { Employee } from '@/types/employee';
@@ -98,7 +99,7 @@ export default function EmployeeDashboardPage() {
 
       setAppointments(appointmentsData.appointments || []);
     } catch (err: any) {
-      console.error('Error loading employee profile:', err);
+      logError('Error loading employee profile', err, { component: 'EmployeeDashboardPage', employeeId: params.id });
       setError(err.message || 'Error al cargar tu perfil');
     } finally {
       setIsLoading(false);
@@ -132,7 +133,7 @@ export default function EmployeeDashboardPage() {
 
       setAppointments(appointmentsData.appointments || []);
     } catch (err: any) {
-      console.error('Error loading employee data:', err);
+      logError('Error loading employee data', err, { component: 'EmployeeDashboardPage', employeeId: params.id });
       setError(err.message || 'Error al cargar datos del empleado');
     } finally {
       setIsLoading(false);
@@ -181,7 +182,7 @@ export default function EmployeeDashboardPage() {
         loadEmployeeData();
       }
     } catch (err: any) {
-      console.error('Error cancelling appointment:', err);
+      logError('Error cancelling appointment', err, { component: 'EmployeeDashboardPage', appointmentId: appointment.id });
       toast.error('Error al cancelar cita', {
         description: err.message || 'No se pudo cancelar la cita',
       });

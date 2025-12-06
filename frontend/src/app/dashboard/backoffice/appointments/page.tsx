@@ -24,6 +24,7 @@ import { CreateAppointmentModalBackoffice } from '@/components/appointments/Crea
 import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
 import type { Therapist } from '@/types/appointment';
 import { api } from '@/lib/api';
+import { logError } from '@/lib/logger';
 
 export default function BackofficeAppointmentsPage() {
   const user = useAuthStore((state) => state.user);
@@ -73,7 +74,7 @@ export default function BackofficeAppointmentsPage() {
           const employeeProfile = await api.employees.getMyProfile(token);
           setEmployeeId(employeeProfile.id);
         } catch (err) {
-          console.error('Error loading employee profile:', err);
+          logError('Error loading employee profile for appointments filter', err, { component: 'BackofficeAppointmentsPage' });
         }
       }
     };

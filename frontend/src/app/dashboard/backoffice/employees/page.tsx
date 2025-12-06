@@ -11,6 +11,7 @@ import { CreateEmployeeModal } from '@/components/backoffice/CreateEmployeeModal
 import { EditEmployeeModal } from '@/components/backoffice/EditEmployeeModal';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 import { EmployeesTableSkeleton } from '@/components/common/TableSkeletons';
 import {
   AlertDialog,
@@ -61,7 +62,7 @@ export default function EmployeesPage() {
       const response = await api.employees.list(token);
       setEmployees(response.employees || []);
     } catch (err) {
-      console.error('Error loading employees:', err);
+      logError('Error loading employees', err, { component: 'EmployeesPage' });
       setError(err instanceof Error ? err.message : 'Error al cargar empleados');
     } finally {
       setIsLoading(false);
@@ -107,7 +108,7 @@ export default function EmployeesPage() {
         description: `${employeeName} ha sido eliminado del sistema`,
       });
     } catch (err) {
-      console.error('Error deleting employee:', err);
+      logError('Error deleting employee', err, { component: 'EmployeesPage', employeeId: employeeToDelete.id });
       const errorMessage = err instanceof Error ? err.message : 'Error al eliminar empleado';
       toast.error('Error al eliminar empleado', {
         description: errorMessage,

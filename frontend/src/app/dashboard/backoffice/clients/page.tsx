@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import { logError } from '@/lib/logger';
 import { ClientsTableSkeleton } from '@/components/common/TableSkeletons';
 import {
   AlertDialog,
@@ -80,7 +81,7 @@ export default function ClientsPage() {
       const response = await api.clients.list(token);
       setClients(response.clients || []);
     } catch (err) {
-      console.error('Error loading clients:', err);
+      logError('Error loading clients', err, { component: 'ClientsPage' });
       setError(err instanceof Error ? err.message : 'Error al cargar clientes');
     } finally {
       setIsLoading(false);
@@ -157,7 +158,7 @@ export default function ClientsPage() {
         description: `${clientName} ha sido eliminado del sistema`,
       });
     } catch (err) {
-      console.error('Error deleting client:', err);
+      logError('Error deleting client', err, { component: 'ClientsPage', clientId: clientToDelete.id });
       const errorMessage = err instanceof Error ? err.message : 'Error al eliminar cliente';
       setError(errorMessage);
       toast.error('Error al eliminar cliente', {

@@ -9,6 +9,7 @@ import { api, type Client } from '@/lib/api';
 import { CreateClientModal } from '@/components/backoffice/CreateClientModal';
 import { useStats } from '@/hooks/useStats';
 import { Loader2 } from 'lucide-react';
+import { logError } from '@/lib/logger';
 
 export default function BackofficeDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -33,7 +34,7 @@ export default function BackofficeDashboard() {
           const employeeProfile = await api.employees.getMyProfile(token);
           router.push(`/dashboard/backoffice/employees/${employeeProfile.id}`);
         } catch (err) {
-          console.error('Error loading employee profile:', err);
+          logError('Error loading employee profile for dashboard redirect', err, { component: 'BackofficeDashboard' });
         }
       };
       redirectToEmployeeDashboard();

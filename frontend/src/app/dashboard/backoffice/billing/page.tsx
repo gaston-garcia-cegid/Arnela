@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logError } from '@/lib/logger';
 import type { BillingDashboardStats } from "@/types/billing";
 import { Euro, TrendingUp, TrendingDown, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -24,7 +25,7 @@ export default function BillingDashboard() {
       const response = await api.billing.stats.getDashboard(token);
       setStats(response);
     } catch (error) {
-      console.error("Error loading billing stats:", error);
+      logError('Error loading billing stats', error, { component: 'BillingDashboard' });
     } finally {
       setLoading(false);
     }
