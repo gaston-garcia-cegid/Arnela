@@ -41,7 +41,7 @@ export default function ClientsPage() {
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Modals
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -183,26 +183,6 @@ export default function ClientsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push('/dashboard/backoffice')}>
-              ← Volver
-            </Button>
-            <h1 className="text-xl font-semibold">Gestión de Clientes</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <Button variant="outline" onClick={handleLogout}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto p-6 space-y-6">
         {/* Page Title Section */}
@@ -217,237 +197,237 @@ export default function ClientsPage() {
           </Button>
         </div>
 
-      {/* Loading State */}
-      {isLoading ? (
-        <ClientsTableSkeleton />
-      ) : (
-        <>
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Clientes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalClients}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Activos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">{activeClients}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Inactivos
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-orange-600">{inactiveClients}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Filtros</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nombre, email, DNI, teléfono..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+        {/* Loading State */}
+        {isLoading ? (
+          <ClientsTableSkeleton />
+        ) : (
+          <>
+            {/* Stats Cards */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Clientes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold">{totalClients}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Activos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-green-600">{activeClients}</div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Inactivos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-600">{inactiveClients}</div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="active">Activos</SelectItem>
-                <SelectItem value="inactive">Inactivos</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* City Filter */}
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger className="w-full md:w-[180px]">
-                <SelectValue placeholder="Ciudad" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas las ciudades</SelectItem>
-                {uniqueCities.map((city) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Error Message */}
-      {error && (
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6">
-            <p className="text-sm text-red-600">{error}</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Clients Table/Grid */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredClients.length === 0 ? (
-          <Card className="col-span-full">
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <UserPlus className="mb-4 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-2 text-lg font-semibold">No se encontraron clientes</h3>
-              <p className="mb-4 text-center text-sm text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' || cityFilter !== 'all'
-                  ? 'Intenta ajustar los filtros de búsqueda'
-                  : 'Comienza agregando tu primer cliente'}
-              </p>
-              {!searchQuery && statusFilter === 'all' && cityFilter === 'all' && (
-                <Button onClick={() => setIsCreateModalOpen(true)}>
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Crear Primer Cliente
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        ) : (
-          filteredClients.map((client) => (
-            <Card key={client.id} className="overflow-hidden hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white"
-                      style={{ backgroundColor: '#6366F1' }}
-                    >
-                      {client.firstName[0]}
-                      {client.lastName[0]}
-                    </div>
-                    <div>
-                      <CardTitle className="text-base">
-                        {client.firstName} {client.lastName}
-                      </CardTitle>
-                      <Badge variant={client.isActive ? 'default' : 'secondary'} className="mt-1">
-                        {client.isActive ? 'Activo' : 'Inactivo'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+            {/* Filters */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Filtros</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Mail className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{client.email}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Phone className="h-4 w-4 flex-shrink-0" />
-                  <span>{client.phone || 'Sin teléfono'}</span>
-                </div>
-                {client.city && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4 flex-shrink-0" />
-                    <span>
-                      {client.city}
-                      {client.province && `, ${client.province}`}
-                    </span>
+              <CardContent>
+                <div className="flex flex-col gap-4 md:flex-row">
+                  {/* Search */}
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por nombre, email, DNI, teléfono..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
-                )}
-                <div className="flex items-center gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => handleEditClick(client)}
-                  >
-                    <Edit className="mr-1 h-3 w-3" />
-                    Editar
-                  </Button>
-                  {user?.role === 'admin' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-red-600 hover:bg-red-50 hover:text-red-700"
-                      onClick={() => handleDeleteClick(client)}
-                    >
-                      <Trash2 className="mr-1 h-3 w-3" />
-                      Eliminar
-                    </Button>
-                  )}
+
+                  {/* Status Filter */}
+                  <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                      <SelectValue placeholder="Estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      <SelectItem value="active">Activos</SelectItem>
+                      <SelectItem value="inactive">Inactivos</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* City Filter */}
+                  <Select value={cityFilter} onValueChange={setCityFilter}>
+                    <SelectTrigger className="w-full md:w-[180px]">
+                      <SelectValue placeholder="Ciudad" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas las ciudades</SelectItem>
+                      {uniqueCities.map((city) => (
+                        <SelectItem key={city} value={city}>
+                          {city}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
-          ))
+
+            {/* Error Message */}
+            {error && (
+              <Card className="border-red-200 bg-red-50">
+                <CardContent className="pt-6">
+                  <p className="text-sm text-red-600">{error}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Clients Table/Grid */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {filteredClients.length === 0 ? (
+                <Card className="col-span-full">
+                  <CardContent className="flex flex-col items-center justify-center py-12">
+                    <UserPlus className="mb-4 h-12 w-12 text-muted-foreground" />
+                    <h3 className="mb-2 text-lg font-semibold">No se encontraron clientes</h3>
+                    <p className="mb-4 text-center text-sm text-muted-foreground">
+                      {searchQuery || statusFilter !== 'all' || cityFilter !== 'all'
+                        ? 'Intenta ajustar los filtros de búsqueda'
+                        : 'Comienza agregando tu primer cliente'}
+                    </p>
+                    {!searchQuery && statusFilter === 'all' && cityFilter === 'all' && (
+                      <Button onClick={() => setIsCreateModalOpen(true)}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Crear Primer Cliente
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                filteredClients.map((client) => (
+                  <Card key={client.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className="flex h-12 w-12 items-center justify-center rounded-full text-lg font-semibold text-white"
+                            style={{ backgroundColor: '#6366F1' }}
+                          >
+                            {client.firstName[0]}
+                            {client.lastName[0]}
+                          </div>
+                          <div>
+                            <CardTitle className="text-base">
+                              {client.firstName} {client.lastName}
+                            </CardTitle>
+                            <Badge variant={client.isActive ? 'default' : 'secondary'} className="mt-1">
+                              {client.isActive ? 'Activo' : 'Inactivo'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Mail className="h-4 w-4 flex-shrink-0" />
+                        <span className="truncate">{client.email}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-4 w-4 flex-shrink-0" />
+                        <span>{client.phone || 'Sin teléfono'}</span>
+                      </div>
+                      {client.city && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <MapPin className="h-4 w-4 flex-shrink-0" />
+                          <span>
+                            {client.city}
+                            {client.province && `, ${client.province}`}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 pt-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleEditClick(client)}
+                        >
+                          <Edit className="mr-1 h-3 w-3" />
+                          Editar
+                        </Button>
+                        {user?.role === 'admin' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={() => handleDeleteClick(client)}
+                          >
+                            <Trash2 className="mr-1 h-3 w-3" />
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+
+            {/* Modals */}
+            <CreateClientModal
+              open={isCreateModalOpen}
+              onOpenChange={setIsCreateModalOpen}
+              onSuccess={handleCreateSuccess}
+            />
+
+            {selectedClient && (
+              <EditClientModal
+                isOpen={isEditModalOpen}
+                onClose={() => {
+                  setIsEditModalOpen(false);
+                  setSelectedClient(null);
+                }}
+                onSuccess={handleEditSuccess}
+                client={selectedClient}
+              />
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Esta acción eliminará permanentemente al cliente{' '}
+                    <span className="font-semibold">
+                      {clientToDelete?.firstName} {clientToDelete?.lastName}
+                    </span>
+                    . Esta acción no se puede deshacer.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteConfirm}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    Eliminar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
         )}
-      </div>
-
-        {/* Modals */}
-        <CreateClientModal
-          open={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-          onSuccess={handleCreateSuccess}
-        />
-
-        {selectedClient && (
-          <EditClientModal
-            isOpen={isEditModalOpen}
-            onClose={() => {
-              setIsEditModalOpen(false);
-              setSelectedClient(null);
-            }}
-            onSuccess={handleEditSuccess}
-            client={selectedClient}
-          />
-        )}
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!clientToDelete} onOpenChange={() => setClientToDelete(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta acción eliminará permanentemente al cliente{' '}
-                <span className="font-semibold">
-                  {clientToDelete?.firstName} {clientToDelete?.lastName}
-                </span>
-                . Esta acción no se puede deshacer.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteConfirm}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                Eliminar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-        </>
-      )}
       </main>
     </div>
   );

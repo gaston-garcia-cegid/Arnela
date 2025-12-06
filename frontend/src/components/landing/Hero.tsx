@@ -3,7 +3,7 @@ export function Hero() {
     <section
       className="relative flex min-h-[60vh] items-center justify-center px-4 py-16 md:py-24 bg-background"
       style={{
-        backgroundImage: `url(/images/fondo-imagen-portada-prueba.avif)`,
+        backgroundImage: `url(/images/fondo-imagen-portada-prueba.png)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',

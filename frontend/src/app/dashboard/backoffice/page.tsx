@@ -19,7 +19,7 @@ export default function BackofficeDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+
   // Use stats hook
   const { stats, loading: statsLoading } = useStats();
 
@@ -31,7 +31,7 @@ export default function BackofficeDashboard() {
 
   const loadClients = async () => {
     if (!token) return;
-    
+
     try {
       setIsLoading(true);
       const response = await api.clients.list(token);
@@ -50,31 +50,16 @@ export default function BackofficeDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div>
-            <h1 className="text-lg font-bold text-foreground md:text-xl">Backoffice - Arnela Gabinete</h1>
-            <p className="text-xs font-medium text-primary">
-              {user?.role === 'admin' ? '👤 Administrador' : '👤 Empleado'}
-            </p>
-          </div>
-          <Button onClick={handleLogout} variant="outline" size="sm">
-            Cerrar sesión
-          </Button>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold">
-          Bienvenido, {user?.firstName} {user?.lastName}
-        </h2>
-        <p className="text-muted-foreground">Panel de administración</p>
-      </div>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold">
+            Bienvenido, {user?.firstName} {user?.lastName}
+          </h2>
+          <p className="text-muted-foreground">Panel de administración</p>
+        </div>
 
-      <div className="grid gap-4 md:grid-cols-3 md:gap-6">
+        <div className="grid gap-4 md:grid-cols-3 md:gap-6">
           {/* Stats Cards */}
           <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
@@ -153,8 +138,8 @@ export default function BackofficeDashboard() {
                 <CardTitle>Gestión de Clientes</CardTitle>
                 <CardDescription>Lista de todos los clientes registrados</CardDescription>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => router.push('/dashboard/backoffice/clients')}
                 className="hover:bg-primary/10 hover:text-primary"
               >
@@ -186,11 +171,10 @@ export default function BackofficeDashboard() {
                   </thead>
                   <tbody>
                     {clients.map((client, index) => (
-                      <tr 
-                        key={client.id} 
-                        className={`border-b transition-colors hover:bg-muted/30 ${
-                          index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
-                        }`}
+                      <tr
+                        key={client.id}
+                        className={`border-b transition-colors hover:bg-muted/30 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
+                          }`}
                       >
                         <td className="px-4 py-3 text-sm font-medium">
                           {client.firstName} {client.lastName}
@@ -199,11 +183,10 @@ export default function BackofficeDashboard() {
                         <td className="px-4 py-3 text-sm font-mono">{client.dniCif}</td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">{client.phone}</td>
                         <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            client.isActive 
-                              ? 'bg-primary/10 text-primary' 
+                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${client.isActive
+                              ? 'bg-primary/10 text-primary'
                               : 'bg-muted text-muted-foreground'
-                          }`}>
+                            }`}>
                             {client.isActive ? '✓ Activo' : '✗ Inactivo'}
                           </span>
                         </td>
@@ -229,32 +212,32 @@ export default function BackofficeDashboard() {
 
         {/* Quick Actions */}
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Button 
-            className="h-20 text-base font-semibold" 
+          <Button
+            className="h-20 text-base font-semibold"
             variant="default"
             onClick={() => setIsCreateModalOpen(true)}
           >
             <span className="text-xl mr-2">+</span> Nuevo Cliente
           </Button>
-          <Button 
+          <Button
             className="h-20 text-base font-semibold bg-accent hover:bg-accent/90 text-accent-foreground"
             onClick={() => router.push('/dashboard/backoffice/appointments')}
           >
             📅 Gestión de Citas
           </Button>
-          <Button 
+          <Button
             className="h-20 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
             onClick={() => router.push('/dashboard/backoffice/employees')}
           >
             👥 Gestión de Empleados
           </Button>
-          <Button 
+          <Button
             className="h-20 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
             onClick={() => router.push('/dashboard/backoffice/clients')}
           >
             👤 Gestión de Clientes
           </Button>
-          <Button 
+          <Button
             className="h-20 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
             onClick={() => router.push('/dashboard/backoffice/billing')}
           >
@@ -264,7 +247,7 @@ export default function BackofficeDashboard() {
       </main>
 
       {/* Create Client Modal */}
-      <CreateClientModal 
+      <CreateClientModal
         open={isCreateModalOpen}
         onOpenChange={setIsCreateModalOpen}
         onSuccess={() => {

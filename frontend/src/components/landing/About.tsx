@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export function About() {
   const values = [
@@ -19,7 +20,7 @@ export function About() {
         <h2 className="mb-10 text-center text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
           EL GABINETE
         </h2>
-        
+
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
           <div className="space-y-6">
             <p className="text-base leading-relaxed text-foreground/90 md:text-lg">
@@ -30,7 +31,7 @@ export function About() {
               Desde Vigo, trabajamos para mejorar la convivencia, ayudar a resolver conflictos
               y acompañar a las personas en momentos importantes de su vida.
             </p>
-            
+
             <ul className="space-y-2.5 pt-2">
               {values.map((value) => (
                 <li key={value} className="flex items-start text-sm md:text-base">
@@ -39,23 +40,22 @@ export function About() {
                 </li>
               ))}
             </ul>
-            
+
             <div className="pt-6">
               <Button asChild size="lg" className="font-semibold shadow-sm hover:shadow-md transition-shadow">
-                <Link href="/sobre-arnela">Conocer más</Link>
+                <Link href="/sobre-arnela">EL GABINETE</Link>
               </Button>
             </div>
           </div>
-          
+
           <div className="flex items-center justify-center">
-            <div className="aspect-square w-full max-w-md overflow-hidden rounded-xl bg-linear-to-br from-primary/10 to-accent/10 shadow-md">
-              {/* Placeholder for image - replace with actual image */}
-              <div className="flex h-full items-center justify-center text-muted-foreground">
-                <div className="text-center p-8">
-                  <div className="text-6xl mb-4">🏢</div>
-                  <p className="text-sm">Imagen del gabinete</p>
-                </div>
-              </div>
+            <div className="relative aspect-square w-full max-w-md overflow-hidden rounded-xl shadow-md">
+              <Image
+                src="/images/about-office.png"
+                alt="Oficina Arnela Gabinete"
+                fill
+                className="object-cover"
+              />
             </div>
           </div>
         </div>

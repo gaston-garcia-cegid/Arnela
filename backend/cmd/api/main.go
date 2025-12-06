@@ -156,12 +156,14 @@ func main() {
 	invoiceRepo := postgres.NewInvoiceRepository(db)
 	expenseRepo := postgres.NewExpenseRepository(db)
 	expenseCategoryRepo := postgres.NewExpenseCategoryRepository(db)
+	taskRepo := postgres.NewTaskRepository(db)
 
 	// Initialize services
 	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
 	appointmentService := service.NewAppointmentService(appointmentRepo, clientRepo, employeeRepo)
 	employeeService := service.NewEmployeeService(employeeRepo, userRepo)
+	taskService := service.NewTaskService(taskRepo, employeeRepo)
 	statsService := service.NewStatsService(statsRepo)
 
 	// Billing services
@@ -175,6 +177,7 @@ func main() {
 	clientHandler := handler.NewClientHandler(clientService)
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
+	taskHandler := handler.NewTaskHandler(taskService)
 	statsHandler := handler.NewStatsHandler(statsService)
 
 	// Billing handlers
@@ -297,6 +300,22 @@ func main() {
 			employees.POST("", authMiddleware.RequireRole("admin"), employeeHandler.CreateEmployee)
 			employees.PUT("/:id", authMiddleware.RequireRole("admin"), employeeHandler.UpdateEmployee)
 			employees.DELETE("/:id", authMiddleware.RequireRole("admin"), employeeHandler.DeleteEmployee)
+		}
+
+		// Task routes (authenticated)
+		tasks := v1.Group("/tasks")
+		tasks.Use(authMiddleware.RequireAuth())
+		{
+			// Admin/Employee can create tasks
+			tasks.POST("", authMiddleware.RequireRole("admin", "employee"), taskHandler.CreateTask)
+			// List tasks with filters
+			tasks.GET("", authMiddleware.RequireRole("admin", "employee"), taskHandler.ListTasks)
+			// My tasks
+			tasks.GET("/me", authMiddleware.RequireRole("employee"), taskHandler.GetMyTasks)
+			// Update task
+			tasks.PUT("/:id", authMiddleware.RequireRole("admin", "employee"), taskHandler.UpdateTask)
+			// Delete task
+			tasks.DELETE("/:id", authMiddleware.RequireRole("admin"), taskHandler.DeleteTask)
 		}
 
 		// Stats routes (authenticated)

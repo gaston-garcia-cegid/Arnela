@@ -72,7 +72,7 @@ export default function EmployeeDashboardPage() {
 
       // Load my employee profile
       const employeeData = await api.employees.getMyProfile(token);
-      
+
       // Verify the employee is accessing their own dashboard
       if (employeeData.id !== employeeId) {
         router.push(`/dashboard/backoffice/employees/${employeeData.id}`);
@@ -94,7 +94,7 @@ export default function EmployeeDashboardPage() {
         page: 1,
         pageSize: 100,
       });
-      
+
       setAppointments(appointmentsData.appointments || []);
     } catch (err: any) {
       console.error('Error loading employee profile:', err);
@@ -128,7 +128,7 @@ export default function EmployeeDashboardPage() {
         page: 1,
         pageSize: 100,
       });
-      
+
       setAppointments(appointmentsData.appointments || []);
     } catch (err: any) {
       console.error('Error loading employee data:', err);
@@ -159,7 +159,7 @@ export default function EmployeeDashboardPage() {
 
   const handleCancelAppointment = async (appointment: Appointment) => {
     if (!token) return;
-    
+
     if (!confirm('¿Estás seguro de que deseas cancelar esta cita?')) {
       return;
     }
@@ -168,11 +168,11 @@ export default function EmployeeDashboardPage() {
       await api.appointments.cancel(appointment.id, {
         reason: 'Cancelada por el empleado',
       }, token);
-      
+
       toast.success('Cita cancelada', {
         description: 'La cita ha sido cancelada correctamente',
       });
-      
+
       // Reload appointments based on user role
       if (user?.role === 'employee') {
         loadMyEmployeeProfile();
@@ -237,12 +237,6 @@ export default function EmployeeDashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <header className="border-b bg-card shadow-sm">
-          <div className="container mx-auto flex h-16 items-center justify-between px-4">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-10 w-32" />
-          </div>
-        </header>
         <main className="container mx-auto p-6 space-y-6">
           <Skeleton className="h-12 w-full" />
           <div className="grid gap-4 md:grid-cols-4">
@@ -258,31 +252,6 @@ export default function EmployeeDashboardPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            {user?.role === 'admin' && (
-              <Button variant="ghost" onClick={() => router.push('/dashboard/backoffice/employees')}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Empleados
-              </Button>
-            )}
-            {user?.role === 'employee' && (
-              <h2 className="text-lg font-semibold">Mi Dashboard</h2>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <Button variant="outline" onClick={handleLogout}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto p-6 space-y-6">
         {/* Page Title Section */}

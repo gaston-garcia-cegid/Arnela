@@ -170,26 +170,6 @@ export default function BackofficeAppointmentsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card shadow-sm">
-        <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => router.push('/dashboard/backoffice')}>
-              ← Volver
-            </Button>
-            <h1 className="text-xl font-semibold">Gestión de Citas</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {user?.firstName} {user?.lastName}
-            </span>
-            <Button variant="outline" onClick={handleLogout}>
-              Cerrar Sesión
-            </Button>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         {/* Page Title Section */}
