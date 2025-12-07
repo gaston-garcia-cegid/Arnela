@@ -48,6 +48,7 @@ export default function ClientsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -151,6 +152,7 @@ export default function ClientsPage() {
     const clientName = `${clientToDelete.firstName} ${clientToDelete.lastName}`;
 
     try {
+      setIsDeleting(true);
       await api.clients.delete(clientToDelete.id, token);
       setClients(clients.filter((c) => c.id !== clientToDelete.id));
       setClientToDelete(null);
@@ -164,6 +166,8 @@ export default function ClientsPage() {
       toast.error('Error al eliminar cliente', {
         description: errorMessage,
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -417,12 +421,23 @@ export default function ClientsPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
-                    onClick={handleDeleteConfirm}
+                    onClick={(e) => {
+                      e.preventDefault(); // Prevent dialog from closing automatically
+                      handleDeleteConfirm();
+                    }}
+                    disabled={isDeleting}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    Eliminar
+                    {isDeleting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Eliminando...
+                      </>
+                    ) : (
+                      'Eliminar'
+                    )}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

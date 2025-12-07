@@ -148,6 +148,12 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
     }
   };
 
+  const onInvalid = () => {
+    toast.error('Error en el formulario', {
+      description: 'Por favor revisa los campos marcados en rojo antes de guardar.',
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[600px]">
@@ -158,7 +164,7 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
           {/* Información Personal */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold">Información Personal</h3>
