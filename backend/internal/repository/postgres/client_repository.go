@@ -328,16 +328,16 @@ func (r *clientRepository) EmailExists(ctx context.Context, email string, exclud
 }
 
 // DNICIFExists checks if a DNI/CIF is already registered
-func (r *clientRepository) DNICIFExists(ctx context.Context, dnicif string, excludeID *uuid.UUID) (bool, error) {
+func (r *clientRepository) DNICIFExists(ctx context.Context, dniCif string, excludeID *uuid.UUID) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM clients WHERE dni_cif = $1 AND deleted_at IS NULL`
-	args := []interface{}{dnicif}
+	args := []interface{}{dniCif}
 
 	if excludeID != nil {
-		query += " AND id != $2"
+		query += ` AND id != $2`
 		args = append(args, *excludeID)
 	}
 
-	query += ")"
+	query += `)`
 
 	var exists bool
 	err := r.db.GetContext(ctx, &exists, query, args...)
@@ -346,4 +346,51 @@ func (r *clientRepository) DNICIFExists(ctx context.Context, dnicif string, excl
 	}
 
 	return exists, nil
+}
+
+// FindDeletedByEmailOrDNI finds a soft-deleted client by email or DNI/CIF
+func (r *clientRepository) FindDeletedByEmailOrDNI(ctx context.Context, email, dniCif string) (*domain.Client, error) {
+	query := `
+		SELECT ` + clientColumns + `
+		FROM clients
+		WHERE (email = $1 OR dni_cif = $2) AND deleted_at IS NOT NULL
+		LIMIT 1
+	`
+
+	client := &domain.Client{}
+	err := r.db.GetContext(ctx, client, query, email, dniCif)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil // No deleted client found
+		}
+		return nil, fmt.Errorf("failed to find deleted client: %w", err)
+	}
+
+	return client, nil
+}
+
+// Reactivate restores a soft-deleted client
+func (r *clientRepository) Reactivate(ctx context.Context, id uuid.UUID) error {
+	query := `
+		UPDATE clients
+		SET deleted_at = NULL, is_active = true, updated_at = NOW()
+		WHERE id = $1 AND deleted_at IS NOT NULL
+	`
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to reactivate client: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("client not found or not deleted")
+	}
+
+	return nil
 }

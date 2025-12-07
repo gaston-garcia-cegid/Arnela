@@ -32,4 +32,10 @@ type UserRepository interface {
 
 	// GetByEmailAll retrieves a user by email regardless of status
 	GetByEmailAll(ctx context.Context, email string) (*domain.User, error)
+
+	// GetByIDAll retrieves a user by ID regardless of is_active status
+	GetByIDAll(ctx context.Context, id uuid.UUID) (*domain.User, error)
+
+	// Reactivate restores a soft-deleted user (sets IsActive to true)
+	Reactivate(ctx context.Context, id uuid.UUID) error
 }

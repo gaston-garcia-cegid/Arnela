@@ -18,6 +18,11 @@ type userRepository struct {
 	db *sqlx.DB
 }
 
+// GetByEmailAll implements repository.UserRepository.
+func (r *userRepository) GetByEmailAll(ctx context.Context, email string) (*domain.User, error) {
+	panic("unimplemented")
+}
+
 // NewUserRepository creates a new UserRepository instance
 func NewUserRepository(db *sqlx.DB) repository.UserRepository {
 	if db == nil {
@@ -53,7 +58,7 @@ func (r *userRepository) Create(ctx context.Context, user *domain.User) error {
 	return nil
 }
 
-// GetByID retrieves a user by their ID
+// GetByID retrieves a user by their ID (only active users)
 func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
 	query := `
 		SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
@@ -63,6 +68,28 @@ func (r *userRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 
 	user := &domain.User{}
 	// Use GetContext instead of QueryRowContext for better error handling
+	err := r.db.GetContext(ctx, user, query, id)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+
+	return user, nil
+}
+
+// GetByIDAll retrieves a user by their ID regardless of is_active status
+// Used for reactivation flows where we need to check inactive users
+func (r *userRepository) GetByIDAll(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	query := `
+		SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+
+	user := &domain.User{}
 	err := r.db.GetContext(ctx, user, query, id)
 
 	if err != nil {
@@ -187,6 +214,31 @@ func (r *userRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 	if rowsAffected == 0 {
 		return fmt.Errorf("user not found")
+	}
+
+	return nil
+}
+
+// Reactivate restores a soft-deleted user by setting IsActive to true
+func (r *userRepository) Reactivate(ctx context.Context, id uuid.UUID) error {
+	query := `
+		UPDATE users
+		SET is_active = true, updated_at = NOW()
+		WHERE id = $1 AND is_active = false
+	`
+
+	result, err := r.db.ExecContext(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to reactivate user: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("user not found or not deleted")
 	}
 
 	return nil

@@ -17,6 +17,7 @@ func TestCreateClient_AddressHandling(t *testing.T) {
 	mockUserRepo := new(mocks.MockUserRepository)
 
 	// Stub checks to pass
+	mockClientRepo.On("FindDeletedByEmailOrDNI", mock.Anything, mock.Anything, mock.Anything).Return(nil, nil)
 	mockClientRepo.On("EmailExists", mock.Anything, mock.Anything, mock.Anything).Return(false, nil)
 	mockClientRepo.On("DNICIFExists", mock.Anything, mock.Anything, mock.Anything).Return(false, nil)
 	mockUserRepo.On("EmailExists", mock.Anything, mock.Anything).Return(false, nil)

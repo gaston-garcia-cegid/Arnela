@@ -33,6 +33,7 @@ func TestClientService_CreateClient(t *testing.T) {
 				DateOfBirth: &dob,
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
+				m.On("FindDeletedByEmailOrDNI", mock.Anything, "juan.perez@example.com", "12345678Z").Return(nil, nil)
 				m.On("EmailExists", mock.Anything, "juan.perez@example.com", mock.Anything).Return(false, nil)
 				m.On("DNICIFExists", mock.Anything, "12345678Z", mock.Anything).Return(false, nil)
 				m.On("Create", mock.Anything, mock.AnythingOfType("*domain.Client")).Return(nil)
@@ -49,6 +50,7 @@ func TestClientService_CreateClient(t *testing.T) {
 				DNICIF:    "87654321X",
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
+				m.On("FindDeletedByEmailOrDNI", mock.Anything, "existing@example.com", "87654321X").Return(nil, nil)
 				m.On("EmailExists", mock.Anything, "existing@example.com", mock.Anything).Return(true, nil)
 			},
 			expectedError: "email already registered",
@@ -63,6 +65,7 @@ func TestClientService_CreateClient(t *testing.T) {
 				DNICIF:    "12345678Z",
 			},
 			mockSetup: func(m *mocks.MockClientRepository) {
+				m.On("FindDeletedByEmailOrDNI", mock.Anything, "carlos@example.com", "12345678Z").Return(nil, nil)
 				m.On("EmailExists", mock.Anything, "carlos@example.com", mock.Anything).Return(false, nil)
 				m.On("DNICIFExists", mock.Anything, "12345678Z", mock.Anything).Return(true, nil)
 			},

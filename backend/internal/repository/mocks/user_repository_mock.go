@@ -63,3 +63,27 @@ func (m *MockUserRepository) EmailExists(ctx context.Context, email string) (boo
 	args := m.Called(ctx, email)
 	return args.Bool(0), args.Error(1)
 }
+
+// GetByEmailAll mocks the GetByEmailAll method
+func (m *MockUserRepository) GetByEmailAll(ctx context.Context, email string) (*domain.User, error) {
+	args := m.Called(ctx, email)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.User), args.Error(1)
+}
+
+// GetByIDAll mocks the GetByIDAll method
+func (m *MockUserRepository) GetByIDAll(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+	args := m.Called(ctx, id)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.User), args.Error(1)
+}
+
+// Reactivate mocks the Reactivate method
+func (m *MockUserRepository) Reactivate(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}

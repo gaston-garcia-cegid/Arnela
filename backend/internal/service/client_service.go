@@ -38,7 +38,70 @@ func NewClientService(clientRepo repository.ClientRepository, userRepo repositor
 func (s *clientService) CreateClient(ctx context.Context, req CreateClientRequest) (*domain.Client, error) {
 	log.Printf("[DEBUG] Creating client with email: %s", req.Email)
 
-	// Verificaciones de existencia
+	// Check if a soft-deleted client exists with this email or DNI/CIF
+	deletedClient, err := s.clientRepo.FindDeletedByEmailOrDNI(ctx, req.Email, req.DNICIF)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check for deleted client: %w", err)
+	}
+
+	if deletedClient != nil {
+		log.Printf("[DEBUG] Found deleted client with ID: %s, reactivating...", deletedClient.ID)
+
+		// Update client data
+		deletedClient.Email = req.Email
+		deletedClient.FirstName = req.FirstName
+		deletedClient.LastName = req.LastName
+		deletedClient.Phone = req.Phone
+		deletedClient.DNICIF = req.DNICIF
+		deletedClient.Notes = req.Notes
+		deletedClient.SetAddress(domain.Address{
+			Street:     req.Address,
+			City:       req.City,
+			Province:   req.Province,
+			PostalCode: req.PostalCode,
+			Country:    "",
+		})
+		deletedClient.UpdatedAt = time.Now()
+
+		// CRITICAL: Set is_active = true in memory before Update()
+		// Without this, Update() will overwrite the is_active = true from Reactivate()
+		deletedClient.IsActive = true
+
+		// Reactivate the client (sets deleted_at = NULL, is_active = true in DB)
+		if err := s.clientRepo.Reactivate(ctx, deletedClient.ID); err != nil {
+			return nil, fmt.Errorf("failed to reactivate client: %w", err)
+		}
+
+		// Update client data (now with is_active = true in memory)
+		if err := s.clientRepo.Update(ctx, deletedClient); err != nil {
+			return nil, fmt.Errorf("failed to update reactivated client: %w", err)
+		}
+
+		// Reactivate associated user if exists and is inactive
+		if deletedClient.UserID != uuid.Nil {
+			// Use GetByIDAll to fetch user regardless of is_active status
+			user, err := s.userRepo.GetByIDAll(ctx, deletedClient.UserID)
+			if err != nil {
+				log.Printf("[WARN] Failed to fetch user %s for reactivation: %v", deletedClient.UserID, err)
+			} else if !user.IsActive {
+				// User exists but is inactive, reactivate it
+				log.Printf("[DEBUG] Reactivating user %s (email: %s)", user.ID, user.Email)
+				if reactivateErr := s.reactivateUser(ctx, deletedClient.UserID); reactivateErr != nil {
+					log.Printf("[ERROR] Failed to reactivate user %s: %v", deletedClient.UserID, reactivateErr)
+					// Don't fail the whole operation, client is already reactivated
+				} else {
+					log.Printf("[DEBUG] User %s reactivated successfully", user.ID)
+				}
+			} else {
+				log.Printf("[DEBUG] User %s is already active, no reactivation needed", user.ID)
+			}
+		}
+
+		log.Printf("[DEBUG] Client reactivated successfully: ID=%s", deletedClient.ID)
+		return deletedClient, nil
+	}
+
+	// Verificaciones de existencia para clientes activos
 	if exists, err := s.clientRepo.EmailExists(ctx, req.Email, nil); err != nil {
 		return nil, fmt.Errorf("failed to check email existence: %w", err)
 	} else if exists {
@@ -253,4 +316,9 @@ func (s *clientService) ListClients(ctx context.Context, filters repository.Clie
 		PageSize:   pageSize,
 		TotalPages: totalPages,
 	}, nil
+}
+
+// reactivateUser is a helper method to reactivate a soft-deleted user
+func (s *clientService) reactivateUser(ctx context.Context, userID uuid.UUID) error {
+	return s.userRepo.Reactivate(ctx, userID)
 }

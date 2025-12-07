@@ -183,6 +183,19 @@ func (m *MockClientRepository) DNICIFExists(ctx context.Context, dnicif string, 
 	return args.Bool(0), args.Error(1)
 }
 
+func (m *MockClientRepository) FindDeletedByEmailOrDNI(ctx context.Context, email, dnicif string) (*domain.Client, error) {
+	args := m.Called(ctx, email, dnicif)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Client), args.Error(1)
+}
+
+func (m *MockClientRepository) Reactivate(ctx context.Context, id uuid.UUID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 // MockEmployeeRepository for testing
 type MockEmployeeRepository struct {
 	mock.Mock

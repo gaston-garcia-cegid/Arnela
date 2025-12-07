@@ -41,6 +41,12 @@ type ClientRepository interface {
 
 	// DNICIFExists checks if a DNI/CIF is already registered (excluding soft-deleted)
 	DNICIFExists(ctx context.Context, dniCif string, excludeID *uuid.UUID) (bool, error)
+
+	// FindDeletedByEmailOrDNI finds a soft-deleted client by email or DNI/CIF
+	FindDeletedByEmailOrDNI(ctx context.Context, email, dniCif string) (*domain.Client, error)
+
+	// Reactivate restores a soft-deleted client
+	Reactivate(ctx context.Context, id uuid.UUID) error
 }
 
 // ClientFilters represents filters for listing clients
