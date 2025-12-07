@@ -79,10 +79,11 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
       email: client.email,
       phone: client.phone || '',
       dniCif: client.dniCif || '',
-      city: client.city || '',
-      province: client.province || '',
-      postalCode: client.postalCode || '',
-      address: client.address || '',
+      // Fix: Handle nested address object from backend
+      address: typeof client.address === 'object' ? (client.address as any)?.street || '' : client.address || '',
+      city: (client.address as any)?.city || '',
+      province: (client.address as any)?.province || '',
+      postalCode: (client.address as any)?.postalCode || '',
       notes: client.notes || '',
       isActive: client.isActive,
     },
@@ -90,16 +91,19 @@ export function EditClientModal({ isOpen, onClose, onSuccess, client }: EditClie
 
   useEffect(() => {
     if (isOpen) {
+      // Fix: Handle nested address object from backend in reset
+      const addr = client.address as any;
+
       reset({
         firstName: client.firstName,
         lastName: client.lastName,
         email: client.email,
         phone: client.phone || '',
         dniCif: client.dniCif || '',
-        city: client.city || '',
-        province: client.province || '',
-        postalCode: client.postalCode || '',
-        address: client.address || '',
+        address: typeof addr === 'object' ? addr?.street || '' : addr || '',
+        city: addr?.city || '',
+        province: addr?.province || '',
+        postalCode: addr?.postalCode || '',
         notes: client.notes || '',
         isActive: client.isActive,
       });

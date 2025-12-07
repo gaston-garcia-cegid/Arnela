@@ -97,7 +97,13 @@ func (s *clientService) CreateClient(ctx context.Context, req CreateClientReques
 	}
 
 	// ✅ Usar helper para asignar address
-	client.SetAddress(req.Address)
+	client.SetAddress(domain.Address{
+		Street:     req.Address,
+		City:       req.City,
+		Province:   req.Province,
+		PostalCode: req.PostalCode,
+		Country:    "España", // Default country
+	})
 
 	if err := s.clientRepo.Create(ctx, client); err != nil {
 		// Rollback: eliminar usuario
@@ -156,9 +162,29 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 		}
 		client.DNICIF = *req.DNICIF
 	}
+	// Address update logic (merging with existing address)
+	currentAddr := client.Address()
+	addrChanged := false
+
 	if req.Address != nil {
-		// ✅ Usar helper para actualizar address
-		client.SetAddress(*req.Address)
+		currentAddr.Street = *req.Address
+		addrChanged = true
+	}
+	if req.City != nil {
+		currentAddr.City = *req.City
+		addrChanged = true
+	}
+	if req.Province != nil {
+		currentAddr.Province = *req.Province
+		addrChanged = true
+	}
+	if req.PostalCode != nil {
+		currentAddr.PostalCode = *req.PostalCode
+		addrChanged = true
+	}
+
+	if addrChanged {
+		client.SetAddress(currentAddr)
 	}
 	if req.Notes != nil {
 		client.Notes = *req.Notes
@@ -177,7 +203,31 @@ func (s *clientService) UpdateClient(ctx context.Context, id uuid.UUID, req Upda
 }
 
 func (s *clientService) DeleteClient(ctx context.Context, id uuid.UUID) error {
-	return s.clientRepo.Delete(ctx, id)
+	log.Printf("[DEBUG] Starting DeleteClient for ID: %s", id)
+
+	// Get client first to find associated UserID
+	client, err := s.clientRepo.GetByID(ctx, id)
+	if err != nil {
+		log.Printf("[ERROR] DeleteClient - Failed to get client: %v", err)
+		return err
+	}
+	log.Printf("[DEBUG] Client found. UserID to deactivate: %s", client.UserID)
+
+	// Delete client (Soft delete + IsActive=false)
+	if err := s.clientRepo.Delete(ctx, id); err != nil {
+		log.Printf("[ERROR] DeleteClient - Failed to delete client record: %v", err)
+		return err
+	}
+	log.Printf("[DEBUG] Client record deleted (soft). IsActive should be false.")
+
+	// Delete associated user (Disable login / Soft delete)
+	if err := s.userRepo.Delete(ctx, client.UserID); err != nil {
+		log.Printf("[ERROR] DeleteClient - Failed to deactivate user %s: %v", client.UserID, err)
+		return fmt.Errorf("failed to delete associated user: %w", err)
+	}
+
+	log.Printf("[DEBUG] DeleteClient completed successfully. User %s deactivated.", client.UserID)
+	return nil
 }
 
 func (s *clientService) ListClients(ctx context.Context, filters repository.ClientFilters, page, pageSize int) (*ClientListResponse, error) {

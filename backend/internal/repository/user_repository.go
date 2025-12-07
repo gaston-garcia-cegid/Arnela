@@ -29,4 +29,7 @@ type UserRepository interface {
 
 	// EmailExists checks if an email is already registered
 	EmailExists(ctx context.Context, email string) (bool, error)
+
+	// GetByEmailAll retrieves a user by email regardless of status
+	GetByEmailAll(ctx context.Context, email string) (*domain.User, error)
 }

@@ -38,6 +38,9 @@ const createClientSchema = z.object({
     { message: 'DNI/NIE/CIF inválido. Formato: 12345678Z (DNI) o A12345678 (CIF)' }
   ),
   address: z.string().optional(),
+  city: z.string().optional(),
+  province: z.string().optional(),
+  postalCode: z.string().optional(),
 });
 
 type CreateClientForm = z.infer<typeof createClientSchema>;
@@ -84,6 +87,9 @@ export function CreateClientModal({
         phone: data.phone,
         dniCif: data.dniCif.toUpperCase(),
         address: data.address,
+        city: data.city,
+        province: data.province,
+        postalCode: data.postalCode,
       }, token);
 
       toast.success('Cliente creado', {
@@ -207,15 +213,51 @@ export function CreateClientModal({
             </div>
           </div>
 
-          {/* Address - Optional */}
-          <div className="space-y-2">
-            <Label htmlFor="address">Dirección (Opcional)</Label>
-            <Input
-              id="address"
-              {...register('address')}
-              placeholder="Ej: Calle Mayor 123, 28001 Madrid"
-              disabled={isSubmitting}
-            />
+          {/* Address Information */}
+          <div className="space-y-4 pt-2 border-t">
+            <h3 className="text-sm font-medium text-muted-foreground">Dirección</h3>
+
+            <div className="space-y-2">
+              <Label htmlFor="address">Calle y número</Label>
+              <Input
+                id="address"
+                {...register('address')}
+                placeholder="Ej: Calle Mayor 123"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">Ciudad</Label>
+                <Input
+                  id="city"
+                  {...register('city')}
+                  placeholder="Madrid"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="province">Provincia</Label>
+                <Input
+                  id="province"
+                  {...register('province')}
+                  placeholder="Madrid"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">C.P.</Label>
+                <Input
+                  id="postalCode"
+                  {...register('postalCode')}
+                  placeholder="28001"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Submit Buttons */}

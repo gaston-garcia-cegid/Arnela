@@ -27,35 +27,36 @@ type ClientServiceInterface interface {
 
 // CreateClientRequest represents a request to create a new client
 type CreateClientRequest struct {
-	UserID      *uuid.UUID     `json:"userId,omitempty"`
-	FirstName   string         `json:"firstName" binding:"required"`
-	LastName    string         `json:"lastName" binding:"required"`
-	Email       string         `json:"email" binding:"required,email"`
-	Phone       string         `json:"phone" binding:"required"`
-	DNICIF      string         `json:"dniCif" binding:"required"`
-	DateOfBirth *string        `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
-	Address     domain.Address `json:"address"`
-	City        string         `json:"city,omitempty"`
-	PostalCode  string         `json:"postalCode,omitempty"`
-	Province    string         `json:"province,omitempty"`
-	Notes       string         `json:"notes,omitempty"`
+	UserID      *uuid.UUID `json:"userId,omitempty"`
+	FirstName   string     `json:"firstName" binding:"required"`
+	LastName    string     `json:"lastName" binding:"required"`
+	Email       string     `json:"email" binding:"required,email"`
+	Phone       string     `json:"phone" binding:"required"`
+	DNICIF      string     `json:"dniCif" binding:"required"`
+	DateOfBirth *string    `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
+	Address     string     `json:"address"`               // Street address
+	City        string     `json:"city,omitempty"`
+	PostalCode  string     `json:"postalCode,omitempty"`
+	Province    string     `json:"province,omitempty"`
+	Notes       string     `json:"notes,omitempty"`
 }
 
 // UpdateClientRequest represents a request to update a client
 type UpdateClientRequest struct {
-	UserID      *uuid.UUID      `json:"-"` // Internal use only
-	FirstName   *string         `json:"firstName,omitempty"`
-	LastName    *string         `json:"lastName,omitempty"`
-	Email       *string         `json:"email,omitempty" binding:"omitempty,email"`
-	Phone       *string         `json:"phone,omitempty"`
-	DNICIF      *string         `json:"dniCif,omitempty"`
-	DateOfBirth *string         `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
-	Address     *domain.Address `json:"address,omitempty"`
-	City        *string         `json:"city,omitempty"`
-	PostalCode  *string         `json:"postalCode,omitempty"`
-	Province    *string         `json:"province,omitempty"`
-	IsActive    *bool           `json:"isActive,omitempty"`
-	Notes       *string         `json:"notes,omitempty"`
+	UserID      *uuid.UUID `json:"-"` // Internal use only
+	FirstName   *string    `json:"firstName,omitempty"`
+	LastName    *string    `json:"lastName,omitempty"`
+	Email       *string    `json:"email,omitempty" binding:"omitempty,email"`
+	Phone       *string    `json:"phone,omitempty"`
+	DNICIF      *string    `json:"dniCif,omitempty"`
+	DateOfBirth *string    `json:"dateOfBirth,omitempty"` // Format: YYYY-MM-DD
+	Address     *string    `json:"address,omitempty"`     // Street address
+
+	City       *string `json:"city,omitempty"`
+	PostalCode *string `json:"postalCode,omitempty"`
+	Province   *string `json:"province,omitempty"`
+	IsActive   *bool   `json:"isActive,omitempty"`
+	Notes      *string `json:"notes,omitempty"`
 }
 
 // ClientListResponse represents a paginated list of clients

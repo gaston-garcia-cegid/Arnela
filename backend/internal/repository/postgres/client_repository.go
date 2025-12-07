@@ -175,7 +175,7 @@ func (r *clientRepository) Update(ctx context.Context, client *domain.Client) er
 
 // Delete soft-deletes a client
 func (r *clientRepository) Delete(ctx context.Context, id uuid.UUID) error {
-	query := `UPDATE clients SET deleted_at = $1 WHERE id = $2 AND deleted_at IS NULL`
+	query := `UPDATE clients SET deleted_at = $1, is_active = false WHERE id = $2 AND deleted_at IS NULL`
 
 	result, err := r.db.ExecContext(ctx, query, time.Now(), id)
 	if err != nil {
