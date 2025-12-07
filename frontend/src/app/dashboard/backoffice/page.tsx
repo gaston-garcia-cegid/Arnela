@@ -3,23 +3,55 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { api, type Client } from '@/lib/api';
 import { CreateClientModal } from '@/components/backoffice/CreateClientModal';
+import { EditClientModal } from '@/components/backoffice/EditClientModal';
 import { useStats } from '@/hooks/useStats';
-import { Loader2 } from 'lucide-react';
+import { 
+  Loader2, 
+  Users, 
+  Calendar, 
+  Briefcase, 
+  Euro,
+  Mail,
+  Phone,
+  MapPin,
+  Clock,
+  User
+} from 'lucide-react';
 import { logError } from '@/lib/logger';
+import { DashboardTable, DashboardTableEmpty } from '@/components/dashboard/DashboardTable';
+import type { Employee } from '@/types/employee';
+import type { Appointment } from '@/types/appointment';
 
 export default function BackofficeDashboard() {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
+  
+  // Clients state
   const [clients, setClients] = useState<Client[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [clientsLoading, setClientsLoading] = useState(true);
+  const [clientsError, setClientsError] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  
+  // Appointments state
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentsLoading, setAppointmentsLoading] = useState(true);
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null);
+  
+  // Employees state
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(true);
+  const [employeesError, setEmployeesError] = useState<string | null>(null);
+  
+  // Modals state
+  const [isCreateClientModalOpen, setIsCreateClientModalOpen] = useState(false);
+  const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
 
   // Use stats hook
   const { stats, loading: statsLoading } = useStats();
@@ -44,21 +76,67 @@ export default function BackofficeDashboard() {
 
   useEffect(() => {
     if (token && user?.role !== 'employee') {
-      loadClients();
+      loadAllData();
     }
   }, [token, user]);
+
+  const loadAllData = async () => {
+    await Promise.all([
+      loadClients(),
+      loadAppointments(),
+      loadEmployees(),
+    ]);
+  };
 
   const loadClients = async () => {
     if (!token) return;
 
     try {
-      setIsLoading(true);
+      setClientsLoading(true);
+      setClientsError(null);
       const response = await api.clients.list(token);
-      setClients(response.clients || []);
+      // Solo mostrar los primeros 5 clientes
+      setClients((response.clients || []).slice(0, 5));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar clientes');
+      logError('Error loading clients for dashboard', err, { component: 'BackofficeDashboard' });
+      setClientsError(err instanceof Error ? err.message : 'Error al cargar clientes');
     } finally {
-      setIsLoading(false);
+      setClientsLoading(false);
+    }
+  };
+
+  const loadAppointments = async () => {
+    if (!token) return;
+
+    try {
+      setAppointmentsLoading(true);
+      setAppointmentsError(null);
+      const response = await api.appointments.list(token, { 
+        pageSize: 5,
+        page: 1 
+      });
+      setAppointments(response.appointments || []);
+    } catch (err) {
+      logError('Error loading appointments for dashboard', err, { component: 'BackofficeDashboard' });
+      setAppointmentsError(err instanceof Error ? err.message : 'Error al cargar citas');
+    } finally {
+      setAppointmentsLoading(false);
+    }
+  };
+
+  const loadEmployees = async () => {
+    if (!token) return;
+
+    try {
+      setEmployeesLoading(true);
+      setEmployeesError(null);
+      const response = await api.employees.list(token, 1, 4);
+      setEmployees(response.employees || []);
+    } catch (err) {
+      logError('Error loading employees for dashboard', err, { component: 'BackofficeDashboard' });
+      setEmployeesError(err instanceof Error ? err.message : 'Error al cargar empleados');
+    } finally {
+      setEmployeesLoading(false);
     }
   };
 
@@ -76,23 +154,55 @@ export default function BackofficeDashboard() {
     );
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', { 
+      day: '2-digit', 
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants: Record<string, { className: string; label: string }> = {
+      pending: { className: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Pendiente' },
+      confirmed: { className: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Confirmada' },
+      completed: { className: 'bg-green-100 text-green-800 border-green-300', label: 'Completada' },
+      cancelled: { className: 'bg-red-100 text-red-800 border-red-300', label: 'Cancelada' },
+    };
+    
+    const variant = variants[status] || variants.pending;
+    
+    return (
+      <Badge variant="outline" className={variant.className}>
+        {variant.label}
+      </Badge>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <div className="mb-8">
+      <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Header */}
+        <div>
           <h2 className="text-3xl font-bold">
             Bienvenido, {user?.firstName} {user?.lastName}
           </h2>
           <p className="text-muted-foreground">Panel de administración</p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3 md:gap-6">
-          {/* Stats Cards */}
+        {/* Stats Cards */}
+        <div className="grid gap-4 md:grid-cols-3">
           <Card className="border-l-4 border-l-primary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Total Clientes</CardTitle>
-              <CardDescription className="text-xs">Clientes registrados (activos)</CardDescription>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Total Clientes
+              </CardTitle>
+              <CardDescription className="text-xs">Clientes registrados</CardDescription>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
@@ -103,7 +213,7 @@ export default function BackofficeDashboard() {
                     {stats?.clients.total || 0}
                   </div>
                   <span className="text-sm text-green-600 font-medium">
-                    ({stats?.clients.active || 0} activos)
+                    {stats?.clients.active || 0} activos
                   </span>
                 </div>
               )}
@@ -112,8 +222,11 @@ export default function BackofficeDashboard() {
 
           <Card className="border-l-4 border-l-accent shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Citas Totales</CardTitle>
-              <CardDescription className="text-xs">Todas las citas del sistema</CardDescription>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Citas Totales
+              </CardTitle>
+              <CardDescription className="text-xs">Todas las citas</CardDescription>
             </CardHeader>
             <CardContent>
               {statsLoading ? (
@@ -123,11 +236,11 @@ export default function BackofficeDashboard() {
                   <div className="text-3xl font-bold text-accent">
                     {stats?.appointments.total || 0}
                   </div>
-                  <div className="flex gap-3 text-xs">
+                  <div className="flex gap-2 text-xs flex-wrap">
                     <span className="text-yellow-600">
                       {stats?.appointments.pending || 0} pendientes
                     </span>
-                    <span className="text-green-600">
+                    <span className="text-blue-600">
                       {stats?.appointments.confirmed || 0} confirmadas
                     </span>
                   </div>
@@ -138,7 +251,10 @@ export default function BackofficeDashboard() {
 
           <Card className="border-l-4 border-l-secondary shadow-sm hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Empleados</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Briefcase className="h-4 w-4" />
+                Empleados
+              </CardTitle>
               <CardDescription className="text-xs">Personal del gabinete</CardDescription>
             </CardHeader>
             <CardContent>
@@ -150,7 +266,7 @@ export default function BackofficeDashboard() {
                     {stats?.employees.total || 0}
                   </div>
                   <span className="text-sm text-green-600 font-medium">
-                    ({stats?.employees.active || 0} activos)
+                    {stats?.employees.active || 0} activos
                   </span>
                 </div>
               )}
@@ -159,129 +275,264 @@ export default function BackofficeDashboard() {
         </div>
 
         {/* Clients Table */}
-        <Card className="mt-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Gestión de Clientes</CardTitle>
-                <CardDescription>Lista de todos los clientes registrados</CardDescription>
-              </div>
-              <Button
-                variant="outline"
-                onClick={() => router.push('/dashboard/backoffice/clients')}
-                className="hover:bg-primary/10 hover:text-primary"
-              >
-                Ver Todos →
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <p className="text-center text-muted-foreground">Cargando clientes...</p>
-            ) : error ? (
-              <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
-                {error}
-              </div>
-            ) : clients.length === 0 ? (
-              <p className="text-center text-muted-foreground">No hay clientes registrados</p>
-            ) : (
-              <div className="overflow-x-auto rounded-md border">
-                <table className="w-full">
-                  <thead className="bg-muted/50">
-                    <tr className="border-b">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Nombre</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Email</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">DNI/CIF</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Teléfono</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Estado</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-foreground">Acciones</th>
+        <DashboardTable
+          title="Últimos Clientes"
+          description={`${clients.length} clientes registrados`}
+          icon={<Users className="h-5 w-5 text-primary" />}
+          viewAllHref="/dashboard/backoffice/clients"
+          onViewAll={() => router.push('/dashboard/backoffice/clients')}
+          onReload={loadClients}
+          onNew={() => setIsCreateClientModalOpen(true)}
+          newButtonText="Nuevo Cliente"
+          loading={clientsLoading}
+          error={clientsError}
+        >
+          {clients.length === 0 ? (
+            <DashboardTableEmpty
+              icon={<Users className="h-12 w-12" />}
+              title="No hay clientes registrados"
+              description="Comienza agregando tu primer cliente"
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Nombre</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Email</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">DNI/CIF</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clients.map((client, index) => (
+                    <tr
+                      key={client.id}
+                      className={`border-b transition-colors hover:bg-muted/30 ${
+                        index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-sm font-medium">
+                        {client.firstName} {client.lastName}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-3 w-3" />
+                          {client.email}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm font-mono">{client.dniCif}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <Badge
+                          variant={client.isActive ? 'default' : 'secondary'}
+                          className={client.isActive ? 'bg-green-100 text-green-800' : ''}
+                        >
+                          {client.isActive ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedClient(client);
+                            setIsEditClientModalOpen(true);
+                          }}
+                          className="hover:bg-primary/10 hover:text-primary"
+                        >
+                          Ver
+                        </Button>
+                      </td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {clients.map((client, index) => (
-                      <tr
-                        key={client.id}
-                        className={`border-b transition-colors hover:bg-muted/30 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
-                          }`}
-                      >
-                        <td className="px-4 py-3 text-sm font-medium">
-                          {client.firstName} {client.lastName}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{client.email}</td>
-                        <td className="px-4 py-3 text-sm font-mono">{client.dniCif}</td>
-                        <td className="px-4 py-3 text-sm text-muted-foreground">{client.phone}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${client.isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'bg-muted text-muted-foreground'
-                            }`}>
-                            {client.isActive ? '✓ Activo' : '✗ Inactivo'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <Button variant="ghost" size="sm" className="hover:bg-primary/10 hover:text-primary">
-                            Ver
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DashboardTable>
+
+        {/* Appointments Table */}
+        <DashboardTable
+          title="Últimas Citas"
+          description={`${appointments.length} citas registradas`}
+          icon={<Calendar className="h-5 w-5 text-accent" />}
+          viewAllHref="/dashboard/backoffice/appointments"
+          onViewAll={() => router.push('/dashboard/backoffice/appointments')}
+          onReload={loadAppointments}
+          onNew={() => router.push('/dashboard/backoffice/appointments')}
+          newButtonText="Nueva Cita"
+          loading={appointmentsLoading}
+          error={appointmentsError}
+        >
+          {appointments.length === 0 ? (
+            <DashboardTableEmpty
+              icon={<Calendar className="h-12 w-12" />}
+              title="No hay citas registradas"
+              description="Comienza agendando la primera cita"
+            />
+          ) : (
+            <div className="overflow-x-auto rounded-md border">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr className="border-b">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Cliente</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Empleado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Fecha</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Estado</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-foreground">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {appointments.map((appointment, index) => (
+                    <tr
+                      key={appointment.id}
+                      className={`border-b transition-colors hover:bg-muted/30 ${
+                        index % 2 === 0 ? 'bg-background' : 'bg-muted/10'
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <User className="h-3 w-3" />
+                          {appointment.client?.firstName} {appointment.client?.lastName}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {appointment.employee?.firstName} {appointment.employee?.lastName}
+                      </td>
+                      <td className="px-4 py-3 text-sm">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3" />
+                          {formatDate(appointment.startTime)}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm">{getStatusBadge(appointment.status)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/dashboard/backoffice/appointments`)}
+                          className="hover:bg-accent/10 hover:text-accent"
+                        >
+                          Ver
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DashboardTable>
+
+        {/* Employees and Billing Grid */}
+        <div className="grid gap-8 lg:grid-cols-2">
+          {/* Employees Cards */}
+          <DashboardTable
+            title="Empleados Activos"
+            description={`${employees.length} empleados`}
+            icon={<Briefcase className="h-5 w-5 text-secondary" />}
+            viewAllHref="/dashboard/backoffice/employees"
+            onViewAll={() => router.push('/dashboard/backoffice/employees')}
+            onReload={loadEmployees}
+            onNew={() => router.push('/dashboard/backoffice/employees')}
+            newButtonText="Nuevo Empleado"
+            loading={employeesLoading}
+            error={employeesError}
+          >
+            {employees.length === 0 ? (
+              <DashboardTableEmpty
+                icon={<Briefcase className="h-12 w-12" />}
+                title="No hay empleados registrados"
+                description="Comienza agregando empleados"
+              />
+            ) : (
+              <div className="grid gap-3">
+                {employees.map((employee) => (
+                  <Card
+                    key={employee.id}
+                    className="hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => router.push(`/dashboard/backoffice/employees/${employee.id}`)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                            <h4 className="font-semibold text-sm">
+                              {employee.firstName} {employee.lastName}
+                            </h4>
+                          </div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Briefcase className="h-3 w-3" />
+                            {employee.position || employee.specialty || 'Sin especialidad'}
+                          </p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
+                            <span className="flex items-center gap-1">
+                              <Mail className="h-3 w-3" />
+                              {employee.email}
+                            </span>
+                            {employee.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="h-3 w-3" />
+                                {employee.phone}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <Badge
+                          variant={employee.isActive ? 'default' : 'secondary'}
+                          className={employee.isActive ? 'bg-green-100 text-green-800' : ''}
+                        >
+                          {employee.isActive ? 'Activo' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
+          </DashboardTable>
 
-            <div className="mt-4">
-              <Button onClick={loadClients} variant="outline">
-                Recargar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Actions */}
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Button
-            className="h-20 text-base font-semibold"
-            variant="default"
-            onClick={() => setIsCreateModalOpen(true)}
+          {/* Billing Preview */}
+          <DashboardTable
+            title="Facturación Reciente"
+            description="Últimas transacciones"
+            icon={<Euro className="h-5 w-5 text-emerald-600" />}
+            viewAllHref="/dashboard/backoffice/billing"
+            onViewAll={() => router.push('/dashboard/backoffice/billing')}
+            onNew={() => router.push('/dashboard/backoffice/billing')}
+            newButtonText="Nueva Factura"
           >
-            <span className="text-xl mr-2">+</span> Nuevo Cliente
-          </Button>
-          <Button
-            className="h-20 text-base font-semibold bg-accent hover:bg-accent/90 text-accent-foreground"
-            onClick={() => router.push('/dashboard/backoffice/appointments')}
-          >
-            📅 Gestión de Citas
-          </Button>
-          <Button
-            className="h-20 text-base font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-            onClick={() => router.push('/dashboard/backoffice/employees')}
-          >
-            👥 Gestión de Empleados
-          </Button>
-          <Button
-            className="h-20 text-base font-semibold bg-green-600 hover:bg-green-700 text-white"
-            onClick={() => router.push('/dashboard/backoffice/clients')}
-          >
-            👤 Gestión de Clientes
-          </Button>
-          <Button
-            className="h-20 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={() => router.push('/dashboard/backoffice/billing')}
-          >
-            💶 Facturación
-          </Button>
+            <DashboardTableEmpty
+              icon={<Euro className="h-12 w-12" />}
+              title="Módulo de Facturación"
+              description="Haz clic en 'Ver Todos' para acceder"
+            />
+          </DashboardTable>
         </div>
       </main>
 
-      {/* Create Client Modal */}
+      {/* Modals */}
       <CreateClientModal
-        open={isCreateModalOpen}
-        onOpenChange={setIsCreateModalOpen}
+        open={isCreateClientModalOpen}
+        onOpenChange={setIsCreateClientModalOpen}
         onSuccess={() => {
           loadClients();
         }}
       />
+
+      {selectedClient && (
+        <EditClientModal
+          open={isEditClientModalOpen}
+          onOpenChange={setIsEditClientModalOpen}
+          client={selectedClient}
+          onSuccess={() => {
+            loadClients();
+            setSelectedClient(null);
+          }}
+        />
+      )}
     </div>
   );
 }
