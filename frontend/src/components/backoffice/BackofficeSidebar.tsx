@@ -197,8 +197,11 @@ export function BackofficeSidebar({ isOpen = true, onClose }: BackofficeSidebarP
             );
           }
 
-          const isActive =
-            pathname === item.href || pathname?.startsWith(item.href + "/");
+          // Para Dashboard, solo coincidencia exacta (no hijos)
+          // Para otros items, coincide con la ruta o cualquier subruta
+          const isActive = item.href === "/dashboard/backoffice"
+            ? pathname === item.href // Exacta solo para dashboard
+            : pathname === item.href || pathname?.startsWith(item.href + "/");
 
           return (
             <Link
