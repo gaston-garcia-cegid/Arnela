@@ -72,9 +72,7 @@ export default function EmployeesPage() {
   const handleCreateSuccess = (employee: Employee) => {
     setEmployees([employee, ...employees]);
     setIsCreateModalOpen(false);
-    toast.success('Empleado creado exitosamente', {
-      description: `${employee.firstName} ${employee.lastName} ha sido agregado al equipo`,
-    });
+    // Toast ya mostrado en CreateEmployeeModal
   };
 
   const handleEditClick = (employee: Employee) => {
@@ -86,9 +84,7 @@ export default function EmployeesPage() {
     setEmployees(employees.map(e => e.id === updatedEmployee.id ? updatedEmployee : e));
     setIsEditModalOpen(false);
     setSelectedEmployee(null);
-    toast.success('Empleado actualizado', {
-      description: `Los datos de ${updatedEmployee.firstName} ${updatedEmployee.lastName} han sido actualizados`,
-    });
+    // Toast ya mostrado en EditEmployeeModal
   };
 
   const handleDeleteClick = (employee: Employee) => {

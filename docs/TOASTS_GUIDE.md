@@ -111,7 +111,11 @@ function MyComponent() {
 
 ## 🎨 Tipos de Toasts Disponibles
 
-### **1. Success (Verde)**
+Todos los toasts tienen colores personalizados que respetan la paleta cálida del sistema.
+
+### **1. Success (Verde Cálido) ✅**
+**Color:** Fondo verde suave (`#f0fdf4`), borde verde (`#86efac`), texto verde oscuro
+
 ```typescript
 toast.success('¡Operación exitosa!', {
   description: 'Los cambios han sido guardados',
@@ -119,7 +123,13 @@ toast.success('¡Operación exitosa!', {
 });
 ```
 
-### **2. Error (Rojo)**
+**Uso:** Confirmaciones de operaciones exitosas (crear, actualizar, eliminar)
+
+---
+
+### **2. Error (Rojo Cálido) ❌**
+**Color:** Fondo rojo suave (`#fef2f2`), borde rojo (`#fca5a5`), texto rojo oscuro
+
 ```typescript
 toast.error('Error al guardar', {
   description: 'Por favor, intenta nuevamente',
@@ -127,22 +137,44 @@ toast.error('Error al guardar', {
 });
 ```
 
-### **3. Info (Neutral)**
-```typescript
-toast('Información importante', {
-  description: 'Recuerda completar todos los campos'
-});
-```
+**Uso:** Errores, validaciones fallidas, operaciones rechazadas
 
-### **4. Warning (Opcional - con acción)**
+---
+
+### **3. Warning (Amarillo Cálido) ⚠️**
+**Color:** Fondo amarillo suave (`#fffbeb`), borde amarillo (`#fcd34d`), texto amarillo oscuro
+
 ```typescript
-toast('Cambios sin guardar', {
+toast.warning('Cambios sin guardar', {
+  description: 'Tienes cambios pendientes',
   action: {
     label: 'Guardar',
     onClick: () => save()
   }
 });
 ```
+
+**Uso:** Advertencias, acciones que requieren atención, confirmaciones importantes
+
+---
+
+### **4. Info (Beige Cálido) ℹ️**
+**Color:** Fondo beige (`#fdfaf7` - paleta actual), borde beige (`#e8ddd0`), texto oscuro
+
+```typescript
+toast('Información importante', {
+  description: 'Recuerda completar todos los campos'
+});
+
+// O explícitamente:
+toast.info('Sincronizando datos', {
+  description: 'Espera un momento...'
+});
+```
+
+**Uso:** Información general, notificaciones neutras, estados del sistema
+
+---
 
 ### **5. Promise (Para operaciones async)**
 ```typescript

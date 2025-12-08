@@ -123,9 +123,7 @@ export default function ClientsPage() {
   const handleCreateSuccess = (client: Client) => {
     loadClients(); // Reload clients after creation
     setIsCreateModalOpen(false);
-    toast.success('Cliente creado exitosamente', {
-      description: `${client.firstName} ${client.lastName} ha sido agregado al sistema`,
-    });
+    // Toast ya mostrado en CreateClientModal
   };
 
   const handleEditClick = (client: Client) => {
@@ -137,9 +135,7 @@ export default function ClientsPage() {
     setClients(clients.map((c) => (c.id === updatedClient.id ? updatedClient : c)));
     setIsEditModalOpen(false);
     setSelectedClient(null);
-    toast.success('Cliente actualizado', {
-      description: `Los datos de ${updatedClient.firstName} ${updatedClient.lastName} han sido actualizados`,
-    });
+    // Toast ya mostrado en EditClientModal
   };
 
   const handleDeleteClick = (client: Client) => {
