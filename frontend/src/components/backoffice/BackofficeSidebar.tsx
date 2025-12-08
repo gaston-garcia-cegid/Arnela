@@ -18,6 +18,11 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+interface BackofficeSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
 interface SubMenuItem {
   title: string;
   href: string;
@@ -85,12 +90,19 @@ const allMenuItems: MenuItem[] = [
   },
 ];
 
-export function BackofficeSidebar() {
+export function BackofficeSidebar({ isOpen = true, onClose }: BackofficeSidebarProps = {}) {
   const pathname = usePathname();
   const user = useAuthStore((state) => state.user);
   const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({
     Facturación: false, // Collapsed by default
   });
+
+  const handleLinkClick = () => {
+    // Cerrar sidebar en mobile al hacer click en un link
+    if (onClose) {
+      onClose();
+    }
+  };
 
   // Filter menu items based on user role
   const menuItems = allMenuItems.filter((item) => {
@@ -111,7 +123,13 @@ export function BackofficeSidebar() {
   };
 
   return (
-    <aside className="w-64 bg-card border-r min-h-screen p-4">
+    <aside
+      className={cn(
+        "w-64 bg-background border-r p-4 transition-transform duration-300 ease-in-out",
+        "fixed top-16 bottom-0 left-0 z-40 overflow-y-auto",
+        isOpen ? "translate-x-0" : "-translate-x-full"
+      )}
+    >
       <div className="mb-6">
         <h2 className="text-lg font-bold text-foreground">Backoffice</h2>
         <p className="text-xs text-muted-foreground">Arnela Gabinete</p>
@@ -160,6 +178,7 @@ export function BackofficeSidebar() {
                         <Link
                           key={subItem.href}
                           href={subItem.href}
+                          onClick={handleLinkClick}
                           className={cn(
                             "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
                             isActive
@@ -185,6 +204,7 @@ export function BackofficeSidebar() {
             <Link
               key={item.href}
               href={item.href!}
+              onClick={handleLinkClick}
               className={cn(
                 "flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
                 isActive

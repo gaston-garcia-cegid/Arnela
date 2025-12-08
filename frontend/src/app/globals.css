@@ -7,31 +7,31 @@
    ============================================ */
 
 @theme {
-  /* Nueva paleta de colores - Suave y profesional con buen contraste */
-  --color-background: #f4e4ec;           /* Rosa muy claro (244, 228, 236) - fondo principal */
+  /* Nueva paleta de colores - Cálidos cerca del blanco con excelente contraste */
+  --color-background: #fdfaf7;           /* Beige muy claro casi blanco (253, 250, 247) - fondo principal */
   --color-foreground: #1a202c;            /* Gris muy oscuro - texto principal (mejor contraste) */
   
-  --color-primary: #4a9fb8;               /* Azul medio oscurecido - botones y énfasis (más contraste) */
+  --color-primary: #d4936d;               /* Terracota cálido - botones y énfasis */
   --color-primary-foreground: #ffffff;    /* Blanco para texto en primary */
   
-  --color-secondary: #e89b8f;             /* Coral oscurecido (más contraste que el original) */
+  --color-secondary: #c89f7b;             /* Arena cálido - elementos secundarios */
   --color-secondary-foreground: #1a202c;  /* Gris muy oscuro para texto en secondary */
   
-  --color-accent: #52c9c9;                /* Turquesa medio - highlights y hover (más visible) */
+  --color-accent: #e8c4a1;                /* Crema cálido - highlights y hover */
   --color-accent-foreground: #1a202c;     /* Gris muy oscuro para texto en accent */
   
   --color-card: #ffffff;                  /* Blanco para cards */
   --color-card-foreground: #1a202c;       /* Gris muy oscuro para texto en cards */
   
-  --color-muted: #e0f0f5;                 /* Azul muy claro - fondos secundarios (más suave) */
-  --color-muted-foreground: #2d3748;      /* Gris oscuro para texto muted (mejor contraste) */
+  --color-muted: #f5ede4;                 /* Beige claro - fondos secundarios */
+  --color-muted-foreground: #5a5a5a;      /* Gris medio para texto muted */
   
-  --color-destructive: #dc2626;           /* Rojo para errores */
+  --color-destructive: #d97757;           /* Coral cálido para errores */
   --color-destructive-foreground: #ffffff; /* Blanco para texto en destructive */
   
-  --color-border: #c0e0e7;                /* Border suave azulado */
+  --color-border: #e8ddd0;                /* Border beige suave */
   --color-input: #ffffff;                 /* Blanco para inputs */
-  --color-ring: #4a9fb8;                  /* Azul medio para focus ring */
+  --color-ring: #d4936d;                  /* Terracota para focus ring */
   
   --color-popover: #ffffff;               /* Blanco para popovers */
   --color-popover-foreground: #1a202c;    /* Gris muy oscuro para texto en popovers */

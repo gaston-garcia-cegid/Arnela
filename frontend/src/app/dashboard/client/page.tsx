@@ -18,7 +18,7 @@ export default function ClientDashboard() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card shadow-sm">
+      <header className="sticky top-0 z-30 border-b bg-background shadow-sm">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <h1 className="text-lg font-bold text-primary md:text-xl">Portal del Cliente</h1>
           <Button onClick={handleLogout} variant="outline" size="sm">
