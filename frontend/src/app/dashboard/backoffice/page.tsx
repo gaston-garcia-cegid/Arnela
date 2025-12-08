@@ -690,8 +690,8 @@ export default function BackofficeDashboard() {
 
       {selectedClient && (
         <EditClientModal
-          open={isEditClientModalOpen}
-          onOpenChange={setIsEditClientModalOpen}
+          isOpen={isEditClientModalOpen}
+          onClose={() => setIsEditClientModalOpen(false)}
           client={selectedClient}
           onSuccess={() => {
             loadClients();
