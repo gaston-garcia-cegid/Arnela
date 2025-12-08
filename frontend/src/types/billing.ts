@@ -20,6 +20,12 @@ export interface Invoice {
   pdfPath?: string;
   createdAt: string;
   updatedAt: string;
+  client?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
 }
 
 export interface CreateInvoiceRequest {
@@ -123,6 +129,7 @@ export interface BillingDashboardStats {
   balance: number;
   unpaidInvoices: number;
   paidInvoices: number;
+  totalInvoices: number;
   currentMonthRevenue: number;
   currentMonthExpenses: number;
 }

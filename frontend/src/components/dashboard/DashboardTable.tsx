@@ -169,18 +169,20 @@ export function DashboardTable({
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="min-h-[300px] flex flex-col">
         {loading ? (
-          <div className="flex justify-center py-8">
+          <div className="flex justify-center items-center flex-1 py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive">
+          <div className="rounded-md bg-destructive/15 p-4 text-sm text-destructive flex-1 flex items-center">
             {error}
           </div>
         ) : (
           <>
-            {children}
+            <div className="flex-1">
+              {children}
+            </div>
             
             {/* Action Buttons */}
             <div className="flex gap-2 mt-4 pt-4 border-t">
@@ -219,7 +221,7 @@ interface EmptyStateProps {
 
 export function DashboardTableEmpty({ icon, title, description }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center py-8 text-center">
+    <div className="flex flex-col items-center justify-center py-12 text-center min-h-[200px]">
       {icon && <div className="mb-4 opacity-50">{icon}</div>}
       <p className="text-sm font-medium text-muted-foreground">{title}</p>
       {description && (

@@ -26,14 +26,18 @@ import {
   Euro,
   Mail,
   Phone,
-  MapPin,
   Clock,
-  User
+  User,
+  TrendingUp,
+  TrendingDown,
+  FileText,
+  Receipt
 } from 'lucide-react';
 import { logError } from '@/lib/logger';
 import { DashboardTable, DashboardTableEmpty } from '@/components/dashboard/DashboardTable';
 import type { Employee } from '@/types/employee';
 import type { Appointment } from '@/types/appointment';
+import type { Invoice, Expense, BillingDashboardStats } from '@/types/billing';
 
 /**
  * BackofficeDashboard - Dashboard principal para administradores
@@ -175,6 +179,13 @@ export default function BackofficeDashboard() {
   const [employeesLoading, setEmployeesLoading] = useState(true);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
   
+  // Billing state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [billingStats, setBillingStats] = useState<BillingDashboardStats | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
+  
   // Modals state
   const [isCreateClientModalOpen, setIsCreateClientModalOpen] = useState(false);
   const [isEditClientModalOpen, setIsEditClientModalOpen] = useState(false);
@@ -211,6 +222,7 @@ export default function BackofficeDashboard() {
       loadClients(),
       loadAppointments(),
       loadEmployees(),
+      loadBilling(),
     ]);
   };
 
@@ -263,6 +275,31 @@ export default function BackofficeDashboard() {
       setEmployeesError(err instanceof Error ? err.message : 'Error al cargar empleados');
     } finally {
       setEmployeesLoading(false);
+    }
+  };
+
+  const loadBilling = async () => {
+    if (!token) return;
+
+    try {
+      setBillingLoading(true);
+      setBillingError(null);
+      
+      // Carga paralela de estadísticas, facturas y gastos
+      const [statsData, invoicesData, expensesData] = await Promise.all([
+        api.billing.stats.getDashboard(token),
+        api.billing.invoices.list(token, { pageSize: 5, page: 1 }),
+        api.billing.expenses.list(token, { pageSize: 5, page: 1 }),
+      ]);
+      
+      setBillingStats(statsData);
+      setInvoices(invoicesData.data || []);
+      setExpenses(expensesData.data || []);
+    } catch (err) {
+      logError('Error loading billing data for dashboard', err, { component: 'BackofficeDashboard' });
+      setBillingError(err instanceof Error ? err.message : 'Error al cargar facturación');
+    } finally {
+      setBillingLoading(false);
     }
   };
 
@@ -660,21 +697,20 @@ export default function BackofficeDashboard() {
             )}
           </DashboardTable>
 
-          {/* Billing Preview */}
+          {/* Billing Dashboard */}
           <DashboardTable
             title="Facturación Reciente"
-            description="Últimas transacciones"
+            description="Ingresos y gastos del mes"
             icon={<Euro className="h-5 w-5 text-emerald-600" />}
             viewAllHref="/dashboard/backoffice/billing"
             onViewAll={() => router.push('/dashboard/backoffice/billing')}
-            onNew={() => router.push('/dashboard/backoffice/billing')}
+            onReload={loadBilling}
+            onNew={() => router.push('/dashboard/backoffice/billing/invoices/new')}
             newButtonText="Nueva Factura"
+            loading={billingLoading}
+            error={billingError}
           >
-            <DashboardTableEmpty
-              icon={<Euro className="h-12 w-12" />}
-              title="Módulo de Facturación"
-              description="Haz clic en 'Ver Todos' para acceder"
-            />
+            {renderBillingContent()}
           </DashboardTable>
         </div>
       </main>
@@ -701,4 +737,176 @@ export default function BackofficeDashboard() {
       )}
     </div>
   );
+  
+  /**
+   * Renderiza el contenido del módulo de facturación
+   * Separado en función para evitar ternarios anidados
+   */
+  function renderBillingContent() {
+    if (billingLoading) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+        </div>
+      );
+    }
+    
+    if (!billingStats) {
+      return (
+        <DashboardTableEmpty
+          icon={<Euro className="h-12 w-12" />}
+          title="No hay datos de facturación"
+          description="Comienza creando facturas y registrando gastos"
+        />
+      );
+    }
+    
+    return (
+              <div className="space-y-4 min-h-[300px]">
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Balance Card */}
+                  <Card className="border-l-4 border-l-emerald-600">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Balance</p>
+                          <p className="text-2xl font-bold text-emerald-600">
+                            {billingStats.balance.toLocaleString('es-ES', { 
+                              style: 'currency', 
+                              currency: 'EUR' 
+                            })}
+                          </p>
+                        </div>
+                        <TrendingUp className="h-8 w-8 text-emerald-600" />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Invoices Count */}
+                  <Card className="border-l-4 border-l-blue-600">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Facturas</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            {billingStats.totalInvoices}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {billingStats.unpaidInvoices} pendientes
+                          </p>
+                        </div>
+                        <FileText className="h-8 w-8 text-blue-600" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Revenue and Expenses */}
+                <div className="grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingUp className="h-4 w-4 text-green-600" />
+                        <p className="text-xs font-semibold text-muted-foreground">INGRESOS</p>
+                      </div>
+                      <p className="text-xl font-bold text-green-600">
+                        {billingStats.totalRevenue.toLocaleString('es-ES', { 
+                          style: 'currency', 
+                          currency: 'EUR' 
+                        })}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Facturas cobradas
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrendingDown className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-semibold text-muted-foreground">GASTOS</p>
+                      </div>
+                      <p className="text-xl font-bold text-red-600">
+                        {billingStats.totalExpenses.toLocaleString('es-ES', { 
+                          style: 'currency', 
+                          currency: 'EUR' 
+                        })}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Total de gastos
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recent Transactions */}
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-muted-foreground">Últimas Transacciones</h4>
+                  {invoices.length === 0 && expenses.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No hay transacciones recientes
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {/* Últimas 3 facturas */}
+                      {invoices.slice(0, 3).map((invoice) => (
+                        <button
+                          key={invoice.id}
+                          type="button"
+                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors cursor-pointer w-full text-left"
+                          onClick={() => router.push('/dashboard/backoffice/billing/invoices')}
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                            <div>
+                              <p className="text-sm font-medium">{invoice.invoiceNumber}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {invoice.client?.firstName} {invoice.client?.lastName}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold text-green-600">
+                              +{(invoice.totalAmount || 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                            </p>
+                            <Badge
+                              variant={invoice.status === 'paid' ? 'default' : 'secondary'}
+                              className={invoice.status === 'paid' ? 'bg-green-100 text-green-800 text-xs' : 'bg-yellow-100 text-yellow-800 text-xs'}
+                            >
+                              {invoice.status === 'paid' ? 'Cobrada' : 'Pendiente'}
+                            </Badge>
+                          </div>
+                        </button>
+                      ))}
+                      
+                      {/* Últimos 2 gastos */}
+                      {expenses.slice(0, 2).map((expense) => (
+                        <button
+                          key={expense.id}
+                          type="button"
+                          className="flex items-center justify-between p-2 rounded-md hover:bg-muted/30 transition-colors cursor-pointer w-full text-left"
+                          onClick={() => router.push('/dashboard/backoffice/billing/expenses')}
+                        >
+                          <div className="flex items-center gap-2">
+                            <Receipt className="h-4 w-4 text-red-600" />
+                            <div>
+                              <p className="text-sm font-medium">{expense.description}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {expense.category?.name || 'Sin categoría'}
+                              </p>
+                            </div>
+                          </div>
+                          <p className="text-sm font-semibold text-red-600">
+                            -{expense.amount.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+    );
+  }
 }
