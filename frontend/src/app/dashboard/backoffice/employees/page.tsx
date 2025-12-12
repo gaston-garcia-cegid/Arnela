@@ -23,7 +23,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { UserPlus, Edit2, Trash2, Mail, Phone, Calendar } from 'lucide-react';
+import { UserPlus, Edit2, Trash2, Mail, Phone, Calendar, Download, FileSpreadsheet } from 'lucide-react';
+import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function EmployeesPage() {
   const user = useAuthStore((state) => state.user);
@@ -125,6 +132,73 @@ export default function EmployeesPage() {
     });
   };
 
+  // Export functions
+  const handleExportCSV = () => {
+    try {
+      const dataToExport = employees.map(employee => ({
+        nombre: employee.firstName,
+        apellidos: employee.lastName,
+        email: employee.email,
+        telefono: employee.phone || '',
+        dni: employee.dni || '',
+        especialidades: employee.specialties?.join(', ') || '',
+        estado: employee.isActive ? 'Activo' : 'Inactivo',
+        fechaCreacion: employee.createdAt ? new Date(employee.createdAt) : '',
+      }));
+
+      const filename = generateFilename('empleados');
+      
+      exportToCSV(dataToExport, filename, {
+        nombre: 'Nombre',
+        apellidos: 'Apellidos',
+        email: 'Email',
+        telefono: 'Teléfono',
+        dni: 'DNI',
+        especialidades: 'Especialidades',
+        estado: 'Estado',
+        fechaCreacion: 'Fecha de Creación',
+      });
+
+      toast.success(`${employees.length} empleados exportados a CSV`);
+    } catch (error) {
+      logError('Error exporting employees to CSV', error, { component: 'EmployeesPage' });
+      toast.error('Error al exportar empleados');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = employees.map(employee => ({
+        nombre: employee.firstName,
+        apellidos: employee.lastName,
+        email: employee.email,
+        telefono: employee.phone || '',
+        dni: employee.dni || '',
+        especialidades: employee.specialties?.join(', ') || '',
+        estado: employee.isActive ? 'Activo' : 'Inactivo',
+        fechaCreacion: employee.createdAt ? new Date(employee.createdAt) : '',
+      }));
+
+      const filename = generateFilename('empleados');
+      
+      exportToExcel(dataToExport, filename, 'Empleados', {
+        nombre: 'Nombre',
+        apellidos: 'Apellidos',
+        email: 'Email',
+        telefono: 'Teléfono',
+        dni: 'DNI',
+        especialidades: 'Especialidades',
+        estado: 'Estado',
+        fechaCreacion: 'Fecha de Creación',
+      });
+
+      toast.success(`${employees.length} empleados exportados a Excel`);
+    } catch (error) {
+      logError('Error exporting employees to Excel', error, { component: 'EmployeesPage' });
+      toast.error('Error al exportar empleados');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content */}
@@ -137,10 +211,32 @@ export default function EmployeesPage() {
               Gestiona el equipo de profesionales
             </p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-            <UserPlus className="h-4 w-4" />
-            Nuevo Empleado
-          </Button>
+          <div className="flex gap-2">
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" disabled={employees.length === 0} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <UserPlus className="h-4 w-4" />
+              Nuevo Empleado
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}

@@ -31,7 +31,14 @@ import { useRouter } from 'next/navigation';
 import { api, type Client } from '@/lib/api';
 import { CreateClientModal } from '@/components/backoffice/CreateClientModal';
 import { EditClientModal } from '@/components/backoffice/EditClientModal';
-import { Search, UserPlus, Mail, Phone, MapPin, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Mail, Phone, MapPin, Edit, Trash2, Loader2, Download, FileSpreadsheet } from 'lucide-react';
+import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function ClientsPage() {
   const user = useAuthStore((state) => state.user);
@@ -187,6 +194,95 @@ export default function ClientsPage() {
   const activeClients = clients.filter((c) => c.isActive).length;
   const inactiveClients = totalClients - activeClients;
 
+  // Export functions
+  const handleExportCSV = () => {
+    try {
+      const dataToExport = filteredClients.map(client => ({
+        nombre: client.firstName,
+        apellidos: client.lastName,
+        email: client.email,
+        telefono: client.phone || '',
+        dniCif: client.dniCif || '',
+        direccion: client.address || '',
+        ciudad: client.city || '',
+        provincia: client.province || '',
+        codigoPostal: client.postalCode || '',
+        estado: client.isActive ? 'Activo' : 'Inactivo',
+        fechaCreacion: client.createdAt ? new Date(client.createdAt) : '',
+      }));
+
+      const filters = {
+        estado: statusFilter !== 'all' ? statusFilter : undefined,
+        ciudad: cityFilter !== 'all' ? cityFilter : undefined,
+      };
+
+      const filename = generateFilename('clientes', filters as any);
+      
+      exportToCSV(dataToExport, filename, {
+        nombre: 'Nombre',
+        apellidos: 'Apellidos',
+        email: 'Email',
+        telefono: 'Teléfono',
+        dniCif: 'DNI/CIF',
+        direccion: 'Dirección',
+        ciudad: 'Ciudad',
+        provincia: 'Provincia',
+        codigoPostal: 'Código Postal',
+        estado: 'Estado',
+        fechaCreacion: 'Fecha de Creación',
+      });
+
+      toast.success(`${filteredClients.length} clientes exportados a CSV`);
+    } catch (error) {
+      logError('Error exporting clients to CSV', error, { component: 'ClientsPage' });
+      toast.error('Error al exportar clientes');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = filteredClients.map(client => ({
+        nombre: client.firstName,
+        apellidos: client.lastName,
+        email: client.email,
+        telefono: client.phone || '',
+        dniCif: client.dniCif || '',
+        direccion: client.address || '',
+        ciudad: client.city || '',
+        provincia: client.province || '',
+        codigoPostal: client.postalCode || '',
+        estado: client.isActive ? 'Activo' : 'Inactivo',
+        fechaCreacion: client.createdAt ? new Date(client.createdAt) : '',
+      }));
+
+      const filters = {
+        estado: statusFilter !== 'all' ? statusFilter : undefined,
+        ciudad: cityFilter !== 'all' ? cityFilter : undefined,
+      };
+
+      const filename = generateFilename('clientes', filters as any);
+      
+      exportToExcel(dataToExport, filename, 'Clientes', {
+        nombre: 'Nombre',
+        apellidos: 'Apellidos',
+        email: 'Email',
+        telefono: 'Teléfono',
+        dniCif: 'DNI/CIF',
+        direccion: 'Dirección',
+        ciudad: 'Ciudad',
+        provincia: 'Provincia',
+        codigoPostal: 'Código Postal',
+        estado: 'Estado',
+        fechaCreacion: 'Fecha de Creación',
+      });
+
+      toast.success(`${filteredClients.length} clientes exportados a Excel`);
+    } catch (error) {
+      logError('Error exporting clients to Excel', error, { component: 'ClientsPage' });
+      toast.error('Error al exportar clientes');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content */}
@@ -197,10 +293,32 @@ export default function ClientsPage() {
             <h2 className="text-3xl font-bold">Clientes</h2>
             <p className="text-muted-foreground">Administra todos los clientes del sistema</p>
           </div>
-          <Button onClick={() => setIsCreateModalOpen(true)} size="lg">
-            <UserPlus className="mr-2 h-5 w-5" />
-            Nuevo Cliente
-          </Button>
+          <div className="flex gap-2">
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" disabled={filteredClients.length === 0}>
+                  <Download className="mr-2 h-5 w-5" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button onClick={() => setIsCreateModalOpen(true)} size="lg">
+              <UserPlus className="mr-2 h-5 w-5" />
+              Nuevo Cliente
+            </Button>
+          </div>
         </div>
 
         {/* Loading State */}

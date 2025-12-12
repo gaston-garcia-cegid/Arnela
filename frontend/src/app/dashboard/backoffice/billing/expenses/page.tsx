@@ -25,8 +25,15 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { logError } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Expense, ExpenseFilters, PaginatedResponse, ExpenseCategory } from "@/types/billing";
-import { Plus, FileCheck, FileX } from "lucide-react";
+import { Plus, FileCheck, FileX, Download, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
+import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function ExpensesPage() {
   const router = useRouter();
@@ -88,6 +95,81 @@ export default function ExpensesPage() {
     return new Date(dateString).toLocaleDateString("es-ES");
   };
 
+  // Export functions
+  const handleExportCSV = () => {
+    try {
+      const dataToExport = expenses.data.map(expense => ({
+        descripcion: expense.description,
+        categoria: expense.category?.name || '',
+        importe: expense.amount,
+        proveedor: expense.supplier || '',
+        fecha: expense.expenseDate ? new Date(expense.expenseDate) : '',
+        metodoPago: expense.paymentMethod || '',
+        factura: expense.supplierInvoice || '',
+        notas: expense.notes || '',
+      }));
+
+      const filterValues = {
+        categoria: filters.categoryId ? categories.find(c => c.id === filters.categoryId)?.name : undefined,
+      };
+
+      const filename = generateFilename('gastos', filterValues as any);
+      
+      exportToCSV(dataToExport, filename, {
+        descripcion: 'Descripción',
+        categoria: 'Categoría',
+        importe: 'Importe',
+        proveedor: 'Proveedor',
+        fecha: 'Fecha',
+        metodoPago: 'Método de Pago',
+        factura: 'Nº Factura',
+        notas: 'Notas',
+      });
+
+      toast.success(`${expenses.data.length} gastos exportados a CSV`);
+    } catch (error) {
+      logError('Error exporting expenses to CSV', error, { component: 'ExpensesPage' });
+      toast.error('Error al exportar gastos');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = expenses.data.map(expense => ({
+        descripcion: expense.description,
+        categoria: expense.category?.name || '',
+        importe: expense.amount,
+        proveedor: expense.supplier || '',
+        fecha: expense.expenseDate ? new Date(expense.expenseDate) : '',
+        metodoPago: expense.paymentMethod || '',
+        factura: expense.supplierInvoice || '',
+        notas: expense.notes || '',
+      }));
+
+      const filterValues = {
+        categoria: filters.categoryId ? categories.find(c => c.id === filters.categoryId)?.name : undefined,
+      };
+
+      const filename = generateFilename('gastos', filterValues as any);
+      
+      exportToExcel(dataToExport, filename, 'Gastos', {
+        descripcion: 'Descripción',
+        categoria: 'Categoría',
+        importe: 'Importe',
+        proveedor: 'Proveedor',
+        fecha: 'Fecha',
+        metodoPago: 'Método de Pago',
+        factura: 'Nº Factura',
+        notas: 'Notas',
+      });
+
+      toast.success(`${expenses.data.length} gastos exportados a Excel`);
+    } catch (error) {
+      logError('Error exporting expenses to Excel', error, { component: 'ExpensesPage' });
+      toast.error('Error al exportar gastos');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -97,12 +179,34 @@ export default function ExpensesPage() {
             Gestión de gastos y proveedores ({expenses.total} total)
           </p>
         </div>
-        <Link href="/dashboard/backoffice/billing/expenses/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nuevo Gasto
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={expenses.data.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exportar Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link href="/dashboard/backoffice/billing/expenses/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nuevo Gasto
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card className="p-4">

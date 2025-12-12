@@ -27,9 +27,16 @@ import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
 import { logError } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Invoice, InvoiceFilters, PaginatedResponse } from "@/types/billing";
-import { Plus, Search, Eye, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Search, Eye, CheckCircle, XCircle, Download, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { ClientNameDisplay } from "@/components/billing/ClientNameDisplay";
+import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function InvoicesPage() {
   const router = useRouter();
@@ -125,6 +132,87 @@ export default function InvoicesPage() {
     );
   };
 
+  // Export functions
+  const handleExportCSV = () => {
+    try {
+      const dataToExport = invoices.data.map(invoice => ({
+        numero: invoice.invoiceNumber,
+        cliente: invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : '',
+        fecha: invoice.issueDate ? new Date(invoice.issueDate) : '',
+        importe: invoice.baseAmount,
+        iva: invoice.vatAmount,
+        total: invoice.totalAmount,
+        estado: invoice.status === 'paid' ? 'Cobrada' : 'Pendiente',
+        metodoPago: invoice.paymentMethod || '',
+        fechaPago: '',
+      }));
+
+      const filterValues = {
+        estado: filters.status,
+        cliente: filters.clientId,
+      };
+
+      const filename = generateFilename('facturas', filterValues as any);
+      
+      exportToCSV(dataToExport, filename, {
+        numero: 'Número',
+        cliente: 'Cliente',
+        fecha: 'Fecha Emisión',
+        importe: 'Importe Base',
+        iva: 'IVA',
+        total: 'Total',
+        estado: 'Estado',
+        metodoPago: 'Método de Pago',
+        fechaPago: 'Fecha de Pago',
+      });
+
+      toast.success(`${invoices.data.length} facturas exportadas a CSV`);
+    } catch (error) {
+      logError('Error exporting invoices to CSV', error, { component: 'InvoicesPage' });
+      toast.error('Error al exportar facturas');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const dataToExport = invoices.data.map(invoice => ({
+        numero: invoice.invoiceNumber,
+        cliente: invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : '',
+        fecha: invoice.issueDate ? new Date(invoice.issueDate) : '',
+        importe: invoice.baseAmount,
+        iva: invoice.vatAmount,
+        total: invoice.totalAmount,
+        estado: invoice.status === 'paid' ? 'Cobrada' : 'Pendiente',
+        metodoPago: invoice.paymentMethod || '',
+        fechaPago: '',
+      }));
+
+      const filterValues = {
+        estado: filters.status,
+        cliente: filters.clientId,
+      };
+
+      const filename = generateFilename('facturas', filterValues as any);
+      
+      exportToExcel(dataToExport, filename, 'Facturas', {
+        numero: 'Número',
+        cliente: 'Cliente',
+        fecha: 'Fecha Emisión',
+        importe: 'Importe Base',
+        iva: 'IVA',
+        total: 'Total',
+        estado: 'Estado',
+        metodoPago: 'Método de Pago',
+        fechaPago: 'Fecha de Pago',
+      });
+
+      toast.success(`${invoices.data.length} facturas exportadas a Excel`);
+    } catch (error) {
+      logError('Error exporting invoices to Excel', error, { component: 'InvoicesPage' });
+      toast.error('Error al exportar facturas');
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -134,12 +222,34 @@ export default function InvoicesPage() {
             Gestión de facturas emitidas ({invoices.total} total)
           </p>
         </div>
-        <Link href="/dashboard/backoffice/billing/invoices/new">
-          <Button>
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Factura
-          </Button>
-        </Link>
+        <div className="flex gap-2">
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={invoices.data.length === 0}>
+                <Download className="w-4 h-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exportar Excel
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link href="/dashboard/backoffice/billing/invoices/new">
+            <Button>
+              <Plus className="w-4 h-4 mr-2" />
+              Nueva Factura
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

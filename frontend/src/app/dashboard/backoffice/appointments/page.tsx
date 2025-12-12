@@ -21,10 +21,18 @@ import { BackofficeAppointmentList } from '@/components/appointments/BackofficeA
 import { AppointmentDetailsModal } from '@/components/appointments/AppointmentDetailsModal';
 import { ConfirmAppointmentModal } from '@/components/appointments/ConfirmAppointmentModal';
 import { CreateAppointmentModalBackoffice } from '@/components/appointments/CreateAppointmentModalBackoffice';
-import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Loader2, Calendar, Filter, AlertCircle, CheckCircle, Clock, XCircle, Download, FileSpreadsheet } from 'lucide-react';
 import type { Therapist } from '@/types/appointment';
 import { api } from '@/lib/api';
 import { logError } from '@/lib/logger';
+import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 export default function BackofficeAppointmentsPage() {
   const user = useAuthStore((state) => state.user);
@@ -195,6 +203,101 @@ export default function BackofficeAppointmentsPage() {
 
   const hasActiveFilters = statusFilter !== 'all' || therapistFilter !== 'all' || startDateFilter || endDateFilter;
 
+  // Export functions
+  const handleExportCSV = () => {
+    try {
+      const statusLabels: Record<string, string> = {
+        pending: 'Pendiente',
+        confirmed: 'Confirmada',
+        cancelled: 'Cancelada',
+        completed: 'Completada',
+      };
+
+      const dataToExport = appointments.map(appointment => ({
+        titulo: appointment.title,
+        cliente: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : '',
+        empleado: appointment.employee ? `${appointment.employee.firstName} ${appointment.employee.lastName}` : '',
+        fecha: appointment.startTime ? new Date(appointment.startTime) : '',
+        hora: appointment.startTime ? new Date(appointment.startTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '',
+        duracion: appointment.durationMinutes ? `${appointment.durationMinutes} min` : '',
+        sala: appointment.room || '',
+        estado: statusLabels[appointment.status] || appointment.status,
+        notas: appointment.notes || '',
+      }));
+
+      const filters = {
+        estado: statusFilter !== 'all' ? statusFilter : undefined,
+        terapeuta: therapistFilter !== 'all' ? therapists.find(t => t.id === therapistFilter)?.name : undefined,
+      };
+
+      const filename = generateFilename('citas', filters as any);
+      
+      exportToCSV(dataToExport, filename, {
+        titulo: 'Título',
+        cliente: 'Cliente',
+        empleado: 'Empleado',
+        fecha: 'Fecha',
+        hora: 'Hora',
+        duracion: 'Duración',
+        sala: 'Sala',
+        estado: 'Estado',
+        notas: 'Notas',
+      });
+
+      toast.success(`${appointments.length} citas exportadas a CSV`);
+    } catch (error) {
+      logError('Error exporting appointments to CSV', error, { component: 'BackofficeAppointmentsPage' });
+      toast.error('Error al exportar citas');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      const statusLabels: Record<string, string> = {
+        pending: 'Pendiente',
+        confirmed: 'Confirmada',
+        cancelled: 'Cancelada',
+        completed: 'Completada',
+      };
+
+      const dataToExport = appointments.map(appointment => ({
+        titulo: appointment.title,
+        cliente: appointment.client ? `${appointment.client.firstName} ${appointment.client.lastName}` : '',
+        empleado: appointment.employee ? `${appointment.employee.firstName} ${appointment.employee.lastName}` : '',
+        fecha: appointment.startTime ? new Date(appointment.startTime) : '',
+        hora: appointment.startTime ? new Date(appointment.startTime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) : '',
+        duracion: appointment.durationMinutes ? `${appointment.durationMinutes} min` : '',
+        sala: appointment.room || '',
+        estado: statusLabels[appointment.status] || appointment.status,
+        notas: appointment.notes || '',
+      }));
+
+      const filters = {
+        estado: statusFilter !== 'all' ? statusFilter : undefined,
+        terapeuta: therapistFilter !== 'all' ? therapists.find(t => t.id === therapistFilter)?.name : undefined,
+      };
+
+      const filename = generateFilename('citas', filters as any);
+      
+      exportToExcel(dataToExport, filename, 'Citas', {
+        titulo: 'Título',
+        cliente: 'Cliente',
+        empleado: 'Empleado',
+        fecha: 'Fecha',
+        hora: 'Hora',
+        duracion: 'Duración',
+        sala: 'Sala',
+        estado: 'Estado',
+        notas: 'Notas',
+      });
+
+      toast.success(`${appointments.length} citas exportadas a Excel`);
+    } catch (error) {
+      logError('Error exporting appointments to Excel', error, { component: 'BackofficeAppointmentsPage' });
+      toast.error('Error al exportar citas');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content */}
@@ -211,10 +314,32 @@ export default function BackofficeAppointmentsPage() {
                 : 'Gestiona todas las citas del sistema'}
             </p>
           </div>
-          <Button onClick={() => setCreateModalOpen(true)} size="lg" className="gap-2">
-            <Calendar className="h-5 w-5" />
-            Nueva Cita
-          </Button>
+          <div className="flex gap-2">
+            {/* Export Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" disabled={appointments.length === 0} className="gap-2">
+                  <Download className="h-5 w-5" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileSpreadsheet className="mr-2 h-4 w-4" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button onClick={() => setCreateModalOpen(true)} size="lg" className="gap-2">
+              <Calendar className="h-5 w-5" />
+              Nueva Cita
+            </Button>
+          </div>
         </div>
 
         {/* Error Alert */}
