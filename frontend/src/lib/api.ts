@@ -855,6 +855,57 @@ export const api = {
       },
     },
   },
+
+  // ============================================
+  // Global Search
+  // ============================================
+  search: {
+    /**
+     * Global search across clients, employees, appointments, and invoices
+     * @param query Search query (minimum 2 characters)
+     * @param token Authorization token
+     * @returns Search results grouped by entity type
+     */
+    global: async (query: string, token: string): Promise<{
+      clients: Array<{
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        dniCif: string;
+      }>;
+      employees: Array<{
+        id: string;
+        name: string;
+        email: string;
+        phone: string;
+        specialties: string[];
+        avatarColor: string;
+      }>;
+      appointments: Array<{
+        id: string;
+        title: string;
+        startTime: string;
+        endTime: string;
+        status: string;
+        clientName: string;
+        employeeName: string;
+      }>;
+      invoices: Array<{
+        id: string;
+        invoiceNumber: string;
+        clientName: string;
+        totalAmount: number;
+        status: string;
+        issueDate: string;
+      }>;
+      totalResults: number;
+    }> => {
+      const queryParams = new URLSearchParams({ q: query });
+      return fetchWithAuth(`/search?${queryParams}`, token, { method: 'GET' });
+    },
+  },
 };
 
 // ============================================

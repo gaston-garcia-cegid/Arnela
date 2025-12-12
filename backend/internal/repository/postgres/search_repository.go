@@ -2,19 +2,20 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 // SearchRepository implements search operations across all entities
 type SearchRepository struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 // NewSearchRepository creates a new search repository
-func NewSearchRepository(db *sql.DB) *SearchRepository {
+func NewSearchRepository(db *sqlx.DB) *SearchRepository {
 	return &SearchRepository{
 		db: db,
 	}
@@ -129,7 +130,7 @@ func (r *SearchRepository) SearchEmployees(ctx context.Context, query string, li
 	var employees []domain.SearchEmployee
 	for rows.Next() {
 		var employee domain.SearchEmployee
-		
+
 		err := rows.Scan(
 			&employee.ID,
 			&employee.Name,
@@ -142,7 +143,9 @@ func (r *SearchRepository) SearchEmployees(ctx context.Context, query string, li
 			return nil, fmt.Errorf("failed to scan employee: %w", err)
 		}
 		employees = append(employees, employee)
-	}	if err = rows.Err(); err != nil {
+	}
+
+	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating employee rows: %w", err)
 	}
 

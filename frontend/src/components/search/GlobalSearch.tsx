@@ -90,8 +90,14 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
       setIsLoading(true);
       try {
-        const response = await api.get<SearchResults>(`/search?q=${encodeURIComponent(debouncedQuery)}`);
-        setResults(response.data);
+        // Get token from localStorage (since we're in authenticated context)
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
+        const data = await api.search.global(debouncedQuery, token);
+        setResults(data);
         setSelectedIndex(0);
       } catch (error) {
         console.error('Search error:', error);
