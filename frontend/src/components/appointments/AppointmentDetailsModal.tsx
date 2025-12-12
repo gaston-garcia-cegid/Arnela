@@ -126,7 +126,7 @@ export function AppointmentDetailsModal({
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{error.message}</AlertDescription>
             </Alert>
           )}
 
