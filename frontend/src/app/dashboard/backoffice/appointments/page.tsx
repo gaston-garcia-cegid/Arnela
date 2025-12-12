@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useAppointments } from '@/hooks/useAppointments';
@@ -26,6 +26,7 @@ import type { Therapist } from '@/types/appointment';
 import { api } from '@/lib/api';
 import { logError } from '@/lib/logger';
 import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import { countByStatus, createLookupMap } from '@/lib/performanceUtils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -195,13 +196,20 @@ export default function BackofficeAppointmentsPage() {
     setEndDateFilter('');
   };
 
-  // Calculate stats
-  const pendingCount = appointments.filter((apt) => apt.status === 'pending').length;
-  const confirmedCount = appointments.filter((apt) => apt.status === 'confirmed').length;
-  const completedCount = appointments.filter((apt) => apt.status === 'completed').length;
-  const cancelledCount = appointments.filter((apt) => apt.status === 'cancelled').length;
+  // Calculate stats - OPTIMIZED: O(n) instead of O(4n)
+  const statusCounts = countByStatus(appointments, ['pending', 'confirmed', 'completed', 'cancelled']);
+  const pendingCount = statusCounts.pending;
+  const confirmedCount = statusCounts.confirmed;
+  const completedCount = statusCounts.completed;
+  const cancelledCount = statusCounts.cancelled;
 
   const hasActiveFilters = statusFilter !== 'all' || therapistFilter !== 'all' || startDateFilter || endDateFilter;
+  
+  // Create therapist lookup map for O(1) lookups - OPTIMIZED: O(1) instead of O(n)
+  const therapistMap = useMemo(
+    () => createLookupMap(therapists, 'id'),
+    [therapists]
+  );
 
   // Export functions
   const handleExportCSV = () => {
@@ -227,7 +235,7 @@ export default function BackofficeAppointmentsPage() {
 
       const filters = {
         estado: statusFilter !== 'all' ? statusFilter : undefined,
-        terapeuta: therapistFilter !== 'all' ? therapists.find(t => t.id === therapistFilter)?.name : undefined,
+        terapeuta: therapistFilter !== 'all' ? therapistMap.get(therapistFilter)?.name : undefined,
       };
 
       const filename = generateFilename('citas', filters as any);
@@ -274,7 +282,7 @@ export default function BackofficeAppointmentsPage() {
 
       const filters = {
         estado: statusFilter !== 'all' ? statusFilter : undefined,
-        terapeuta: therapistFilter !== 'all' ? therapists.find(t => t.id === therapistFilter)?.name : undefined,
+        terapeuta: therapistFilter !== 'all' ? therapistMap.get(therapistFilter)?.name : undefined,
       };
 
       const filename = generateFilename('citas', filters as any);

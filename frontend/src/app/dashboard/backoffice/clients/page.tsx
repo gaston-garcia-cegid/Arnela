@@ -184,10 +184,8 @@ export default function ClientsPage() {
     router.push('/');
   };
 
-  // Get unique cities for filter
-  const uniqueCities = Array.from(
-    new Set(clients.map((c) => c.city).filter(Boolean))
-  ).sort() as string[];
+  // Get unique cities for filter - OPTIMIZED: O(n + m log m)
+  const uniqueCities = extractUniqueSorted(clients, 'city');
 
   // Stats
   const totalClients = clients.length;

@@ -1402,6 +1402,7 @@ Total: 204 horas (~6-8 semanas a tiempo completo)
 - [OPTIMISTIC_UI_UPDATES.md](./docs/OPTIMISTIC_UI_UPDATES.md) - Sistema de actualizaciones optimistas (460+ líneas)
 - [GLOBAL_SEARCH.md](./docs/GLOBAL_SEARCH.md) - Sistema de búsqueda global (850+ líneas)
 - [CSV_EXCEL_EXPORT.md](./docs/CSV_EXCEL_EXPORT.md) - Sistema de exportación CSV/Excel (550+ líneas)
+- [PERFORMANCE_OPTIMIZATION.md](./docs/PERFORMANCE_OPTIMIZATION.md) - Optimización de performance (800+ líneas)
 - [TOAST_CONVENTIONS.md](./docs/TOAST_CONVENTIONS.md) - Guía de notificaciones toast
 - [TOAST_COLORS_README.md](./docs/TOAST_COLORS_README.md) - Colores personalizados de toasts
 - [TOASTS_GUIDE.md](./docs/TOASTS_GUIDE.md) - Guía completa de uso de toasts

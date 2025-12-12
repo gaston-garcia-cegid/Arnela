@@ -25,6 +25,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { logError } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Expense, ExpenseFilters, PaginatedResponse, ExpenseCategory } from "@/types/billing";
+import { createPropertyMap } from '@/lib/performanceUtils';
 import { Plus, FileCheck, FileX, Download, FileSpreadsheet } from "lucide-react";
 import Link from "next/link";
 import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
@@ -109,8 +110,11 @@ export default function ExpensesPage() {
         notas: expense.notes || '',
       }));
 
+      // OPTIMIZED: Create map once for O(1) lookups instead of O(n)
+      const categoryMap = createPropertyMap(categories, 'id', 'name');
+      
       const filterValues = {
-        categoria: filters.categoryId ? categories.find(c => c.id === filters.categoryId)?.name : undefined,
+        categoria: filters.categoryId ? categoryMap.get(filters.categoryId) : undefined,
       };
 
       const filename = generateFilename('gastos', filterValues as any);
@@ -146,8 +150,11 @@ export default function ExpensesPage() {
         notas: expense.notes || '',
       }));
 
+      // OPTIMIZED: Reuse same map for O(1) lookups
+      const categoryMap = createPropertyMap(categories, 'id', 'name');
+      
       const filterValues = {
-        categoria: filters.categoryId ? categories.find(c => c.id === filters.categoryId)?.name : undefined,
+        categoria: filters.categoryId ? categoryMap.get(filters.categoryId) : undefined,
       };
 
       const filename = generateFilename('gastos', filterValues as any);
