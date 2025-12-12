@@ -158,6 +158,9 @@ func main() {
 	expenseCategoryRepo := postgres.NewExpenseCategoryRepository(db)
 	taskRepo := postgres.NewTaskRepository(db)
 
+	// Search repository
+	searchRepo := postgres.NewSearchRepository(db)
+
 	// Initialize services
 	authService := service.NewAuthService(userRepo, clientRepo, tokenManager, cfg.JWT.TokenExpiry)
 	clientService := service.NewClientService(clientRepo, userRepo)
@@ -172,6 +175,9 @@ func main() {
 	expenseCategoryService := service.NewExpenseCategoryService(expenseCategoryRepo)
 	billingStatsService := service.NewBillingStatsService(invoiceRepo, expenseRepo, expenseCategoryRepo)
 
+	// Search service
+	searchService := service.NewSearchService(searchRepo)
+
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
@@ -185,6 +191,9 @@ func main() {
 	expenseHandler := handler.NewExpenseHandler(expenseService)
 	expenseCategoryHandler := handler.NewExpenseCategoryHandler(expenseCategoryService)
 	billingStatsHandler := handler.NewBillingStatsHandler(billingStatsService)
+
+	// Search handler
+	searchHandler := handler.NewSearchHandler(searchService)
 
 	// Initialize middleware
 	authMiddleware := middleware.NewAuthMiddleware(tokenManager)
@@ -325,6 +334,9 @@ func main() {
 			// Admin/Employee only routes
 			stats.GET("/dashboard", authMiddleware.RequireRole("admin", "employee"), statsHandler.GetDashboardStats)
 		}
+
+		// Search route (authenticated)
+		v1.GET("/search", authMiddleware.RequireAuth(), searchHandler.GlobalSearch)
 
 		// Billing routes (authenticated)
 		billing := v1.Group("/billing")

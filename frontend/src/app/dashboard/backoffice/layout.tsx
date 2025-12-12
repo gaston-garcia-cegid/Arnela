@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { BackofficeSidebar } from "@/components/backoffice/BackofficeSidebar";
+import { GlobalSearch } from "@/components/search/GlobalSearch";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
+import { Menu, X, Search } from "lucide-react";
 
 export default function BackofficeLayout({
   children,
@@ -16,6 +18,10 @@ export default function BackofficeLayout({
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  // Ctrl+K shortcut
+  useKeyboardShortcut('k', () => setSearchOpen(true), { ctrl: true });
 
   const handleLogout = () => {
     logout();
@@ -51,6 +57,20 @@ export default function BackofficeLayout({
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Search Button */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSearchOpen(true)}
+              className="gap-2"
+            >
+              <Search className="h-4 w-4" />
+              <span className="hidden md:inline">Buscar...</span>
+              <kbd className="hidden lg:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </Button>
+
             <div className="text-right hidden md:block">
               <p className="text-sm font-medium text-foreground">
                 {user?.firstName} {user?.lastName}
@@ -83,6 +103,9 @@ export default function BackofficeLayout({
 
       {/* Main Content */}
       <main className="bg-background">{children}</main>
+
+      {/* Global Search Modal */}
+      <GlobalSearch isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }

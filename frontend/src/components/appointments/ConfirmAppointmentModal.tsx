@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
+import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
+import { useAppointmentStore } from '@/stores/useAppointmentStore';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -35,22 +37,55 @@ export function ConfirmAppointmentModal({
   onClose,
   onSuccess,
 }: ConfirmAppointmentModalProps) {
-  const { confirmAppointment, loading, error } = useAppointments();
+  const { confirmAppointment, loading } = useAppointments();
+  const { execute, isLoading: isOptimisticLoading, error } = useOptimisticUpdate();
+  const { appointments, setAppointments, setSelectedAppointment } = useAppointmentStore();
   const [notes, setNotes] = useState('');
 
   const handleConfirm = async () => {
-    const result = await confirmAppointment(appointment.id, notes);
-    if (result) {
-      toast.success('Cita confirmada exitosamente', {
-        description: `La cita ha sido confirmada correctamente`,
-      });
-      setNotes('');
-      onSuccess();
-    } else {
-      toast.error('Error al confirmar la cita', {
-        description: 'Por favor inténtalo nuevamente',
-      });
-    }
+    const previousAppointments = [...appointments];
+    const previousStatus = appointment.status;
+
+    await execute({
+      optimisticFn: () => {
+        // Update UI immediately
+        const updatedAppointments = appointments.map((apt) =>
+          apt.id === appointment.id
+            ? { ...apt, status: 'confirmed' as const, notes: notes || apt.notes }
+            : apt
+        );
+        setAppointments(updatedAppointments);
+        
+        // Update selected appointment if exists
+        if (appointment) {
+          setSelectedAppointment({
+            ...appointment,
+            status: 'confirmed',
+            notes: notes || appointment.notes,
+          });
+        }
+      },
+      asyncFn: async () => {
+        const result = await confirmAppointment(appointment.id, notes);
+        if (!result) {
+          throw new Error('Failed to confirm appointment');
+        }
+        return result;
+      },
+      rollbackFn: () => {
+        // Rollback on error
+        setAppointments(previousAppointments);
+        if (appointment) {
+          setSelectedAppointment({ ...appointment, status: previousStatus });
+        }
+      },
+      successMessage: 'Cita confirmada exitosamente',
+      errorMessage: 'Error al confirmar la cita. Por favor inténtalo nuevamente.',
+      onSuccess: () => {
+        setNotes('');
+        onSuccess();
+      },
+    });
   };
 
   const handleClose = () => {
@@ -185,15 +220,15 @@ export function ConfirmAppointmentModal({
         </div>
 
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={handleClose} disabled={loading}>
+          <Button variant="outline" onClick={handleClose} disabled={isOptimisticLoading}>
             Cancelar
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={loading}
+            disabled={isOptimisticLoading}
             className="bg-green-600 hover:bg-green-700"
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isOptimisticLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <CheckCircle className="mr-2 h-4 w-4" />
             Confirmar Cita
           </Button>

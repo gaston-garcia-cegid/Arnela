@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { api } from '@/lib/api';
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
 import { logError } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Invoice, InvoiceFilters, PaginatedResponse } from "@/types/billing";
@@ -33,6 +34,7 @@ import { ClientNameDisplay } from "@/components/billing/ClientNameDisplay";
 export default function InvoicesPage() {
   const router = useRouter();
   const { token } = useAuthStore();
+  const { execute, isLoading: isOptimisticLoading } = useOptimisticUpdate();
   const [invoices, setInvoices] = useState<PaginatedResponse<Invoice>>({
     data: [],
     total: 0,
@@ -77,14 +79,33 @@ export default function InvoicesPage() {
 
   const handleMarkPaid = async (id: string) => {
     if (!token) return;
-    try {
-      await api.billing.invoices.markAsPaid(id, token);
-      toast.success('Factura marcada como cobrada');
-      loadInvoices();
-    } catch (error) {
-      logError('Error marking invoice as paid', error, { component: 'InvoicesPage', invoiceId: id });
-      toast.error('Error al marcar factura como cobrada');
-    }
+    
+    const previousInvoices = { ...invoices };
+    
+    await execute({
+      optimisticFn: () => {
+        // Update UI immediately
+        const updatedData = invoices.data.map((invoice) =>
+          invoice.id === id
+            ? { ...invoice, status: 'paid' as const, paidAt: new Date().toISOString() }
+            : invoice
+        );
+        setInvoices({ ...invoices, data: updatedData });
+      },
+      asyncFn: async () => {
+        await api.billing.invoices.markAsPaid(id, token);
+      },
+      rollbackFn: () => {
+        // Rollback on error
+        setInvoices(previousInvoices);
+      },
+      successMessage: 'Factura marcada como cobrada',
+      errorMessage: 'Error al marcar factura como cobrada. Por favor inténtalo nuevamente.',
+      onSuccess: () => {
+        // Reload to get fresh data from server
+        loadInvoices();
+      },
+    });
   };
 
   const getStatusBadge = (status: string) => {

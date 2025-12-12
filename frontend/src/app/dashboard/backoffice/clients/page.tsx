@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { logError } from '@/lib/logger';
+import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
 import { ClientsTableSkeleton } from '@/components/common/TableSkeletons';
 import {
   AlertDialog,
@@ -37,6 +38,7 @@ export default function ClientsPage() {
   const token = useAuthStore((state) => state.token);
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
+  const { execute, isLoading: isOptimisticLoading } = useOptimisticUpdate();
 
   const [clients, setClients] = useState<Client[]>([]);
   const [filteredClients, setFilteredClients] = useState<Client[]>([]);
@@ -48,7 +50,6 @@ export default function ClientsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,25 +147,29 @@ export default function ClientsPage() {
     if (!clientToDelete || !token) return;
 
     const clientName = `${clientToDelete.firstName} ${clientToDelete.lastName}`;
+    const clientId = clientToDelete.id;
+    const previousClients = [...clients];
 
-    try {
-      setIsDeleting(true);
-      await api.clients.delete(clientToDelete.id, token);
-      setClients(clients.filter((c) => c.id !== clientToDelete.id));
-      setClientToDelete(null);
-      toast.success('Cliente eliminado', {
-        description: `${clientName} ha sido eliminado del sistema`,
-      });
-    } catch (err) {
-      logError('Error deleting client', err, { component: 'ClientsPage', clientId: clientToDelete.id });
-      const errorMessage = err instanceof Error ? err.message : 'Error al eliminar cliente';
-      setError(errorMessage);
-      toast.error('Error al eliminar cliente', {
-        description: errorMessage,
-      });
-    } finally {
-      setIsDeleting(false);
-    }
+    await execute({
+      optimisticFn: () => {
+        // Remove client from UI immediately
+        setClients(clients.filter((c) => c.id !== clientId));
+        setClientToDelete(null);
+      },
+      asyncFn: async () => {
+        await api.clients.delete(clientId, token);
+      },
+      rollbackFn: () => {
+        // Restore client on error
+        setClients(previousClients);
+      },
+      successMessage: `Cliente ${clientName} eliminado`,
+      errorMessage: 'Error al eliminar cliente. Por favor inténtalo nuevamente.',
+      onError: (err) => {
+        logError('Error deleting client', err, { component: 'ClientsPage', clientId });
+        setClientToDelete(null);
+      },
+    });
   };
 
   const handleLogout = () => {
@@ -417,16 +422,16 @@ export default function ClientsPage() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                  <AlertDialogCancel disabled={isOptimisticLoading}>Cancelar</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={(e) => {
                       e.preventDefault(); // Prevent dialog from closing automatically
                       handleDeleteConfirm();
                     }}
-                    disabled={isDeleting}
+                    disabled={isOptimisticLoading}
                     className="bg-red-600 hover:bg-red-700"
                   >
-                    {isDeleting ? (
+                    {isOptimisticLoading ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Eliminando...

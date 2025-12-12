@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useAppointments } from '@/hooks/useAppointments';
+import { useOptimisticUpdate } from '@/hooks/useOptimisticUpdate';
+import { useAppointmentStore } from '@/stores/useAppointmentStore';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import {
@@ -48,7 +50,9 @@ export function AppointmentDetailsModal({
   onClose,
   onUpdate,
 }: AppointmentDetailsModalProps) {
-  const { cancelAppointment, loading, error } = useAppointments();
+  const { cancelAppointment, loading } = useAppointments();
+  const { execute, isLoading: isOptimisticLoading, error } = useOptimisticUpdate();
+  const { appointments, setAppointments, setSelectedAppointment } = useAppointmentStore();
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [cancellationReason, setCancellationReason] = useState('');
 
@@ -64,19 +68,50 @@ export function AppointmentDetailsModal({
       return;
     }
 
-    const success = await cancelAppointment(appointment.id, cancellationReason);
-    if (success) {
-      toast.success('Cita cancelada', {
-        description: `La cita ha sido cancelada exitosamente`,
-      });
-      setShowCancelDialog(false);
-      setCancellationReason('');
-      onUpdate();
-    } else {
-      toast.error('Error al cancelar la cita', {
-        description: 'Por favor inténtalo nuevamente',
-      });
-    }
+    const previousAppointments = [...appointments];
+    const previousStatus = appointment.status;
+
+    await execute({
+      optimisticFn: () => {
+        // Update UI immediately
+        const updatedAppointments = appointments.map((apt) =>
+          apt.id === appointment.id
+            ? { ...apt, status: 'cancelled' as const, cancellationReason }
+            : apt
+        );
+        setAppointments(updatedAppointments);
+        
+        // Update selected appointment if exists
+        if (appointment) {
+          setSelectedAppointment({
+            ...appointment,
+            status: 'cancelled',
+            cancellationReason,
+          });
+        }
+      },
+      asyncFn: async () => {
+        const success = await cancelAppointment(appointment.id, cancellationReason);
+        if (!success) {
+          throw new Error('Failed to cancel appointment');
+        }
+        return success;
+      },
+      rollbackFn: () => {
+        // Rollback on error
+        setAppointments(previousAppointments);
+        if (appointment) {
+          setSelectedAppointment({ ...appointment, status: previousStatus });
+        }
+      },
+      successMessage: 'Cita cancelada exitosamente',
+      errorMessage: 'Error al cancelar la cita. Por favor inténtalo nuevamente.',
+      onSuccess: () => {
+        setShowCancelDialog(false);
+        setCancellationReason('');
+        onUpdate();
+      },
+    });
   };
 
   return (
