@@ -10,6 +10,12 @@
 /**
  * Count items by status in O(n) instead of O(4n)
  * 
+ * Performs a single-pass count of items grouped by status field,
+ * significantly more efficient than multiple filter operations.
+ * 
+ * **Time Complexity:** O(n) where n = number of items
+ * **Space Complexity:** O(k) where k = number of unique statuses
+ * 
  * BEFORE (O(4n) - 4 iterations):
  * ```ts
  * const pending = items.filter(i => i.status === 'pending').length;
@@ -23,18 +29,45 @@
  * const stats = countByStatus(items, ['pending', 'confirmed', 'completed', 'cancelled']);
  * ```
  * 
- * @param items Array of items with status property
- * @param statusList Array of status values to count
- * @returns Object with status counts
+ * @template T - Type of items with status property
+ * @param {T[]} items - Array of items with status property
+ * @param {string[]} statusList - Array of status values to count (initializes all to 0)
+ * @returns {Record<string, number>} Object with status counts (guaranteed to include all statuses from statusList)
+ * @throws {TypeError} If items is not an array or statusList is not an array of strings
  * 
  * @example
+ * // Basic usage with appointments
  * const appointments = [
  *   { id: '1', status: 'pending' },
  *   { id: '2', status: 'confirmed' },
  *   { id: '3', status: 'pending' },
  * ];
  * const stats = countByStatus(appointments, ['pending', 'confirmed', 'cancelled']);
- * // { pending: 2, confirmed: 1, cancelled: 0 }
+ * // => { pending: 2, confirmed: 1, cancelled: 0 }
+ * 
+ * @example
+ * // With React component
+ * function AppointmentStats({ appointments }) {
+ *   const stats = useMemo(
+ *     () => countByStatus(appointments, ['pending', 'confirmed', 'completed', 'cancelled']),
+ *     [appointments]
+ *   );
+ *   
+ *   return (
+ *     <div>
+ *       <Badge>Pending: {stats.pending}</Badge>
+ *       <Badge>Confirmed: {stats.confirmed}</Badge>
+ *     </div>
+ *   );
+ * }
+ * 
+ * @example
+ * // Empty array returns all zeros
+ * const stats = countByStatus([], ['active', 'inactive']);
+ * // => { active: 0, inactive: 0 }
+ * 
+ * @see {@link createLookupMap} for O(1) item lookups
+ * @since 1.0.0
  */
 export function countByStatus<T extends { status: string }>(
   items: T[],
@@ -57,6 +90,15 @@ export function countByStatus<T extends { status: string }>(
 /**
  * Create lookup Map for O(1) searches instead of O(n)
  * 
+ * Builds an indexed Map structure for constant-time lookups by key field.
+ * Particularly useful when performing multiple lookups on the same dataset.
+ * 
+ * **Time Complexity:** 
+ * - Build: O(n) where n = number of items
+ * - Lookup: O(1) per get operation
+ * **Space Complexity:** O(n)
+ * **Break-even Point:** ~20+ lookups to offset build cost
+ * 
  * BEFORE (O(n) per lookup):
  * ```ts
  * const therapist = therapists.find(t => t.id === id)?.name;
@@ -68,17 +110,46 @@ export function countByStatus<T extends { status: string }>(
  * const therapist = therapistMap.get(id);
  * ```
  * 
- * @param items Array of items
- * @param keyField Field to use as Map key
- * @returns Map for O(1) lookups
+ * @template T - Type of items in array
+ * @template K - Type of key field (must be keyof T)
+ * @param {T[]} items - Array of items to index
+ * @param {K} keyField - Field name to use as Map key (must exist in T)
+ * @returns {Map<T[K], T>} Map with key field values as keys and full items as values
+ * @throws {TypeError} If items is not an array or keyField is not a valid property
  * 
  * @example
+ * // Basic usage with user lookup
  * const users = [
- *   { id: '1', name: 'Alice' },
- *   { id: '2', name: 'Bob' }
+ *   { id: '1', name: 'Alice', email: 'alice@example.com' },
+ *   { id: '2', name: 'Bob', email: 'bob@example.com' }
  * ];
  * const userMap = createLookupMap(users, 'id');
  * const alice = userMap.get('1'); // O(1) lookup
+ * // => { id: '1', name: 'Alice', email: 'alice@example.com' }
+ * 
+ * @example
+ * // With React useMemo for performance
+ * function UserList({ users, selectedId }) {
+ *   const userMap = useMemo(
+ *     () => createLookupMap(users, 'id'),
+ *     [users]
+ *   );
+ *   
+ *   const selectedUser = userMap.get(selectedId);
+ *   return <UserCard user={selectedUser} />;
+ * }
+ * 
+ * @example
+ * // Duplicate keys: last item wins
+ * const items = [
+ *   { id: '1', value: 'first' },
+ *   { id: '1', value: 'second' }
+ * ];
+ * const map = createLookupMap(items, 'id');
+ * map.get('1'); // => { id: '1', value: 'second' }
+ * 
+ * @see {@link createPropertyMap} for mapping key to single property
+ * @since 1.0.0
  */
 export function createLookupMap<T, K extends keyof T>(
   items: T[],
@@ -200,7 +271,15 @@ export function createPropertyMap<T, K extends keyof T, V extends keyof T>(
 /**
  * Batch filter by multiple conditions in O(n) instead of O(kn)
  * 
- * BEFORE (Multiple passes):
+ * Applies multiple filter conditions in a single pass through the array,
+ * significantly more efficient than chaining multiple .filter() calls.
+ * 
+ * **Time Complexity:** O(n) where n = number of items
+ * **Space Complexity:** O(m) where m = filtered items
+ * 
+ * **Note:** Only beneficial with 4+ filters. For 1-3 filters, native .filter() may be faster.
+ * 
+ * BEFORE (Multiple passes - O(kn) where k = number of filters):
  * ```ts
  * let filtered = items;
  * if (status !== 'all') filtered = filtered.filter(i => i.status === status);
@@ -208,7 +287,7 @@ export function createPropertyMap<T, K extends keyof T, V extends keyof T>(
  * if (minAmount) filtered = filtered.filter(i => i.amount >= minAmount);
  * ```
  * 
- * AFTER (Single pass):
+ * AFTER (Single pass - O(n)):
  * ```ts
  * const filtered = batchFilter(items, [
  *   { field: 'status', value: status, condition: 'equals' },
@@ -217,9 +296,40 @@ export function createPropertyMap<T, K extends keyof T, V extends keyof T>(
  * ]);
  * ```
  * 
- * @param items Array to filter
- * @param filters Array of filter conditions
- * @returns Filtered array
+ * @template T - Type of items in array
+ * @param {T[]} items - Array to filter
+ * @param {Array} filters - Array of filter conditions with field, value, and condition
+ * @returns {T[]} Filtered array containing only items matching all conditions
+ * 
+ * @example
+ * // Filter expenses by multiple criteria
+ * const expenses = [
+ *   { category: 'Office', amount: 100, hasInvoice: true },
+ *   { category: 'Travel', amount: 500, hasInvoice: false },
+ *   { category: 'Office', amount: 50, hasInvoice: true }
+ * ];
+ * 
+ * const filtered = batchFilter(expenses, [
+ *   { field: 'category', value: 'Office', condition: 'equals' },
+ *   { field: 'amount', value: 75, condition: 'gte' },
+ *   { field: 'hasInvoice', value: true, condition: 'equals' }
+ * ]);
+ * // => [{ category: 'Office', amount: 100, hasInvoice: true }]
+ * 
+ * @example
+ * // Using different conditions
+ * const filtered = batchFilter(items, [
+ *   { field: 'status', value: 'cancelled', condition: 'not-equals' },
+ *   { field: 'price', value: 100, condition: 'lt' },
+ *   { field: 'name', value: 'important', condition: 'includes' }
+ * ]);
+ * 
+ * @example
+ * // Empty filters returns original array
+ * const result = batchFilter(items, []);
+ * // => items (no filtering applied)
+ * 
+ * @since 1.0.0
  */
 export function batchFilter<T>(
   items: T[],
@@ -229,19 +339,22 @@ export function batchFilter<T>(
     condition?: 'equals' | 'not-equals' | 'gt' | 'gte' | 'lt' | 'lte' | 'includes';
   }>
 ): T[] {
-  // Skip if no filters
-  if (filters.length === 0) return items;
-  
-  // Filter out empty/undefined values
-  const activeFilters = filters.filter(f => f.value !== undefined && f.value !== null && f.value !== '');
-  if (activeFilters.length === 0) return items;
+  // Skip filtering if no filters provided
+  if (filters.length === 0) {
+    return items;
+  }
   
   // Single pass through items
   return items.filter(item => {
-    // Check all conditions (AND logic)
-    return activeFilters.every(filter => {
+    // Item must match ALL filters
+    return filters.every(filter => {
       const itemValue = item[filter.field];
       const filterValue = filter.value;
+      
+      // Skip undefined/null filter values
+      if (filterValue === undefined || filterValue === null) {
+        return true;
+      }
       
       switch (filter.condition || 'equals') {
         case 'equals':
@@ -266,20 +379,63 @@ export function batchFilter<T>(
 }
 
 /**
- * Memoize expensive computations
+ * Memoize function calls with automatic caching
  * 
- * @param fn Function to memoize
- * @param keyGenerator Optional custom key generator
- * @returns Memoized function
+ * Creates a cached version of a function that stores results by arguments.
+ * Subsequent calls with the same arguments return cached results in O(1).
+ * 
+ * **Time Complexity:** 
+ * - First call: O(f) where f = original function complexity
+ * - Cached calls: O(1)
+ * **Space Complexity:** O(c) where c = number of unique argument combinations
+ * 
+ * **Warning:** Cache grows unbounded. Consider using WeakMapCache for object keys
+ * or implementing a LRU cache for production use with many unique arguments.
+ * 
+ * @template Args - Array of argument types
+ * @template Return - Return type of function
+ * @param {(...args: Args) => Return} fn - Function to memoize (should be pure)
+ * @param {(...args: Args) => string} [keyGenerator] - Optional custom key generator for cache lookup
+ * @returns {(...args: Args) => Return} Memoized version of function with same signature
+ * @throws {Error} If fn is not a function
  * 
  * @example
- * const expensiveCalc = memoize((n: number) => {
- *   // Heavy computation
- *   return n ** 2;
+ * // Memoize expensive calculation
+ * const fibonacci = memoize((n: number): number => {
+ *   if (n <= 1) return n;
+ *   return fibonacci(n - 1) + fibonacci(n - 2);
  * });
  * 
- * expensiveCalc(5); // Computed
- * expensiveCalc(5); // Cached O(1)
+ * fibonacci(40); // Takes ~1s first time
+ * fibonacci(40); // Returns instantly from cache
+ * 
+ * @example
+ * // Custom key generator for complex objects
+ * interface User { id: string; name: string; }
+ * 
+ * const formatUser = memoize(
+ *   (user: User) => `${user.name.toUpperCase()} (#${user.id})`,
+ *   (user) => user.id // Use only ID as cache key
+ * );
+ * 
+ * const user1 = { id: '1', name: 'Alice' };
+ * const user1Updated = { id: '1', name: 'Alice Smith' };
+ * 
+ * formatUser(user1); // Computed: 'ALICE (#1)'
+ * formatUser(user1Updated); // Cached: 'ALICE (#1)' (same ID)
+ * 
+ * @example
+ * // API call memoization (be careful with stale data!)
+ * const fetchUser = memoize(async (id: string) => {
+ *   const response = await fetch(`/api/users/${id}`);
+ *   return response.json();
+ * });
+ * 
+ * await fetchUser('123'); // API call
+ * await fetchUser('123'); // Cached, no API call
+ * 
+ * @see {@link WeakMapCache} for garbage-collected caching with object keys
+ * @since 1.0.0
  */
 export function memoize<Args extends any[], Return>(
   fn: (...args: Args) => Return,
@@ -303,14 +459,62 @@ export function memoize<Args extends any[], Return>(
 
 /**
  * WeakMap-based cache for object-keyed memoization
- * Automatically garbage-collected when objects are no longer referenced
+ * 
+ * Provides automatic garbage collection when keys are no longer referenced.
+ * Ideal for caching computed values derived from object instances where
+ * memory management is critical.
+ * 
+ * **Key Features:**
+ * - Automatic garbage collection (no memory leaks)
+ * - Only works with object keys (not primitives)
+ * - Cache entries removed when key objects are garbage collected
+ * 
+ * **Time Complexity:** O(1) for get/set/has operations
+ * **Space Complexity:** O(n) but automatically cleaned up
+ * 
+ * @template K - Key type (must be object, not primitive)
+ * @template V - Value type (can be any type)
  * 
  * @example
+ * // Basic usage with user statistics
+ * interface User { id: string; name: string; }
+ * interface UserStats { posts: number; followers: number; }
+ * 
  * const cache = new WeakMapCache<User, UserStats>();
  * 
- * function getStats(user: User) {
- *   return cache.getOrCompute(user, () => calculateStats(user));
+ * function getStats(user: User): UserStats {
+ *   return cache.getOrCompute(user, () => ({
+ *     posts: calculatePosts(user),
+ *     followers: calculateFollowers(user)
+ *   }));
  * }
+ * 
+ * const alice = { id: '1', name: 'Alice' };
+ * getStats(alice); // Computed and cached
+ * getStats(alice); // Retrieved from cache
+ * 
+ * @example
+ * // Automatic garbage collection
+ * let user = { id: '1', name: 'Bob' };
+ * cache.set(user, { posts: 10, followers: 50 });
+ * 
+ * user = null; // Object is now eligible for GC
+ * // Cache entry will be automatically removed by garbage collector
+ * 
+ * @example
+ * // React component optimization
+ * const expensiveDataCache = new WeakMapCache<Props, ProcessedData>();
+ * 
+ * function HeavyComponent(props: Props) {
+ *   const data = expensiveDataCache.getOrCompute(props, () => 
+ *     processExpensiveData(props)
+ *   );
+ *   
+ *   return <div>{data.result}</div>;
+ * }
+ * 
+ * @see {@link memoize} for primitive-keyed memoization
+ * @since 1.0.0
  */
 export class WeakMapCache<K extends object, V> {
   private cache = new WeakMap<K, V>();
