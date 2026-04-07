@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.prod}
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - /DATA/AppData/Arnela/data/postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-arnela_user} -d ${DB_NAME:-arnela_db}"]
       interval: 10s
@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.prod}
     volumes:
-      - redis_data:/data
+      - /DATA/AppData/Arnela/data/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
@@ -88,10 +88,6 @@ services:
       - go-api
     networks:
       - arnela-network
-
-volumes:
-  postgres_data:
-  redis_data:
 
 networks:
   arnela-network:
