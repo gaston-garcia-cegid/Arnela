@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: arnela-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-arnela_db}
+      POSTGRES_USER: ${DB_USER:-arnela_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env.prod}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-arnela_user} -d ${DB_NAME:-arnela_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arnela-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: arnela-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.prod}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - arnela-network
+
+  go-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: arnela-go-api
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: production
+      SERVER_PORT: 8080
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-arnela_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-arnela_db}
+      DB_SSLMODE: disable
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_DB: 0
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.prod}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://192.168.1.100}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - arnela-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.100/api/v1}
+    container_name: arnela-frontend
+    restart: unless-stopped
+    depends_on:
+      - go-api
+    networks:
+      - arnela-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: arnela-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - go-api
+    networks:
+      - arnela-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  arnela-network:
+    driver: bridge

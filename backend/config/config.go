@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Config struct {
 type ServerConfig struct {
 	Port        int
 	Environment string
+	CORSOrigins []string
 }
 
 // DatabaseConfig holds database connection configuration
@@ -52,6 +54,7 @@ func LoadConfig() (*Config, error) {
 		Server: ServerConfig{
 			Port:        getEnvAsInt("SERVER_PORT", 8080),
 			Environment: getEnv("ENVIRONMENT", "development"),
+			CORSOrigins: getEnvAsSlice("CORS_ORIGINS", []string{"http://localhost:3000", "http://localhost:3001"}),
 		},
 		Database: DatabaseConfig{
 			Host:           getEnv("DB_HOST", "localhost"),
@@ -104,4 +107,20 @@ func getEnvAsInt(key string, defaultValue int) int {
 		return value
 	}
 	return defaultValue
+}
+
+// getEnvAsSlice gets an environment variable as a comma-separated slice
+func getEnvAsSlice(key string, defaultValue []string) []string {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if trimmed := strings.TrimSpace(p); trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
 }

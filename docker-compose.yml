@@ -41,17 +41,19 @@ services:
     networks:
       - arnela-network
 
-  # Go API (Backend)
+  # Go API (Backend) - only starts with: docker-compose --profile app up -d
   go-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: arnela-go-api
     restart: unless-stopped
+    profiles:
+      - app
     environment:
       # Application
-      APP_ENV: development
-      APP_PORT: 8080
+      ENVIRONMENT: development
+      SERVER_PORT: 8080
       
       # Database
       DB_HOST: postgres
