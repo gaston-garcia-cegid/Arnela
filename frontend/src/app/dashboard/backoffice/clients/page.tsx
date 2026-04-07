@@ -32,6 +32,7 @@ import { api, type Client } from '@/lib/api';
 import { CreateClientModal } from '@/components/backoffice/CreateClientModal';
 import { EditClientModal } from '@/components/backoffice/EditClientModal';
 import { Search, UserPlus, Mail, Phone, MapPin, Edit, Trash2, Loader2, Download, FileSpreadsheet } from 'lucide-react';
+import { extractUniqueSorted } from '@/lib/performanceUtils';
 import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
 import {
   DropdownMenu,
