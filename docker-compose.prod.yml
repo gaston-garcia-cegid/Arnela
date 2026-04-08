@@ -23,10 +23,12 @@ services:
     container_name: arnela-redis
     restart: unless-stopped
     command: redis-server --requirepass ${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env.prod}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - /DATA/AppData/Arnela/data/redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
