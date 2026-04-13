@@ -30,19 +30,23 @@ export const useAuthStore = create<AuthState>()(
       token: null,
       isAuthenticated: false,
 
-      login: (token, user) =>
+      login: (token, user) => {
+        document.cookie = `auth-token=${token}; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
         set({
           token,
           user,
           isAuthenticated: true,
-        }),
+        });
+      },
 
-      logout: () =>
+      logout: () => {
+        document.cookie = 'auth-token=; path=/; max-age=0';
         set({
           user: null,
           token: null,
           isAuthenticated: false,
-        }),
+        });
+      },
 
       setUser: (user) =>
         set({ user }),
