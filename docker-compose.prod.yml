@@ -55,7 +55,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_DB: 0
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.prod}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://192.168.1.100:8101}
+      # FIX: Must match the public-facing URL of the frontend exactly
+      # Same origin that the browser uses — no trailing slash
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env.prod}
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,7 +71,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://192.168.1.100:8101/api/v1}
+        # FIX: This must be the PUBLIC URL of the API as seen from the browser,
+        # not the internal Docker service name. Nginx proxies /api → go-api:8080
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL in .env.prod}
     container_name: arnela-frontend
     restart: unless-stopped
     depends_on:

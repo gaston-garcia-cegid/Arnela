@@ -96,6 +96,16 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+	c.SetCookie(
+		"auth-token", // nombre — coincide con lo que busca tu middleware
+		resp.Token,   // valor
+		60*60*24,     // maxAge: 24 horas en segundos
+		"/",          // path
+		"",           // domain: vacío = mismo dominio automático
+		true,         // secure: true en producción (HTTPS)
+		true,         // httpOnly: true — JS no puede leerla (más seguro)
+	)
+
 	c.JSON(http.StatusOK, resp)
 }
 

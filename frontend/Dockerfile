@@ -12,9 +12,14 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# NEXT_PUBLIC_* variables must be present at BUILD TIME
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NODE_ENV=production
+
+# FIX: NEXTAUTH_URL is not needed (no NextAuth), but HOSTNAME must be set
+# so Next.js standalone server binds correctly inside Docker
+ENV HOSTNAME="0.0.0.0"
 
 RUN pnpm build
 
