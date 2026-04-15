@@ -1,0 +1,10 @@
+feat: add CI/CD, SEO, billing tests, email notifications, and health monitoring (Phase 3)
+
+- Add GitHub Actions CI pipeline (Go vet/build/test + Next.js lint/typecheck/test/build)
+- Add per-page SEO metadata for all public routes
+- Add 14 tests for invoice and billing stats services
+- Implement SMTP email notification system integrated with Redis worker pool
+- Send confirmation/cancellation emails on appointment status changes
+- Add structured health handler (/health with runtime stats, /readiness for Docker probes)
+- Configure Docker healthchecks for go-api in dev and prod compose files
+- Add SMTP env vars to .env.example and docker-compose.prod.yml

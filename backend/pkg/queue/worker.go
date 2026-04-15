@@ -265,12 +265,15 @@ func generateTaskID() string {
 	return fmt.Sprintf("task_%d", time.Now().UnixNano())
 }
 
-// Default handlers (placeholders - implement actual logic)
+// RegisterEmailHandler registers a real email handler with the given mailer.
+func (wp *WorkerPool) RegisterEmailHandler(handler TaskHandler) {
+	wp.RegisterHandler(TaskTypeSendEmail, handler)
+}
+
+// Default handlers (placeholders for SMS/WhatsApp/Calendar)
 
 func defaultEmailHandler(ctx context.Context, task *Task) error {
-	log.Printf("EMAIL HANDLER: Sending email - %+v", task.Payload)
-	// TODO: Implement actual email sending via SendGrid/SMTP
-	time.Sleep(500 * time.Millisecond) // Simulate work
+	log.Printf("EMAIL HANDLER: No mailer configured, logging email - %+v", task.Payload)
 	return nil
 }
 

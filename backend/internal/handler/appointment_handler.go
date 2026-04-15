@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -14,14 +15,20 @@ import (
 
 // AppointmentHandler handles appointment-related endpoints
 type AppointmentHandler struct {
-	appointmentService service.AppointmentServiceInterface
+	appointmentService  service.AppointmentServiceInterface
+	notificationService service.NotificationService
 }
 
-// NewAppointmentHandler creates a new AppointmentHandler
-func NewAppointmentHandler(appointmentService service.AppointmentServiceInterface) *AppointmentHandler {
-	return &AppointmentHandler{
+// NewAppointmentHandler creates a new AppointmentHandler.
+// An optional NotificationService enables email notifications on confirm/cancel.
+func NewAppointmentHandler(appointmentService service.AppointmentServiceInterface, notifSvc ...service.NotificationService) *AppointmentHandler {
+	h := &AppointmentHandler{
 		appointmentService: appointmentService,
 	}
+	if len(notifSvc) > 0 {
+		h.notificationService = notifSvc[0]
+	}
+	return h
 }
 
 // CreateAppointment creates a new appointment
@@ -195,6 +202,12 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 	userRole, _ := c.Get("userRole")
 	isAdmin := userRole == string(domain.RoleAdmin) || userRole == string(domain.RoleEmployee)
 
+	// Fetch appointment before cancelling (for notification data)
+	var appointmentForNotif *domain.Appointment
+	if h.notificationService != nil {
+		appointmentForNotif, _ = h.appointmentService.GetAppointment(c.Request.Context(), id)
+	}
+
 	err = h.appointmentService.CancelAppointment(c.Request.Context(), id, req, userID.(uuid.UUID), isAdmin)
 	if err != nil {
 		if err.Error() == "cita no encontrada" {
@@ -210,6 +223,14 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 		appErr := pkgerrors.NewValidationError(err.Error(), nil)
 		pkgerrors.RespondWithAppError(c, appErr)
 		return
+	}
+
+	if h.notificationService != nil && appointmentForNotif != nil && appointmentForNotif.Client != nil && appointmentForNotif.Client.Email != "" {
+		go func() {
+			if err := h.notificationService.NotifyAppointmentCancelled(appointmentForNotif, appointmentForNotif.Client.Email, req.Reason); err != nil {
+				log.Printf("Failed to send cancellation email: %v", err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Cita cancelada exitosamente"})
@@ -300,6 +321,14 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 		appErr := pkgerrors.NewValidationError(err.Error(), nil)
 		pkgerrors.RespondWithAppError(c, appErr)
 		return
+	}
+
+	if h.notificationService != nil && appointment.Client != nil && appointment.Client.Email != "" {
+		go func() {
+			if err := h.notificationService.NotifyAppointmentConfirmed(appointment, appointment.Client.Email); err != nil {
+				log.Printf("Failed to send confirmation email: %v", err)
+			}
+		}()
 	}
 
 	c.JSON(http.StatusOK, appointment)

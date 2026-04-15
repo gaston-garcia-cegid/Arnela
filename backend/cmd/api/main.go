@@ -18,6 +18,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/cache"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/database"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/email"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/logger"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/queue"
@@ -137,6 +138,17 @@ func main() {
 	// Initialize Task Queue Worker Pool
 	log.Println("[DEBUG] Starting task queue worker pool...")
 	workerPool := queue.NewWorkerPool(redisClient.Client, 5) // 5 workers
+
+	// Configure SMTP email handler
+	smtpCfg := email.LoadSMTPConfig()
+	if smtpCfg.IsConfigured() {
+		mailer := email.NewMailer(smtpCfg)
+		workerPool.RegisterEmailHandler(email.NewEmailTaskHandler(mailer))
+		log.Println("✓ SMTP email handler registered")
+	} else {
+		log.Println("⚠ SMTP not configured — emails will be logged but not sent")
+	}
+
 	workerPool.Start()
 	defer workerPool.Stop()
 	log.Println("✓ Worker pool started with 5 workers")
@@ -177,10 +189,13 @@ func main() {
 	// Search service
 	searchService := service.NewSearchService(searchRepo)
 
+	// Initialize notification service
+	notificationService := email.NewQueueNotificationService(workerPool)
+
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
-	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
+	appointmentHandler := handler.NewAppointmentHandler(appointmentService, notificationService)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
 	taskHandler := handler.NewTaskHandler(taskService)
 	statsHandler := handler.NewStatsHandler(statsService, cacheService)
@@ -220,35 +235,10 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Health check endpoint
-	router.GET("/health", func(c *gin.Context) {
-		// Check database
-		dbHealthy := true
-		if err := database.HealthCheck(db); err != nil {
-			dbHealthy = false
-		}
-
-		// Check Redis
-		redisHealthy := true
-		ctx := context.Background()
-		if err := redisClient.Client.Ping(ctx).Err(); err != nil {
-			redisHealthy = false
-		}
-
-		// Overall health status
-		overallHealthy := dbHealthy && redisHealthy
-		statusCode := http.StatusOK
-		if !overallHealthy {
-			statusCode = http.StatusServiceUnavailable
-		}
-
-		c.JSON(statusCode, gin.H{
-			"status":   map[bool]string{true: "healthy", false: "unhealthy"}[overallHealthy],
-			"database": map[bool]string{true: "connected", false: "disconnected"}[dbHealthy],
-			"redis":    map[bool]string{true: "connected", false: "disconnected"}[redisHealthy],
-			"workers":  workerPool.GetStats(),
-		})
-	})
+	// Health check endpoints
+	healthHandler := handler.NewHealthHandler(db, redisClient.Client, "1.0.0")
+	router.GET("/health", healthHandler.Health)
+	router.GET("/readiness", healthHandler.Readiness)
 
 	// Swagger documentation
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
