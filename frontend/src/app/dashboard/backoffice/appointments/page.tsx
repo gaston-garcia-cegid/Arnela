@@ -90,27 +90,12 @@ export default function BackofficeAppointmentsPage() {
     loadEmployeeId();
   }, [user]);
 
-  // Load therapists on mount
-  useEffect(() => {
-    loadTherapists();
-  }, []);
-
-  // Load appointments when filters or pagination change
-  useEffect(() => {
-    // Only load appointments after we have employeeId (if employee role)
-    if (user?.role === 'employee' && !employeeId) {
-      return; // Wait for employeeId to be loaded
-    }
-    loadAppointments();
-  }, [pagination.page, statusFilter, therapistFilter, startDateFilter, endDateFilter, employeeId, user]);
-
   const loadTherapists = async () => {
     const data = await getTherapists();
     setTherapists(data);
   };
 
   const loadAppointments = async () => {
-    // Build filters object with proper structure
     const filters: {
       page: number;
       pageSize: number;
@@ -123,11 +108,9 @@ export default function BackofficeAppointmentsPage() {
       pageSize: pagination.pageSize,
     };
 
-    // If employee role, ALWAYS filter by their employeeId
     if (user?.role === 'employee' && employeeId) {
       filters.employeeId = employeeId;
     } else if (therapistFilter !== 'all') {
-      // For admins, use the therapist filter
       filters.employeeId = therapistFilter;
     }
 
@@ -151,6 +134,21 @@ export default function BackofficeAppointmentsPage() {
       setPagination({ total: response.total });
     }
   };
+
+  // Load therapists on mount
+  useEffect(() => {
+    loadTherapists();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Load appointments when filters or pagination change
+  useEffect(() => {
+    if (user?.role === 'employee' && !employeeId) {
+      return;
+    }
+    loadAppointments();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page, statusFilter, therapistFilter, startDateFilter, endDateFilter, employeeId, user]);
 
   const handleViewAppointment = async (id: string) => {
     const appointment = await getAppointment(id);

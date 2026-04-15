@@ -9,7 +9,10 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    // Required to avoid hydration mismatch with next-themes
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
+  }, []);
 
   if (!mounted) {
     return <Button variant="ghost" size="icon" className="h-9 w-9" aria-label="Toggle theme" />;

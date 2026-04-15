@@ -62,20 +62,6 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
   const [description, setDescription] = useState('');
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // Load therapists on mount
-  useEffect(() => {
-    if (open) {
-      loadTherapists();
-    }
-  }, [open]);
-
-  // Load available slots when date/duration changes
-  useEffect(() => {
-    if (selectedTherapist && selectedDate && duration) {
-      loadAvailableSlots();
-    }
-  }, [selectedTherapist, selectedDate, duration]);
-
   const loadTherapists = async () => {
     const data = await getTherapists();
     setTherapists(data);
@@ -90,6 +76,22 @@ export function CreateAppointmentModal({ open, onClose, onSuccess }: CreateAppoi
     setAvailableSlots(slots);
     setLoadingSlots(false);
   };
+
+  // Load therapists on mount
+  useEffect(() => {
+    if (open) {
+      loadTherapists();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  // Load available slots when date/duration changes
+  useEffect(() => {
+    if (selectedTherapist && selectedDate && duration) {
+      loadAvailableSlots();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedTherapist, selectedDate, duration]);
 
   const handleSubmit = async () => {
     if (!user || !selectedTime) return;

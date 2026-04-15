@@ -87,11 +87,27 @@ export function CreateAppointmentModalBackoffice({
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
 
+  const loadEmployees = async () => {
+    const data = await getEmployees();
+    setEmployees(data);
+  };
+
+  const loadAvailableSlots = async () => {
+    if (!selectedDate) return;
+
+    setLoadingSlots(true);
+    const dateStr = formatDateForAPI(selectedDate);
+    const slots = await getAvailableSlots(selectedEmployee, dateStr, duration);
+    setAvailableSlots(slots);
+    setLoadingSlots(false);
+  };
+
   // Load employees on mount
   useEffect(() => {
     if (open) {
       loadEmployees();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // Search clients when query changes
@@ -108,6 +124,7 @@ export function CreateAppointmentModalBackoffice({
     }, 300);
 
     return () => clearTimeout(delayDebounce);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientSearchQuery]);
 
   // Load available slots when date/duration changes
@@ -115,22 +132,8 @@ export function CreateAppointmentModalBackoffice({
     if (selectedEmployee && selectedDate && duration) {
       loadAvailableSlots();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEmployee, selectedDate, duration]);
-
-  const loadEmployees = async () => {
-    const data = await getEmployees();
-    setEmployees(data);
-  };
-
-  const loadAvailableSlots = async () => {
-    if (!selectedDate) return;
-
-    setLoadingSlots(true);
-    const dateStr = formatDateForAPI(selectedDate);
-    const slots = await getAvailableSlots(selectedEmployee, dateStr, duration);
-    setAvailableSlots(slots);
-    setLoadingSlots(false);
-  };
 
   const handleSubmit = async () => {
     if (!user || !selectedClient || !selectedTime) return;

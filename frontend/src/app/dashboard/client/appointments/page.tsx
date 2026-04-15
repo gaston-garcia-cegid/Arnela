@@ -43,11 +43,6 @@ export default function ClientAppointmentsPage() {
     }
   }, [user, router]);
 
-  // Load appointments on mount
-  useEffect(() => {
-    loadAppointments();
-  }, [pagination.page]);
-
   const loadAppointments = async () => {
     const response = await getMyAppointments(pagination.page, pagination.pageSize);
     if (response) {
@@ -55,6 +50,12 @@ export default function ClientAppointmentsPage() {
       setPagination({ total: response.total });
     }
   };
+
+  // Load appointments on mount
+  useEffect(() => {
+    loadAppointments();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagination.page]);
 
   const handleViewAppointment = async (id: string) => {
     const appointment = await getAppointment(id);

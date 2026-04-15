@@ -44,7 +44,7 @@ export function Reviews() {
                     ))}
                   </div>
                   <p className="text-sm text-foreground/80 italic mb-4 leading-relaxed">
-                    "{review.text}"
+                    &ldquo;{review.text}&rdquo;
                   </p>
                   <div className="border-t pt-3">
                     <p className="font-semibold text-sm text-foreground">{review.name}</p>

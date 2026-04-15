@@ -4,7 +4,7 @@ export function Testimonial() {
       <div className="container mx-auto">
         <div className="mx-auto max-w-4xl">
           <div className="text-center mb-6">
-            <span className="text-5xl md:text-6xl text-primary/30">"</span>
+            <span className="text-5xl md:text-6xl text-primary/30">&ldquo;</span>
           </div>
           <blockquote className="text-center">
             <p className="text-base leading-relaxed italic text-foreground/90 sm:text-lg md:text-xl font-medium">
