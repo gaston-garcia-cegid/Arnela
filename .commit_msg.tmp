@@ -1,1 +1,0 @@
-chore: use go-version-file in CI to auto-sync Go version from go.mod
