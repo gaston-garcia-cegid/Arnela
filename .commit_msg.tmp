@@ -1,10 +1,10 @@
-feat: add CI/CD, SEO, billing tests, email notifications, and health monitoring (Phase 3)
+feat: add PDF invoices, dark mode, and Google Calendar integration (Phase 4)
 
-- Add GitHub Actions CI pipeline (Go vet/build/test + Next.js lint/typecheck/test/build)
-- Add per-page SEO metadata for all public routes
-- Add 14 tests for invoice and billing stats services
-- Implement SMTP email notification system integrated with Redis worker pool
-- Send confirmation/cancellation emails on appointment status changes
-- Add structured health handler (/health with runtime stats, /readiness for Docker probes)
-- Configure Docker healthchecks for go-api in dev and prod compose files
-- Add SMTP env vars to .env.example and docker-compose.prod.yml
+- Add PDF invoice generation with branded layout (go-pdf/fpdf)
+- New endpoint GET /billing/invoices/:id/pdf for direct download
+- Implement full dark mode with next-themes (class strategy)
+- Add warm dark palette consistent with Arnela branding
+- Add ThemeToggle in public Navbar and backoffice header
+- Integrate Google Calendar API for appointment sync (service account)
+- Wire calendar handler into async worker pool
+- Add GOOGLE_CALENDAR_* and SMTP env vars to .env.example

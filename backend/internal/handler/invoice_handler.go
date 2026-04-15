@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/pdf"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -315,4 +317,41 @@ func (h *InvoiceHandler) GetUnpaidInvoices(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, invoices)
+}
+
+// DownloadInvoicePDF godoc
+// @Summary Download invoice as PDF
+// @Description Generate and download a PDF for the specified invoice
+// @Tags invoices
+// @Security BearerAuth
+// @Produce application/pdf
+// @Param id path string true "Invoice ID (UUID)"
+// @Success 200 {file} binary "PDF file"
+// @Failure 400 {object} ErrorResponse "Invalid ID"
+// @Failure 404 {object} ErrorResponse "Invoice not found"
+// @Failure 500 {object} ErrorResponse "PDF generation failed"
+// @Router /billing/invoices/{id}/pdf [get]
+func (h *InvoiceHandler) DownloadInvoicePDF(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := uuid.Parse(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "invalid invoice ID"})
+		return
+	}
+
+	invoice, client, err := h.invoiceService.GetInvoiceWithClient(c.Request.Context(), id)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+
+	pdfBytes, err := pdf.GenerateInvoicePDF(invoice, client)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "failed to generate PDF"})
+		return
+	}
+
+	filename := fmt.Sprintf("%s.pdf", invoice.InvoiceNumber)
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filename))
+	c.Data(http.StatusOK, "application/pdf", pdfBytes)
 }

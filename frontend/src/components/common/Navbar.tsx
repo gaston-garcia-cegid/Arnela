@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/common/ThemeToggle';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -37,6 +38,7 @@ export function Navbar({ onLoginClick }: Readonly<NavbarProps>) {
               {link.label}
             </Link>
           ))}
+          <ThemeToggle />
           {onLoginClick && (
             <Button onClick={onLoginClick} variant="default" size="sm" className="ml-2 bg-primary text-background hover:bg-accent hover:text-primary">
               Iniciar sesión
@@ -89,6 +91,10 @@ export function Navbar({ onLoginClick }: Readonly<NavbarProps>) {
                 {link.label}
               </Link>
             ))}
+            <div className="flex items-center justify-between pt-2 border-t border-border">
+              <span className="text-sm text-muted-foreground">Tema</span>
+              <ThemeToggle />
+            </div>
             {onLoginClick && (
               <Button onClick={onLoginClick} variant="default" className="w-full">
                 Iniciar sesión

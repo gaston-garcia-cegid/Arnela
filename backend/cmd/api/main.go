@@ -19,6 +19,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/cache"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/database"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/email"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/gcal"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/logger"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/queue"
@@ -147,6 +148,19 @@ func main() {
 		log.Println("✓ SMTP email handler registered")
 	} else {
 		log.Println("⚠ SMTP not configured — emails will be logged but not sent")
+	}
+
+	// Configure Google Calendar handler
+	if gcal.IsConfigured() {
+		calService, err := gcal.NewCalendarService()
+		if err != nil {
+			log.Printf("⚠ Google Calendar init failed: %v", err)
+		} else {
+			workerPool.RegisterHandler(queue.TaskTypeSyncCalendar, gcal.NewCalendarTaskHandler(calService))
+			log.Println("✓ Google Calendar handler registered")
+		}
+	} else {
+		log.Println("⚠ Google Calendar not configured — calendar sync will be logged only")
 	}
 
 	workerPool.Start()
@@ -348,6 +362,7 @@ func main() {
 				invoices.PUT("/:id", invoiceHandler.UpdateInvoice)
 				invoices.DELETE("/:id", invoiceHandler.DeleteInvoice)
 				invoices.POST("/:id/mark-paid", invoiceHandler.MarkInvoiceAsPaid)
+				invoices.GET("/:id/pdf", invoiceHandler.DownloadInvoicePDF)
 				invoices.GET("/client/:clientId", invoiceHandler.GetClientInvoices)
 				invoices.GET("/unpaid", invoiceHandler.GetUnpaidInvoices)
 			}

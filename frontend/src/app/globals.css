@@ -42,6 +42,37 @@
   --radius-sm: calc(0.5rem - 4px);
 }
 
+/* Dark theme overrides (class strategy via next-themes) */
+.dark {
+  --color-background: #1a1714;
+  --color-foreground: #f0ebe5;
+
+  --color-primary: #d4936d;
+  --color-primary-foreground: #1a1714;
+
+  --color-secondary: #c89f7b;
+  --color-secondary-foreground: #f0ebe5;
+
+  --color-accent: #8b6844;
+  --color-accent-foreground: #f0ebe5;
+
+  --color-card: #241f1b;
+  --color-card-foreground: #f0ebe5;
+
+  --color-muted: #2d2621;
+  --color-muted-foreground: #a89a8c;
+
+  --color-destructive: #d97757;
+  --color-destructive-foreground: #ffffff;
+
+  --color-border: #3d3430;
+  --color-input: #2d2621;
+  --color-ring: #d4936d;
+
+  --color-popover: #241f1b;
+  --color-popover-foreground: #f0ebe5;
+}
+
 /* Base styles */
 @layer base {
   * {

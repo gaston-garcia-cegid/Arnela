@@ -62,6 +62,9 @@ type InvoiceService interface {
 
 	// GetUnpaidInvoices retrieves all unpaid invoices
 	GetUnpaidInvoices(ctx context.Context) ([]*domain.Invoice, error)
+
+	// GetInvoiceWithClient retrieves an invoice with its associated client data (for PDF generation)
+	GetInvoiceWithClient(ctx context.Context, id uuid.UUID) (*domain.Invoice, *domain.Client, error)
 }
 
 type invoiceService struct {
@@ -337,4 +340,19 @@ func (s *invoiceService) GetClientInvoices(ctx context.Context, clientID uuid.UU
 // GetUnpaidInvoices retrieves all unpaid invoices
 func (s *invoiceService) GetUnpaidInvoices(ctx context.Context) ([]*domain.Invoice, error) {
 	return s.invoiceRepo.GetUnpaidInvoices(ctx)
+}
+
+// GetInvoiceWithClient retrieves an invoice and its associated client for PDF rendering.
+func (s *invoiceService) GetInvoiceWithClient(ctx context.Context, id uuid.UUID) (*domain.Invoice, *domain.Client, error) {
+	invoice, err := s.invoiceRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	client, err := s.clientRepo.GetByID(ctx, invoice.ClientID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to load client for invoice: %w", err)
+	}
+
+	return invoice, client, nil
 }

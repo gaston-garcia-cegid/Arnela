@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import type { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from '@/components/common/ThemeProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -17,10 +18,12 @@ export default function RootLayout({
   children: ReactNode;
 }) {
   return (
-    <html lang="es" className="scroll-smooth">
+    <html lang="es" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
-        {children}
-        <Toaster />
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

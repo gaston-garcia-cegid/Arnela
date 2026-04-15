@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useRouter } from "next/navigation";
 import { useKeyboardShortcut } from "@/hooks/useKeyboardShortcut";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { Menu, X, Search } from "lucide-react";
 
 export default function BackofficeLayout({
@@ -71,6 +72,7 @@ export default function BackofficeLayout({
               </kbd>
             </Button>
 
+            <ThemeToggle />
             <div className="text-right hidden md:block">
               <p className="text-sm font-medium text-foreground">
                 {user?.firstName} {user?.lastName}
