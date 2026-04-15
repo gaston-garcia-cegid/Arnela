@@ -1,547 +1,290 @@
-# 🏥 Arnela Backend - CRM/CMS API
+# Arnela Backend
 
-Backend API for Arnela Professional Office CRM/CMS system built with Go, GIN Framework, PostgreSQL, and Redis.
+API REST para el sistema CRM/CMS de Arnela Gabinete. Go + Gin + PostgreSQL + Redis.
 
----
+## Requisitos
 
-## 📋 Table of Contents
+- Go 1.25+
+- PostgreSQL 16
+- Redis 7
 
-- [Tech Stack](#-tech-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [API Endpoints](#-api-endpoints)
-- [Authentication](#-authentication)
-- [Testing](#-testing)
-- [Database](#-database)
-- [Development](#-development)
+O usar Docker Compose desde la raíz del proyecto.
 
----
+## Inicio rápido
 
-## 🚀 Tech Stack
+```powershell
+# Copiar configuración
+copy .env.example .env
 
-- **Go 1.23** - Programming language
-- **GIN** - Web framework
-- **sqlx** - SQL extensions for Go
-- **PostgreSQL 16** - Primary database
-- **Redis** - Caching & session management
-- **JWT** - Authentication
-- **Swagger/OpenAPI 3.0** - API documentation
-- **testify** - Testing framework
-- **Docker** - Containerization
+# Levantar dependencias (PostgreSQL + Redis)
+docker compose up -d   # desde la raíz del proyecto
 
----
+# Ejecutar
+go run cmd/api/main.go
+```
 
-## 📁 Project Structure
+Las migraciones se ejecutan automáticamente al arrancar. El servidor escucha en `http://localhost:8080`.
+
+## Estructura
 
 ```
 backend/
-├── cmd/api/                    # Application entry point
+├── cmd/api/main.go              # Entrypoint, wiring, routes, graceful shutdown
+├── config/config.go             # Lectura de env vars con defaults
 ├── internal/
-│   ├── domain/                 # Core entities (User, Client, etc.)
-│   ├── repository/             # Data access layer
-│   │   ├── postgres/           # PostgreSQL implementations
-│   │   └── mocks/              # Mock implementations for tests
-│   ├── service/                # Business logic layer
-│   ├── handler/                # HTTP handlers (controllers)
-│   └── middleware/             # HTTP middleware (auth, logging)
+│   ├── domain/                  # Entidades: User, Client, Employee, Appointment,
+│   │                            #   Task, Invoice, Expense, ExpenseCategory
+│   ├── repository/              # Interfaces de repositorio
+│   │   ├── postgres/            # Implementaciones PostgreSQL (sqlx)
+│   │   └── mocks/               # Mocks para tests
+│   ├── service/                 # Lógica de negocio (un service por entidad)
+│   ├── handler/                 # HTTP handlers Gin (un handler por entidad + health)
+│   └── middleware/              # Auth (JWT), logging, rate limiting, CORS
 ├── pkg/
-│   ├── database/               # Database utilities
-│   └── utils/                  # Helper utilities (JWT, logger)
-├── migrations/                 # Database migrations
-├── docs/                       # Swagger documentation
-├── go.mod
-└── .env.example
+│   ├── cache/                   # CacheService (Redis, get/set/invalidate con TTL)
+│   ├── database/                # NewPostgresDB, RunMigrations
+│   ├── email/                   # SMTP Mailer, HTML templates, queue handler
+│   ├── errors/                  # AppError, RespondWithError, error codes
+│   ├── gcal/                    # Google Calendar service (service account)
+│   ├── jwt/                     # TokenManager (generate, validate, claims)
+│   ├── logger/                  # Zerolog wrapper (dev=pretty, prod=JSON)
+│   ├── pdf/                     # GenerateInvoicePDF (go-pdf/fpdf)
+│   └── queue/                   # WorkerPool, TaskHandler, Redis-backed task queue
+├── migrations/                  # 000001..000015 SQL up/down
+├── docs/                        # Swagger auto-generado (swag init)
+└── go.mod
 ```
 
----
+## Variables de entorno
 
-## 🏁 Getting Started
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `ENVIRONMENT` | `development` | `development` / `production` |
+| `SERVER_PORT` | `8080` | Puerto del servidor |
+| `CORS_ORIGINS` | `http://localhost:3000` | Orígenes CORS (comma-separated) |
+| `DB_HOST` | `localhost` | Host PostgreSQL |
+| `DB_PORT` | `5432` | Puerto PostgreSQL |
+| `DB_USER` | `arnela_user` | Usuario DB |
+| `DB_PASSWORD` | | Contraseña DB |
+| `DB_NAME` | `arnela_db` | Nombre DB |
+| `DB_SSLMODE` | `disable` | SSL mode |
+| `REDIS_HOST` | `localhost` | Host Redis |
+| `REDIS_PORT` | `6379` | Puerto Redis |
+| `REDIS_PASSWORD` | | Contraseña Redis |
+| `REDIS_DB` | `0` | Base de datos Redis |
+| `JWT_SECRET` | | Clave secreta JWT (obligatorio en producción) |
+| `JWT_EXPIRY_HOURS` | `168` | Expiración del token en horas |
+| `SMTP_HOST` | | Host SMTP (opcional, sin configurar = logs only) |
+| `SMTP_PORT` | `587` | Puerto SMTP |
+| `SMTP_USERNAME` | | Usuario SMTP |
+| `SMTP_PASSWORD` | | Contraseña SMTP |
+| `SMTP_FROM` | `no-reply@arnela.es` | Dirección from |
+| `GOOGLE_CALENDAR_CREDENTIALS` | | JSON credentials service account (opcional) |
+| `GOOGLE_CALENDAR_ID` | | ID del calendario (opcional) |
 
-### Prerequisites
+## API Endpoints
 
-- **Go 1.23+**
-- **Docker & Docker Compose**
-- **PostgreSQL 16** (or use Docker)
-- **Redis** (or use Docker)
+### Health
 
-### Installation
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/health` | Estado detallado (DB, Redis, Go runtime, uptime) |
+| GET | `/readiness` | Probe liviano para healthchecks |
+| GET | `/swagger/*` | Swagger UI |
 
-1. **Clone the repository:**
-```bash
-git clone <repo-url>
-cd arnela/backend
+### Auth (`/api/v1/auth`)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| POST | `/register` | No (rate limited) | Registrar usuario |
+| POST | `/login` | No (rate limited) | Login, devuelve JWT |
+| GET | `/me` | JWT | Usuario actual |
+
+### Clients (`/api/v1/clients`)
+
+| Método | Ruta | Rol | Descripción |
+|--------|------|-----|-------------|
+| GET | `/me` | Any | Perfil propio del cliente |
+| POST | `/` | Admin, Employee | Crear cliente |
+| GET | `/` | Admin, Employee | Listar (paginado, filtros) |
+| GET | `/:id` | Admin, Employee | Detalle |
+| PUT | `/:id` | Admin, Employee | Actualizar |
+| DELETE | `/:id` | Admin | Soft delete |
+
+**Filtros de listado**: `?search=`, `?isActive=`, `?city=`, `?province=`, `?page=`, `?pageSize=`
+
+### Employees (`/api/v1/employees`)
+
+| Método | Ruta | Rol | Descripción |
+|--------|------|-----|-------------|
+| GET | `/` | Any | Listar empleados |
+| GET | `/me` | Employee | Mi perfil de empleado |
+| GET | `/:id` | Any | Detalle |
+| GET | `/specialty/:specialty` | Any | Por especialidad |
+| POST | `/` | Admin | Crear |
+| PUT | `/:id` | Admin | Actualizar |
+| DELETE | `/:id` | Admin | Eliminar |
+
+### Appointments (`/api/v1/appointments`)
+
+| Método | Ruta | Rol | Descripción |
+|--------|------|-----|-------------|
+| GET | `/therapists` | Any | Terapeutas disponibles |
+| GET | `/available-slots` | Any | Horarios disponibles |
+| POST | `/` | Any | Crear cita |
+| GET | `/:id` | Any | Detalle |
+| PUT | `/:id` | Admin, Employee | Actualizar |
+| POST | `/:id/cancel` | Any | Cancelar |
+| GET | `/me` | Client | Mis citas |
+| GET | `/` | Admin, Employee | Listar todas |
+| POST | `/:id/confirm` | Admin, Employee | Confirmar (envía email + calendar sync) |
+
+### Tasks (`/api/v1/tasks`)
+
+| Método | Ruta | Rol | Descripción |
+|--------|------|-----|-------------|
+| POST | `/` | Admin, Employee | Crear tarea |
+| GET | `/` | Admin, Employee | Listar (filtros) |
+| GET | `/me` | Employee | Mis tareas |
+| PUT | `/:id` | Admin, Employee | Actualizar |
+| DELETE | `/:id` | Admin | Eliminar |
+
+### Billing - Invoices (`/api/v1/billing/invoices`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/` | Crear factura |
+| GET | `/` | Listar facturas |
+| GET | `/:id` | Detalle |
+| GET | `/number/:number` | Por número |
+| PUT | `/:id` | Actualizar |
+| DELETE | `/:id` | Eliminar (no pagadas) |
+| POST | `/:id/mark-paid` | Marcar como pagada |
+| GET | `/:id/pdf` | Descargar PDF |
+| GET | `/client/:clientId` | Facturas de un cliente |
+| GET | `/unpaid` | Facturas pendientes |
+
+### Billing - Expenses (`/api/v1/billing/expenses`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/` | Crear gasto |
+| GET | `/` | Listar gastos |
+| GET | `/:id` | Detalle |
+| PUT | `/:id` | Actualizar |
+| DELETE | `/:id` | Eliminar |
+| GET | `/category/:categoryId` | Por categoría |
+| GET | `/supplier/:supplier` | Por proveedor |
+
+### Billing - Categories (`/api/v1/billing/expense-categories`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/` | Crear categoría |
+| GET | `/` | Listar |
+| GET | `/tree` | Árbol jerárquico |
+| GET | `/parents` | Solo padres |
+| GET | `/:id` | Detalle |
+| PUT | `/:id` | Actualizar |
+| DELETE | `/:id` | Eliminar |
+| GET | `/:id/subcategories` | Subcategorías |
+
+### Billing - Stats (`/api/v1/billing`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/dashboard` | Resumen financiero |
+| GET | `/revenue-by-month` | Ingresos mensuales |
+| GET | `/expenses-by-category` | Gastos por categoría |
+| GET | `/balance` | Balance general |
+
+### Stats (`/api/v1/stats`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/dashboard` | Estadísticas CRM (clientes, citas, empleados) |
+
+### Search
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/search?q=` | Búsqueda global |
+
+## Testing
+
+```powershell
+go test ./... -count=1                # Todos los tests
+go test ./... -race                    # Con race detector
+go test ./... -cover                   # Con cobertura
+go test ./internal/service/... -v      # Services verbose
+go test ./internal/handler/... -v      # Handlers verbose
+go test ./pkg/... -v                   # Packages verbose
 ```
 
-2. **Install dependencies:**
-```bash
-go mod download
-```
+17 archivos de test cubriendo:
+- **Services**: auth, client (incl. reactivación, isActive bug), employee, appointment, task, invoice, billing stats, search
+- **Handlers**: auth, search
+- **Packages**: cache (miniredis), errors, queue (worker pool)
 
-3. **Setup environment:**
-```bash
-cp .env.example .env
-```
+Framework: `testify` (assert + mock) + `miniredis` para tests de Redis.
 
-Edit `.env` with your configuration:
-```env
-# Server
-PORT=8080
+## Migraciones
 
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=postgres
-DB_NAME=arnela
-DB_SSLMODE=disable
+Las migraciones se ejecutan automáticamente al arrancar. Para gestión manual:
 
-# JWT
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_PASSWORD=
-```
-
-4. **Start Docker services:**
-```bash
-docker-compose up -d
-```
-
-5. **Run migrations (automatic on startup):**
-```bash
-go run cmd/api/main.go
-```
-
-6. **Access the API:**
-- **Backend:** http://localhost:8080
-- **Swagger UI:** http://localhost:8080/swagger/index.html
-
----
-
-## 🌐 API Endpoints
-
-### Authentication
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/api/v1/auth/register` | Public | Register new user |
-| POST | `/api/v1/auth/login` | Public | Login with credentials |
-| GET | `/api/v1/auth/me` | Authenticated | Get current user |
-
-**Example - Register:**
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@arnela.com",
-    "password": "Admin123!",
-    "firstName": "Admin",
-    "lastName": "User",
-    "role": "admin"
-  }'
-```
-
-**Example - Login:**
-```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "admin@arnela.com",
-    "password": "Admin123!"
-  }'
-```
-
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": "uuid",
-    "email": "admin@arnela.com",
-    "firstName": "Admin",
-    "lastName": "User",
-    "role": "admin",
-    "isActive": true
-  }
-}
-```
-
-### User Management (Admin Only)
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/api/v1/users` | Admin | Create new user |
-| GET | `/api/v1/users` | Admin | List all users |
-| GET | `/api/v1/users/:id` | Admin | Get user by ID |
-| PUT | `/api/v1/users/:id` | Admin | Update user |
-| DELETE | `/api/v1/users/:id` | Admin | Delete user |
-
-**Example - Create User:**
-```bash
-curl -X POST http://localhost:8080/api/v1/users \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "employee@arnela.com",
-    "password": "Emp123!",
-    "firstName": "John",
-    "lastName": "Doe",
-    "role": "employee"
-  }'
-```
-
-### Client Management
-
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| POST | `/api/v1/clients` | Admin, Employee | Create new client |
-| GET | `/api/v1/clients` | Admin, Employee | List clients (with filters) |
-| GET | `/api/v1/clients/:id` | Admin, Employee | Get client by ID |
-| PUT | `/api/v1/clients/:id` | Admin, Employee | Update client |
-| DELETE | `/api/v1/clients/:id` | Admin | Soft delete client |
-| GET | `/api/v1/clients/me` | Client | Get own profile |
-
-**Example - Create Client:**
-```bash
-curl -X POST http://localhost:8080/api/v1/clients \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstName": "Juan",
-    "lastName": "Pérez",
-    "email": "juan@example.com",
-    "phone": "612345678",
-    "dni": "12345678Z",
-    "dateOfBirth": "1990-01-15",
-    "address": "Calle Mayor 123",
-    "city": "Madrid",
-    "postalCode": "28001",
-    "province": "Madrid",
-    "notes": "Cliente preferente"
-  }'
-```
-
-**Example - List Clients with Filters:**
-```bash
-# Get all clients (page 1, 20 per page)
-curl "http://localhost:8080/api/v1/clients?page=1&pageSize=20" \
-  -H "Authorization: Bearer $TOKEN"
-
-# Search for "Juan"
-curl "http://localhost:8080/api/v1/clients?search=Juan" \
-  -H "Authorization: Bearer $TOKEN"
-
-# Filter by city and active status
-curl "http://localhost:8080/api/v1/clients?city=Madrid&isActive=true" \
-  -H "Authorization: Bearer $TOKEN"
-
-# Combine filters
-curl "http://localhost:8080/api/v1/clients?search=Juan&city=Madrid&page=1&pageSize=10" \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-**Query Parameters:**
-- `page` (default: 1) - Page number
-- `pageSize` (default: 20, max: 100) - Items per page
-- `search` - Search across firstName, lastName, email, dni, phone
-- `isActive` - Filter by active status (true/false)
-- `city` - Filter by city
-- `province` - Filter by province
-
----
-
-## 🔐 Authentication
-
-### JWT Token
-
-All protected endpoints require a JWT token in the `Authorization` header:
-
-```bash
-Authorization: Bearer <your-jwt-token>
-```
-
-**Token includes:**
-- User ID (UUID)
-- Email
-- Role (admin, employee, client)
-- Expiration (24 hours)
-
-### Role-Based Access Control
-
-| Role | Permissions |
-| :--- | :--- |
-| **admin** | Full access to all endpoints, can delete resources |
-| **employee** | Can manage clients, appointments, tasks (no delete) |
-| **client** | Can only access own profile and appointments |
-
----
-
-## 🧪 Testing
-
-### Run All Tests
-
-```bash
-go test ./...
-```
-
-### Run Specific Package Tests
-
-```bash
-# Test all services
-go test ./internal/service/... -v
-
-# Test specific service
-go test ./internal/service/... -v -run TestClientService
-```
-
-### Run with Coverage
-
-```bash
-go test -cover ./...
-```
-
-### Test Results
-
-```bash
-$ go test ./internal/service/... -v
-
-=== RUN   TestAuthService_Register
-    ✓ successful registration
-    ✓ email already exists
-    ✓ weak password
-    ... (5/5 passing)
-
-=== RUN   TestAuthService_Login
-    ✓ successful login
-    ✓ invalid credentials
-    ... (3/3 passing)
-
-=== RUN   TestUserService_CreateUser
-    ... (4/4 passing)
-
-=== RUN   TestClientService_CreateClient
-    ✓ successful creation
-    ✓ email already exists
-    ✓ DNI already exists
-    ✓ invalid email format
-    ✓ invalid phone format
-    ✓ invalid DNI format
-    ... (6/6 passing)
-
-Total: 28/28 tests passing ✅
-```
-
----
-
-## 🗄️ Database
-
-### Migrations
-
-Migrations run automatically on application startup. To manage manually:
-
-```bash
-# Install golang-migrate
+```powershell
+# Instalar CLI
 go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-# Run migrations
-migrate -path migrations -database "postgres://user:pass@localhost:5432/arnela?sslmode=disable" up
+# Ejecutar
+migrate -path migrations -database "postgres://user:pass@localhost:5432/arnela_db?sslmode=disable" up
 
-# Rollback last migration
-migrate -path migrations -database "postgres://user:pass@localhost:5432/arnela?sslmode=disable" down 1
+# Rollback
+migrate -path migrations -database "postgres://..." down 1
 
-# Create new migration
-migrate create -ext sql -dir migrations -seq <migration_name>
+# Crear nueva migración
+migrate create -ext sql -dir migrations -seq nombre_migracion
 ```
 
-### Current Schema
+### Migraciones actuales (15)
 
-**Users Table:**
-- Authentication and user management
-- Roles: admin, employee, client
-- Password hashing with bcrypt
+| # | Nombre |
+|---|--------|
+| 1 | create_users_table |
+| 2 | create_clients_table |
+| 3 | add_nif_field |
+| 4 | create_appointments |
+| 5 | create_employees_table |
+| 6 | update_appointments_employee_fk |
+| 7 | add_room_to_appointments |
+| 8 | consolidate_dni_cif |
+| 9 | create_invoices_table |
+| 10 | create_expense_categories_table |
+| 11 | create_expenses_table |
+| 12 | seed_expense_categories |
+| 13 | add_soft_delete_billing |
+| 14 | add_due_date_to_invoices |
+| 15 | create_tasks_table |
 
-**Clients Table:**
-- Client information with Spanish-specific fields
-- DNI/NIE validation
-- Soft delete support
-- Comprehensive indexes for performance
+## Swagger
 
----
+Regenerar después de cambiar anotaciones en handlers:
 
-## 🛠️ Development
-
-### Build
-
-```bash
-go build -o arnela-api.exe cmd/api/main.go
-```
-
-### Run
-
-```bash
-# Development mode (with hot reload)
-air
-
-# Production mode
-go run cmd/api/main.go
-```
-
-### Swagger Documentation
-
-After modifying handler annotations, regenerate Swagger docs:
-
-```bash
-# Install swag (once)
+```powershell
 go install github.com/swaggo/swag/cmd/swag@latest
-
-# Regenerate docs
 swag init -g cmd/api/main.go -o docs
 ```
 
-Access Swagger UI at: http://localhost:8080/swagger/index.html
+## Integraciones opcionales
 
-### Docker
+### Email (SMTP)
 
-```bash
-# Start services
-docker-compose up -d
+Configurar `SMTP_*` en `.env`. Sin configurar, los envíos se loguean sin enviar. Se usa para:
+- Confirmación de cita
+- Cancelación de cita
 
-# Stop services
-docker-compose down
+Los emails se procesan asincrónicamente a través del worker pool de Redis.
 
-# View logs
-docker-compose logs -f
+### Google Calendar
 
-# Rebuild
-docker-compose up -d --build
-```
-
----
-
-## 📝 Spanish-Specific Validations
-
-### DNI/NIE Validation
-
-**Valid DNI:** `12345678Z` (8 digits + check letter)  
-**Valid NIE:** `X1234567L` (X/Y/Z + 7 digits + check letter)
-
-The system validates the check digit using the modulo 23 algorithm.
-
-### Phone Normalization
-
-Automatically normalizes Spanish phone numbers to `+34XXXXXXXXX` format:
-
-- `612345678` → `+34612345678`
-- `+34612345678` → `+34612345678`
-- `34612345678` → `+34612345678`
-
----
-
-## 🔍 URLs Disponibles
-
-### Local Development
-
-- **Backend API:** http://localhost:8080
-- **Swagger UI:** http://localhost:8080/swagger/index.html
-- **Swagger JSON:** http://localhost:8080/swagger/doc.json
-- **PostgreSQL:** localhost:5432
-- **Redis:** localhost:6379
-
-### API Base URL
-
-```
-http://localhost:8080/api/v1
-```
-
----
-
-## 📚 Documentation
-
-- **Agent.md** - Technical project definition and architecture
-- **PHASE_1.3_COMPLETE.md** - User management implementation details
-- **PHASE_1.4_COMPLETE.md** - Client management implementation details
-- **Swagger UI** - Interactive API documentation
-
----
-
-## 🐛 Troubleshooting
-
-### Database Connection Issues
-
-```bash
-# Check if PostgreSQL is running
-docker-compose ps
-
-# View PostgreSQL logs
-docker-compose logs postgres
-
-# Restart PostgreSQL
-docker-compose restart postgres
-```
-
-### Migration Errors
-
-```bash
-# Force migration version
-migrate -path migrations -database "postgres://..." force <version>
-
-# Check current version
-migrate -path migrations -database "postgres://..." version
-```
-
-### JWT Token Expired
-
-If you get "token expired" errors, login again to get a new token. Tokens are valid for 24 hours.
-
----
-
-## 📈 Performance
-
-### Database Indexes
-
-All performance-critical fields are indexed:
-- Email (unique)
-- DNI (unique, excluding soft-deleted)
-- Phone
-- City, Province
-- Last name
-- Active status
-
-### Pagination
-
-List endpoints support pagination to handle large datasets efficiently:
-- Default page size: 20
-- Maximum page size: 100
-
----
-
-## 🚦 Status
-
-**Current Phase:** 1.4 - Client Management ✅  
-**Tests:** 28/28 passing ✅  
-**API Endpoints:** 15 endpoints implemented  
-**Next Phase:** Employee Management or Appointments System
-
----
-
-## 📄 License
-
-Proprietary - Arnela Professional Office
-
----
-
-## 🤝 Contributing
-
-This is a private project. For internal team members:
-
-1. Create a feature branch
-2. Write tests for new features
-3. Ensure all tests pass
-4. Update documentation
-5. Submit pull request
-
----
-
-**Built with ❤️ using Go, GIN, and PostgreSQL**
+Configurar `GOOGLE_CALENDAR_CREDENTIALS` (JSON de service account) y `GOOGLE_CALENDAR_ID`. Sin configurar, las operaciones se loguean sin ejecutar. Sincroniza eventos al confirmar/cancelar citas.

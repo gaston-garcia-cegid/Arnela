@@ -1,379 +1,208 @@
-# 🏥 Arnela - CRM/CMS para Oficina Profesional
+# Arnela - CRM/CMS para Gabinete Profesional
 
-Sistema empresarial personalizado para la gestión de clientes, empleados, citas y tareas. Desarrollado con arquitectura Modular Monolith (Backend) y Next.js (Frontend).
+Sistema de gestión para Arnela Gabinete (Vigo). Gestión de clientes, empleados, citas, facturación, gastos y tareas internas.
 
----
+## Stack
 
-## 📦 Stack Tecnológico
+| Capa | Tecnología |
+|------|------------|
+| Backend | Go 1.25, Gin, Clean Architecture |
+| Frontend | Next.js 16, TypeScript, Zustand, Tailwind v4, Shadcn/Radix |
+| Base de datos | PostgreSQL 16, 15 migraciones SQL (golang-migrate) |
+| Cache / Queue | Redis 7 (cache-aside + worker pool async) |
+| Infraestructura | Docker Compose, Nginx reverse proxy, GitHub Actions CI |
+| Auth | JWT con roles (admin, employee, client), rate limiting |
+| Docs | Swagger/OpenAPI auto-generado |
 
-| Componente | Tecnología |
-|------------|------------|
-| **Backend** | Go 1.23 + GIN Framework |
-| **Frontend** | Next.js 16 + TypeScript + Zustand |
-| **Database** | PostgreSQL 16 |
-| **Cache** | Redis 7 |
-| **Container** | Docker + Docker Compose |
-| **Metodología** | TDD, Clean Architecture |
+## Inicio rápido
 
----
+### Pre-requisitos
 
-## 🚀 Inicio Rápido
+- Docker y Docker Compose
+- Go 1.25+ (backend local)
+- Node.js 22+ con pnpm (frontend local)
 
-### 1️⃣ Pre-requisitos
-
-- **Docker** y **Docker Compose** instalados
-- **Go 1.23+** (para desarrollo local del backend)
-- **Node.js 22+** con **pnpm** (para desarrollo local del frontend)
-
-### 2️⃣ Clonar y Configurar
+### Levantar servicios
 
 ```powershell
-# Clonar el repositorio
-git clone <tu-repo-url>
-cd arnela
+# Copiar env
+copy backend\.env.example backend\.env
 
-# Copiar variables de entorno (Backend)
-cd backend
-copy .env.example .env
-cd ..
-
-# Copiar variables de entorno (Frontend)
-cd frontend
-copy .env.example .env
-cd ..
-```
-
-### 3️⃣ Iniciar con Docker
-
-```powershell
-# Iniciar todos los servicios (PostgreSQL, Redis, Go API)
+# Levantar PostgreSQL + Redis
 docker-compose up -d
 
-# Ver logs
-docker-compose logs -f go-api
+# Backend (en otra terminal)
+cd backend
+go run cmd/api/main.go
 
-# Verificar que los servicios estén arriba
-docker-compose ps
-```
-
-**URLs disponibles:**
-- **Backend API**: http://localhost:8080
-- **Health Check**: http://localhost:8080/health
-- **Swagger UI**: http://localhost:8080/swagger/index.html (📖 Documentación interactiva de la API)
-- **API Auth**: 
-  - POST `/api/v1/auth/register` - Registro
-  - POST `/api/v1/auth/login` - Login
-  - GET `/api/v1/auth/me` - Usuario actual (requiere token)
-- **PostgreSQL**: localhost:5432 (usuario: `arnela_user`, password: `arnela_secure_pass_2024`)
-- **Redis**: localhost:6379 (password: `arnela_redis_pass_2024`)
-
-### 4️⃣ Desarrollo Local del Frontend
-
-```powershell
+# Frontend (en otra terminal)
 cd frontend
-
-# Instalar dependencias (solo primera vez)
 pnpm install
-
-# Iniciar servidor de desarrollo
 pnpm dev
 ```
 
-**Frontend disponible en**: http://localhost:3000
+### URLs
 
----
+| Servicio | URL |
+|----------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8080/api/v1 |
+| Swagger | http://localhost:8080/swagger/index.html |
+| Health | http://localhost:8080/health |
+| Readiness | http://localhost:8080/readiness |
 
-## 🏗️ Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 arnela/
 ├── backend/
-│   ├── cmd/api/              # Punto de entrada de la aplicación
+│   ├── cmd/api/                 # Entrypoint
+│   ├── config/                  # Configuración desde env vars
 │   ├── internal/
-│   │   ├── handler/          # HTTP handlers (Controllers)
-│   │   ├── service/          # Lógica de negocio
-│   │   ├── domain/           # Modelos de dominio
-│   │   ├── repository/       # Acceso a datos (DB)
-│   │   ├── middleware/       # Middlewares (Auth, CORS, etc.)
-│   │   └── integration/      # Integraciones externas (Google Cal, SMS)
+│   │   ├── domain/              # Entidades de dominio
+│   │   ├── repository/          # Interfaces + implementación Postgres
+│   │   ├── service/             # Lógica de negocio
+│   │   ├── handler/             # HTTP handlers (Gin)
+│   │   └── middleware/          # Auth, logging, rate limiting
 │   ├── pkg/
-│   │   ├── database/         # Conexión PostgreSQL
-│   │   └── cache/            # Conexión Redis
-│   ├── config/               # Configuración centralizada
-│   ├── go.mod                # Dependencias Go
-│   └── Dockerfile            # Imagen Docker del backend
+│   │   ├── cache/               # Redis cache service
+│   │   ├── database/            # PostgreSQL connection + health
+│   │   ├── email/               # SMTP mailer + templates + notifications
+│   │   ├── errors/              # Structured error responses
+│   │   ├── gcal/                # Google Calendar integration
+│   │   ├── jwt/                 # Token manager
+│   │   ├── logger/              # Zerolog structured logging
+│   │   ├── pdf/                 # Invoice PDF generation
+│   │   └── queue/               # Redis task queue + worker pool
+│   ├── migrations/              # 15 SQL migrations
+│   └── docs/                    # Swagger auto-generated
 │
 ├── frontend/
 │   ├── src/
-│   │   ├── app/              # Next.js App Router (páginas/layouts)
-│   │   ├── components/       # Componentes React
-│   │   │   ├── ui/           # Componentes Shadcn UI
-│   │   │   ├── common/       # Componentes compartidos
-│   │   │   └── backoffice/   # Componentes del backoffice
-│   │   ├── stores/           # Zustand stores (gestión de estado)
-│   │   ├── hooks/            # Custom hooks
-│   │   └── lib/              # Utilidades y cliente API
-│   ├── package.json          # Dependencias frontend
-│   └── tsconfig.json         # Configuración TypeScript
+│   │   ├── app/                 # Next.js App Router (páginas + layouts)
+│   │   ├── components/          # UI, common, landing, auth, backoffice, billing
+│   │   ├── hooks/               # Custom hooks
+│   │   ├── lib/                 # API client, errors, validators, utils
+│   │   ├── stores/              # Zustand stores
+│   │   └── types/               # TypeScript types
+│   └── Dockerfile
 │
-└── docker-compose.yml        # Orquestación de servicios
+├── nginx/                       # Nginx reverse proxy config
+├── docker-compose.yml           # Dev (Postgres + Redis)
+├── docker-compose.prod.yml      # Producción (todos los servicios)
+└── .github/workflows/ci.yml     # CI pipeline
 ```
 
----
+## API
 
-## 🛠️ Comandos Útiles
+### Endpoints principales
 
-### Backend (Go)
+| Grupo | Endpoints | Acceso |
+|-------|-----------|--------|
+| Auth | register, login, me | Público (rate limited) |
+| Clients | CRUD, me, search | Admin/Employee |
+| Employees | CRUD, specialties | Admin (write), All (read) |
+| Appointments | CRUD, confirm, cancel, available-slots | Authenticated |
+| Tasks | CRUD, my-tasks | Employee |
+| Billing > Invoices | CRUD, mark-paid, PDF download, unpaid | Admin/Employee |
+| Billing > Expenses | CRUD, by-category, by-supplier | Admin/Employee |
+| Billing > Categories | CRUD, tree, subcategories | Admin/Employee |
+| Billing > Stats | dashboard, revenue-by-month, balance | Admin/Employee |
+| Stats | dashboard (CRM) | Admin/Employee |
+| Search | global search | Authenticated |
+
+Documentación interactiva completa en Swagger: `http://localhost:8080/swagger/index.html`
+
+### Autenticación
+
+JWT Bearer token en header `Authorization: Bearer <token>`.
+
+Roles: `admin` (acceso total), `employee` (gestión sin borrar), `client` (solo perfil propio y citas).
+
+## Testing
+
+### Backend (17 test files, Go)
 
 ```powershell
 cd backend
-
-# Ejecutar localmente (sin Docker)
-go run cmd/api/main.go
-
-# Ejecutar tests
-go test ./...                    # Todos los tests
-go test ./internal/... -v         # Tests con output detallado
-go test ./internal/... -cover     # Con coverage
-
-# Tests específicos
-go test ./internal/service/... -v
-go test ./internal/handler/... -v
-
-# Actualizar dependencias
-go mod tidy
-
-# Compilar binario
-go build -o main.exe cmd/api/main.go
-
-# Generar documentación Swagger
-swag init -g cmd/api/main.go -o docs
+go test ./... -count=1 -race    # Todos con race detector
+go test ./... -cover             # Con cobertura
 ```
 
-### Frontend (Next.js)
+Cobertura: services (auth, client, employee, appointment, task, invoice, billing stats, search), handlers (auth, search), packages (cache, errors, queue).
+
+### Frontend (14 test files, Vitest)
 
 ```powershell
 cd frontend
-
-# Desarrollo
-pnpm dev
-
-# Build para producción
-pnpm build
-
-# Iniciar en producción
-pnpm start
-
-# Linter
-pnpm lint
+pnpm test -- --run              # Todos
+pnpm test:coverage              # Con cobertura
 ```
 
-### Docker
+Cobertura: hooks, API client, utils, validators, LoginModal, CreateClientModal, EditClientModal.
+
+### CI/CD
+
+GitHub Actions ejecuta en cada push/PR a `main`:
+- **Backend**: `go vet` → `go build` → `go test` (race + coverage)
+- **Frontend**: `pnpm lint` → `tsc --noEmit` → `vitest` → `next build`
+
+## Features implementadas
+
+### Sitio público
+- Landing page con Hero, About, Services, Testimonials, Reviews
+- Páginas: Sobre Arnela, Intervención, Formación, Convenios, Contacto
+- SEO metadata por página (OpenGraph incluido)
+- Dark mode con toggle (light/dark, next-themes)
+
+### Backoffice (dashboard)
+- Dashboard con estadísticas (clientes, citas, empleados)
+- CRUD completo de clientes con filtros y búsqueda
+- Gestión de empleados y especialidades
+- Sistema de citas: crear, confirmar, cancelar, slots disponibles
+- Facturación: facturas con IVA auto, gastos, categorías jerárquicas
+- Exportación de facturas a PDF
+- Estadísticas de billing: revenue mensual, gastos por categoría, balance
+- Búsqueda global (Ctrl+K)
+- Sidebar colapsable con menú por rol
+- Dark mode integrado
+
+### Backend
+- Clean Architecture (domain, repository, service, handler)
+- Rate limiting en endpoints de auth
+- Structured logging con Zerolog
+- Cache Redis en dashboard stats
+- Worker pool async para tareas (email, SMS, calendar)
+- Notificaciones email: confirmación y cancelación de citas (SMTP)
+- Google Calendar sync para citas
+- Health check detallado (/health) + readiness probe (/readiness)
+- Migraciones automáticas al arrancar
+
+## Deployment
+
+### Producción con Docker Compose
 
 ```powershell
-# Iniciar servicios
-docker-compose up -d
+# Copiar y editar variables
+copy .env.prod.example .env.prod
 
-# Ver logs de un servicio específico
-docker-compose logs -f go-api
-docker-compose logs -f postgres
-
-# Reiniciar servicios
-docker-compose restart
-
-# Detener servicios
-docker-compose down
-
-# Rebuild del backend
-docker-compose up -d --build go-api
-
-# Limpiar todo (incluye volúmenes)
-docker-compose down -v
+# Deploy
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
----
+Requiere en `.env.prod`: `DB_PASSWORD`, `REDIS_PASSWORD`, `JWT_SECRET`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`.
 
-## 🧪 Testing
+Opcionales: `SMTP_*` (email), `GOOGLE_CALENDAR_*` (calendar sync).
 
-El proyecto implementa **TDD** (Test-Driven Development) con cobertura completa de tests unitarios.
+### Variables de entorno
 
-### Ejecutar Tests
+Ver `backend/.env.example` y `.env.prod.example` para la lista completa.
 
-```powershell
-cd backend
+## Convenciones
 
-# Todos los tests
-go test ./internal/... -v
-
-# Ver resultados
-# ✅ internal/handler - 10 tests passing
-# ✅ internal/service - 8 tests passing
-# Total: 18/18 tests passing
-```
-
-### Estructura de Tests
-
-```
-backend/internal/
-├── handler/
-│   └── auth_handler_test.go     # Tests de endpoints HTTP
-├── service/
-│   └── auth_service_test.go     # Tests de lógica de negocio
-└── repository/mocks/
-    └── user_repository_mock.go  # Mocks para testing
-```
-
-**Framework:** `stretchr/testify` para assertions y mocking
-
-### Verificar Coverage
-
-```powershell
-go test ./internal/... -cover
-```
-
----
-
-## 📖 Documentación API (Swagger)
-
-El proyecto usa **Swagger/OpenAPI 3.0** para documentación automática de la API.
-
-### Acceder a Swagger UI
-
-1. Iniciar el backend:
-   ```powershell
-   cd backend
-   go run cmd/api/main.go
-   ```
-
-2. Abrir en el navegador:
-   ```
-   http://localhost:8080/swagger/index.html
-   ```
-
-### Regenerar Documentación
-
-Después de cambiar endpoints o modelos:
-
-```powershell
-cd backend
-swag init -g cmd/api/main.go -o docs
-```
-
-**Archivos generados:**
-- `docs/docs.go` - Especificación en Go
-- `docs/swagger.json` - Formato JSON
-- `docs/swagger.yaml` - Formato YAML
-
----
-
-## 📊 Logging Estructurado
-
-El backend usa **zerolog** para logging de alto rendimiento con JSON estructurado.
-
-### Desarrollo (Pretty Logs)
-
-```powershell
-$env:GO_ENV="development"
-go run cmd/api/main.go
-```
-
-**Output:**
-```
-19:30:45 INF Starting Arnela API server port=8080
-19:30:45 INF Database connected
-19:30:45 INF Redis connected
-```
-
-### Producción (JSON Logs)
-
-```powershell
-go run cmd/api/main.go
-```
-
-**Output:**
-```json
-{"level":"info","time":"2024-11-15T19:30:45Z","message":"Starting Arnela API server","port":8080}
-```
-
-### Logs de Requests HTTP
-
-Cada request HTTP es logueado automáticamente:
-
-```json
-{
-  "level": "info",
-  "method": "POST",
-  "path": "/api/v1/auth/login",
-  "status": 200,
-  "duration": 45,
-  "ip": "127.0.0.1",
-  "message": "HTTP request completed"
-}
-```
-
----
-
-## 🔑 Convenciones del Proyecto
-
-### Backend (Go)
-
-- **PascalCase**: Funciones/structs exportados (`GetUserByID`, `UserService`)
-- **camelCase**: Variables/funciones privadas (`userName`, `validateInput`)
-- **CONST_CASE**: Constantes públicas (`MaxRetries`, `DefaultTimeout`)
-- **JSON Tags**: Siempre en `camelCase` para compatibilidad con frontend
-
-```go
-type CreateUserRequest struct {
-    FirstName string `json:"firstName"`
-    LastName  string `json:"lastName"`
-    Email     string `json:"email"`
-}
-```
-
-### Frontend (TypeScript)
-
-- **PascalCase**: Componentes, interfaces, tipos (`UserList`, `UserProps`)
-- **camelCase**: Props, variables, funciones (`firstName`, `handleClick`)
-- **Zustand**: Para toda la gestión de estado global
-
-```typescript
-import { create } from 'zustand';
-
-export const useAuthStore = create((set) => ({
-  user: null,
-  setUser: (user) => set({ user })
-}));
-```
-
----
-
-## � Troubleshooting
-
-### Error de Symlinks en Windows (Frontend)
-Si ves errores relacionados con `EPERM: operation not permitted, symlink`:
-- Ya está solucionado en la configuración (`next.config.js`)
-- Ver `FRONTEND_FIX.md` para más detalles
-- El modo `standalone` está deshabilitado para desarrollo local
-
-### Problemas con pnpm
-Si hay errores de autenticación con registros privados:
-- El proyecto usa `.npmrc` local configurado con el registro público
-- Eliminar archivos `.npmrc` globales si causan conflictos
-
----
-
-## �📚 Referencias
-
-- **Documentación detallada**: Ver `Agent.md` en la raíz del proyecto
-- **Copilot Instructions**: `.github/copilot-instructions.md`
-- **Fix Frontend**: Ver `FRONTEND_FIX.md` para detalles de correcciones
-
----
-
-## 📞 Soporte
-
-Para preguntas o issues, consulta la documentación técnica completa en `Agent.md`.
-
----
-
-**✨ Happy Coding!**
+- **Go**: PascalCase exports, camelCase private, JSON tags en camelCase
+- **TypeScript**: PascalCase componentes, camelCase props/variables
+- **Git**: Conventional Commits (`feat:`, `fix:`, `chore:`)
+- **Arquitectura**: Clean Architecture, repository pattern, dependency injection
+- **Errores**: Structured error responses con `pkg/errors`
+- **Estado**: Zustand stores, no prop drilling

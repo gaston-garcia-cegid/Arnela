@@ -1,260 +1,253 @@
-# 🚀 Deployment & Ejecución - Arnela CRM
+# Deployment
 
-## ✅ Estado Actual del Proyecto
+Guía de despliegue de Arnela en producción.
 
-**APLICACIÓN COMPLETAMENTE FUNCIONAL Y LISTA PARA USO** ✓
+## Arquitectura
 
-- ✅ Backend compilando sin errores
-- ✅ Frontend compilando sin errores  
-- ✅ Sistema de error handling implementado
-- ✅ Tests configurados (2/5 pasando)
-- ✅ Todas las funcionalidades principales operativas
-
----
-
-## 🏃 Ejecutar Localmente
-
-### Opción 1: Desarrollo Rápido
-
-#### Terminal 1 - Base de Datos
-```powershell
-cd d:\Repos\Arnela\backend
-docker-compose up -d
+```
+Internet
+  │
+  ▼
+Nginx (:80/443)
+  ├── /api/*    → go-api (:8080)
+  ├── /swagger/ → go-api (:8080)
+  ├── /health   → go-api (:8080)
+  └── /*        → frontend (:3000)
+                      │
+                go-api ──┬── PostgreSQL (:5432)
+                         └── Redis (:6379)
 ```
 
-#### Terminal 2 - Backend
-```powershell
-cd d:\Repos\Arnela\backend
-go run ./cmd/api
-```
-**Backend corriendo en:** http://localhost:8080
+Todos los servicios corren en contenedores Docker conectados a la red interna `arnela-network`. Solo Nginx expone puertos al host.
 
-#### Terminal 3 - Frontend
-```powershell
-cd d:\Repos\Arnela\frontend
-pnpm run dev
-```
-**Frontend corriendo en:** http://localhost:3000
+## Pre-requisitos
 
----
+- Docker y Docker Compose instalados en el servidor
+- Git para clonar el repositorio
+- Certificado TLS (Let's Encrypt o similar) configurado a nivel de reverse proxy externo o directamente en Nginx
 
-### Opción 2: Build de Producción
+## Configuración
 
-#### Compilar Backend
-```powershell
-cd d:\Repos\Arnela\backend
-go build -o bin/api.exe ./cmd/api
-./bin/api.exe
+### 1. Crear archivo de variables
+
+```bash
+cp .env.prod.example .env.prod
 ```
 
-#### Compilar Frontend
-```powershell
-cd d:\Repos\Arnela\frontend
-pnpm run build
-pnpm run start
-```
+Editar `.env.prod` con valores de producción:
 
----
-
-## 🧪 Ejecutar Tests
-
-### Tests del Frontend
-```powershell
-cd d:\Repos\Arnela\frontend
-
-# Ejecutar todos los tests
-pnpm test
-
-# Tests con UI interactiva
-pnpm test:ui
-
-# Tests con cobertura
-pnpm test:coverage
-```
-
-### Tests del Backend (cuando se implementen)
-```powershell
-cd d:\Repos\Arnela\backend
-go test ./...
-```
-
----
-
-## 🎯 Flujo de Usuario Completo
-
-### 1. Acceder a la Landing Page
-- Ir a http://localhost:3000
-- Ver Hero, Sobre Mí, Servicios, Testimonios
-- Click en "Iniciar Sesión"
-
-### 2. Login
-- Ingresar credenciales
-- Sistema valida y muestra errores específicos:
-  - ✅ Credenciales incorrectas
-  - ✅ Error de conexión
-  - ✅ Errores de validación
-- Redirección automática según rol
-
-### 3. Dashboard Cliente
-- URL: `/dashboard/client`
-- Ver perfil
-- (Futuro: gestión de citas)
-
-### 4. Backoffice (Admin/Employee)
-- URL: `/dashboard/backoffice`
-- Ver estadísticas
-- Lista de clientes
-- Crear nuevo cliente:
-  - Se crea automáticamente usuario
-  - DNI como contraseña inicial
-  - Validación completa
-
----
-
-## 📊 APIs Disponibles
-
-### Autenticación
-- **POST** `/api/v1/auth/register` - Registro
-- **POST** `/api/v1/auth/login` - Login (retorna JWT)
-- **GET** `/api/v1/auth/me` - Perfil actual
-
-### Clientes (requieren auth)
-- **POST** `/api/v1/clients` - Crear
-- **GET** `/api/v1/clients` - Listar
-- **GET** `/api/v1/clients/:id` - Ver detalle
-- **PUT** `/api/v1/clients/:id` - Actualizar
-- **DELETE** `/api/v1/clients/:id` - Eliminar (soft delete)
-
----
-
-## 🔧 Configuración de Entorno
-
-### Backend (.env)
 ```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=arnela_user
-DB_PASSWORD=arnela_password
-DB_NAME=arnela_db
-REDIS_HOST=localhost:6379
-JWT_SECRET=your-secret-key-here
+# Obligatorios
+DB_PASSWORD=<contraseña segura>
+REDIS_PASSWORD=<contraseña segura>
+JWT_SECRET=<generar con: openssl rand -base64 32>
+CORS_ORIGINS=https://tu-dominio.com
+NEXT_PUBLIC_API_URL=https://tu-dominio.com/api/v1
+
+# Opcionales
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=<email>
+SMTP_PASSWORD=<app password>
+SMTP_FROM=no-reply@arnela.es
+GOOGLE_CALENDAR_CREDENTIALS=<JSON service account>
+GOOGLE_CALENDAR_ID=<calendar id>
 ```
 
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+**Variables obligatorias**:
+
+| Variable | Descripción |
+|----------|-------------|
+| `DB_PASSWORD` | Contraseña de PostgreSQL |
+| `REDIS_PASSWORD` | Contraseña de Redis |
+| `JWT_SECRET` | Clave para firmar tokens JWT |
+| `CORS_ORIGINS` | URL pública del frontend (sin trailing slash) |
+| `NEXT_PUBLIC_API_URL` | URL pública de la API vista desde el navegador del usuario |
+
+### 2. Verificar rutas de datos
+
+El docker-compose de producción monta volúmenes en rutas del host:
+
+```yaml
+postgres: /DATA/AppData/Arnela/data/postgres
+redis:    /DATA/AppData/Arnela/data/redis
 ```
 
----
+Crear estos directorios si no existen, o modificar las rutas en `docker-compose.prod.yml`.
 
-## 🎨 Características Implementadas
+## Deploy
 
-### Sistema de Error Handling
-✅ **Frontend:**
-- Clases de error personalizadas (ApiError, ValidationError, etc.)
-- Mensajes amigables para usuarios
-- Retry logic con exponential backoff
-- Componente Alert de Shadcn UI
+### Build y arranque
 
-✅ **Backend:**
-- Respuestas estandarizadas
-- Códigos de error constantes
-- Helpers para responder con errores
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
 
-### Autenticación
-✅ JWT tokens con roles
-✅ Middleware de autenticación
-✅ Role-based access control
-✅ Persist en localStorage (Zustand)
+### Verificar estado
 
-### Gestión de Clientes
-✅ CRUD completo
-✅ Auto-creación de usuario
-✅ Soft delete
-✅ Validación en frontend y backend
+```bash
+# Estado de contenedores
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
----
+# Health check del backend
+curl http://localhost:8080/health
 
-## 📝 Tests Implementados
+# Readiness probe
+curl http://localhost:8080/readiness
 
-### LoginModal Error Handling (2/5 Passing)
-✅ Invalid credentials (401)
-✅ Network error
-❌ Validation errors (mock complejo)
-❌ Disable form during submission (timing)
-❌ Successful login (mock complejo)
+# Logs
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f go-api
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f frontend
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f nginx
+```
 
-**Nota:** Los 3 tests que fallan son por complejidad de mocks en el entorno de testing. La funcionalidad real funciona perfectamente en la aplicación.
+### Detener
 
----
+```bash
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod down
+```
 
-## 🐛 Troubleshooting
+## Servicios
 
-### "sql: database is closed"
-✅ **SOLUCIONADO:** Separada conexión de migraciones y aplicación
+### Backend (go-api)
 
-### Windows file paths en migraciones
-✅ **SOLUCIONADO:** Formato especial `file:D:/path`
-
-### Permisos de PostgreSQL
-✅ **SOLUCIONADO:** Permisos correctos a arnela_user
-
-### Vitest config en build de Next.js
-✅ **SOLUCIONADO:** Excluido de tsconfig.json
-
----
-
-## 📦 Dependencias Actualizadas
+- **Imagen base**: `golang:1.23-alpine` (build) + `alpine:latest` (runtime)
+- `GOTOOLCHAIN=auto` en el Dockerfile permite que Go descargue la versión que necesita `go.mod` (actualmente 1.25)
+- Las migraciones SQL se ejecutan automáticamente al arrancar
+- Healthcheck: `wget -qO- http://localhost:8080/readiness` cada 15s
+- Modo producción: `gin.ReleaseMode`, JSON logs via zerolog
 
 ### Frontend
-```json
-{
-  "vitest": "^2.1.9",
-  "@testing-library/react": "^16.3.0",
-  "@testing-library/user-event": "^14.6.1",
-  "@testing-library/jest-dom": "^6.9.1",
-  "@vitejs/plugin-react": "^4.7.0",
-  "jsdom": "^26.1.0"
+
+- **Build**: Multi-stage (deps → build → runner) con `node:22-alpine`
+- `NEXT_PUBLIC_API_URL` se inyecta como build arg (baked en el JS del cliente)
+- Output standalone: el runtime solo necesita `node server.js`
+- Corre como usuario `nextjs` (UID 1001)
+
+### Nginx
+
+- Reverse proxy para frontend (/) y backend (/api/, /swagger/, /health)
+- `client_max_body_size 10M`
+- WebSocket headers para Next.js HMR
+- Puerto expuesto al host: `8101:80` (modificar según necesidad)
+
+### PostgreSQL
+
+- `postgres:16-alpine`
+- Healthcheck con `pg_isready`
+- Datos persistidos en volumen del host
+
+### Redis
+
+- `redis:7-alpine` con password
+- Healthcheck con `redis-cli ping`
+- Datos persistidos en volumen del host
+
+## HTTPS / TLS
+
+El setup actual de Nginx solo escucha en puerto 80. Para HTTPS:
+
+**Opción A: Reverse proxy externo (recomendado)**
+
+Si tienes un proxy externo (Caddy, Traefik, o el propio Nginx del host) que maneja TLS, apunta al puerto 8101 del contenedor Nginx.
+
+**Opción B: TLS en el Nginx del contenedor**
+
+Montar certificados en el contenedor y modificar `nginx/nginx.conf`:
+
+```nginx
+server {
+    listen 443 ssl;
+    ssl_certificate /etc/nginx/certs/fullchain.pem;
+    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+    # ... resto de la config
+}
+
+server {
+    listen 80;
+    return 301 https://$host$request_uri;
 }
 ```
 
-### Backend
-- Go 1.23
-- Todas las dependencias en go.mod actualizadas
+Agregar volumen en `docker-compose.prod.yml`:
 
----
+```yaml
+nginx:
+  volumes:
+    - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    - /path/to/certs:/etc/nginx/certs:ro
+```
 
-## 🎯 Próximos Pasos
+## Actualización
 
-1. **Completar Tests**
-   - Simplificar mocks
-   - Agregar más tests de integración
+```bash
+# Obtener últimos cambios
+git pull
 
-2. **Implementar Citas**
-   - Modelo Appointment
-   - Calendario en cliente
-   - Gestión en backoffice
+# Rebuild y restart
+docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
-3. **Integración Google Calendar**
-   - OAuth2 setup
-   - Sync bidireccional
+# Verificar
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+curl http://localhost:8080/health
+```
 
-4. **Notificaciones**
-   - WhatsApp/SMS
-   - Email automático
+## Backups
 
-5. **Facturación**
-   - Modelo Invoice
-   - PDF generation
+### PostgreSQL
 
----
+```bash
+# Backup
+docker exec arnela-postgres pg_dump -U arnela_user arnela_db > backup_$(date +%Y%m%d).sql
 
-## ✨ Conclusión
+# Restore
+cat backup.sql | docker exec -i arnela-postgres psql -U arnela_user arnela_db
+```
 
-**La aplicación está completamente funcional y lista para uso inmediato.**
+### Redis
 
-Todos los componentes principales están implementados, testeados y compilando sin errores. El sistema de error handling es robusto y la experiencia de usuario es profesional.
+Redis persiste automáticamente en el volumen montado. Para un snapshot manual:
 
-Para iniciar, simplemente seguir los pasos en "Ejecutar Localmente" arriba.
+```bash
+docker exec arnela-redis redis-cli -a "$REDIS_PASSWORD" BGSAVE
+```
 
-**Happy Coding! 🚀**
+## Troubleshooting
+
+### El frontend no conecta con la API
+
+1. Verificar `NEXT_PUBLIC_API_URL` en `.env.prod`: debe ser la URL que el navegador del usuario puede alcanzar
+2. Verificar `CORS_ORIGINS`: debe coincidir exactamente con el origen del frontend (sin trailing slash)
+3. Rebuild del frontend tras cambiar `NEXT_PUBLIC_API_URL` (es un build arg)
+
+### Migraciones fallan
+
+```bash
+# Ver logs del backend
+docker compose logs go-api | head -50
+
+# Conectar a PostgreSQL
+docker exec -it arnela-postgres psql -U arnela_user arnela_db
+
+# Verificar versión de migración
+SELECT * FROM schema_migrations;
+```
+
+### Contenedor se reinicia continuamente
+
+```bash
+# Ver logs de crash
+docker compose logs --tail 50 <servicio>
+
+# Verificar healthcheck
+docker inspect arnela-go-api | jq '.[0].State.Health'
+```
+
+## CI/CD
+
+GitHub Actions (`.github/workflows/ci.yml`) ejecuta en cada push/PR a `main`:
+
+- **Backend**: vet → build → test (race + coverage)
+- **Frontend**: lint → type-check → test → build
+
+La versión de Go en CI se lee automáticamente de `backend/go.mod` (`go-version-file`).
