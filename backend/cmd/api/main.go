@@ -133,8 +133,6 @@ func main() {
 	// Initialize Cache Service
 	cacheService := cache.NewCacheService(redisClient.Client)
 	log.Println("✓ Cache service initialized")
-	// Note: cacheService will be used in future sprints for repository caching
-	_ = cacheService // Prevent unused variable error
 
 	// Initialize Task Queue Worker Pool
 	log.Println("[DEBUG] Starting task queue worker pool...")
@@ -171,7 +169,7 @@ func main() {
 	statsService := service.NewStatsService(statsRepo)
 
 	// Billing services
-	invoiceService := service.NewInvoiceService(invoiceRepo, clientRepo)
+	invoiceService := service.NewInvoiceService(invoiceRepo, clientRepo, appointmentRepo)
 	expenseService := service.NewExpenseService(expenseRepo, expenseCategoryRepo)
 	expenseCategoryService := service.NewExpenseCategoryService(expenseCategoryRepo)
 	billingStatsService := service.NewBillingStatsService(invoiceRepo, expenseRepo, expenseCategoryRepo)
@@ -185,13 +183,13 @@ func main() {
 	appointmentHandler := handler.NewAppointmentHandler(appointmentService)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
 	taskHandler := handler.NewTaskHandler(taskService)
-	statsHandler := handler.NewStatsHandler(statsService)
+	statsHandler := handler.NewStatsHandler(statsService, cacheService)
 
 	// Billing handlers
 	invoiceHandler := handler.NewInvoiceHandler(invoiceService)
 	expenseHandler := handler.NewExpenseHandler(expenseService)
 	expenseCategoryHandler := handler.NewExpenseCategoryHandler(expenseCategoryService)
-	billingStatsHandler := handler.NewBillingStatsHandler(billingStatsService)
+	billingStatsHandler := handler.NewBillingStatsHandler(billingStatsService, cacheService)
 
 	// Search handler
 	searchHandler := handler.NewSearchHandler(searchService)

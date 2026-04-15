@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export function Hero() {
   return (
     <section
@@ -19,16 +21,18 @@ export function Hero() {
           GABINETE ESPECIALIZADO EN TERAPIA Y FORMACIÓN
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <button
+          <Link
+            href="/contacto"
             className="px-6 py-3 rounded-lg font-semibold text-background bg-primary hover:bg-accent hover:text-primary shadow-lg transition-colors"
           >
             Solicitar Cita
-          </button>
-          <button
+          </Link>
+          <Link
+            href="/sobre-arnela"
             className="px-6 py-3 rounded-lg font-semibold text-primary bg-accent hover:bg-primary hover:text-background shadow-lg border border-primary transition-colors"
           >
             Conócenos
-          </button>
+          </Link>
         </div>
       </div>
     </section>

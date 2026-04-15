@@ -309,3 +309,26 @@ func (r *invoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]*domain.In
 
 	return invoices, nil
 }
+
+// GetRevenueByMonth returns monthly revenue totals (paid invoices) within a date range
+func (r *invoiceRepository) GetRevenueByMonth(ctx context.Context, fromDate, toDate time.Time) ([]repository.MonthlyRevenueRow, error) {
+	query := `
+		SELECT
+			TO_CHAR(issue_date, 'YYYY-MM') AS month,
+			COALESCE(SUM(total_amount), 0) AS revenue
+		FROM invoices
+		WHERE issue_date >= $1
+			AND issue_date <= $2
+			AND status = 'paid'
+			AND deleted_at IS NULL
+		GROUP BY TO_CHAR(issue_date, 'YYYY-MM')
+		ORDER BY month ASC`
+
+	var rows []repository.MonthlyRevenueRow
+	err := r.db.SelectContext(ctx, &rows, query, fromDate, toDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get revenue by month: %w", err)
+	}
+
+	return rows, nil
+}

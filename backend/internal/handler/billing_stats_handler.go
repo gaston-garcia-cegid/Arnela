@@ -1,23 +1,28 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/cache"
 	"github.com/gin-gonic/gin"
 )
 
 // BillingStatsHandler handles billing statistics HTTP requests
 type BillingStatsHandler struct {
 	statsService service.BillingStatsService
+	cache        *cache.CacheService
 }
 
 // NewBillingStatsHandler creates a new billing stats handler
-func NewBillingStatsHandler(statsService service.BillingStatsService) *BillingStatsHandler {
-	return &BillingStatsHandler{
-		statsService: statsService,
+func NewBillingStatsHandler(statsService service.BillingStatsService, cacheService ...*cache.CacheService) *BillingStatsHandler {
+	h := &BillingStatsHandler{statsService: statsService}
+	if len(cacheService) > 0 {
+		h.cache = cacheService[0]
 	}
+	return h
 }
 
 // GetDashboardStats godoc
@@ -55,10 +60,24 @@ func (h *BillingStatsHandler) GetDashboardStats(c *gin.Context) {
 		}
 	}
 
+	cacheKey := fmt.Sprintf("billing:dashboard:%s:%s", fromDate.Format("2006-01-02"), toDate.Format("2006-01-02"))
+
+	if h.cache != nil {
+		var cached service.DashboardStats
+		if err := h.cache.Get(c.Request.Context(), cacheKey, &cached); err == nil {
+			c.JSON(http.StatusOK, cached)
+			return
+		}
+	}
+
 	stats, err := h.statsService.GetDashboardStats(c.Request.Context(), fromDate, toDate)
 	if err != nil {
 		handleError(c, err)
 		return
+	}
+
+	if h.cache != nil {
+		_ = h.cache.Set(c.Request.Context(), cacheKey, stats, cache.CacheTTLShort)
 	}
 
 	c.JSON(http.StatusOK, stats)

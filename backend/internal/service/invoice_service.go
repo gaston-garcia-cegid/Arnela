@@ -65,16 +65,21 @@ type InvoiceService interface {
 }
 
 type invoiceService struct {
-	invoiceRepo repository.InvoiceRepository
-	clientRepo  repository.ClientRepository
+	invoiceRepo     repository.InvoiceRepository
+	clientRepo      repository.ClientRepository
+	appointmentRepo repository.AppointmentRepository
 }
 
 // NewInvoiceService creates a new invoice service
-func NewInvoiceService(invoiceRepo repository.InvoiceRepository, clientRepo repository.ClientRepository) InvoiceService {
-	return &invoiceService{
+func NewInvoiceService(invoiceRepo repository.InvoiceRepository, clientRepo repository.ClientRepository, appointmentRepo ...repository.AppointmentRepository) InvoiceService {
+	svc := &invoiceService{
 		invoiceRepo: invoiceRepo,
 		clientRepo:  clientRepo,
 	}
+	if len(appointmentRepo) > 0 {
+		svc.appointmentRepo = appointmentRepo[0]
+	}
+	return svc
 }
 
 // CreateInvoice creates a new invoice with automatic VAT calculation
@@ -136,9 +141,84 @@ func (s *invoiceService) CreateInvoice(ctx context.Context, req *CreateInvoiceRe
 
 // CreateInvoiceFromAppointment creates an invoice automatically from an appointment
 func (s *invoiceService) CreateInvoiceFromAppointment(ctx context.Context, appointmentID uuid.UUID, baseAmount float64) (*domain.Invoice, error) {
-	// TODO: Implement once AppointmentRepository is created
-	// For now, return not implemented error
-	return nil, errors.NewValidationError("appointment invoice creation not yet implemented", nil)
+	if s.appointmentRepo == nil {
+		return nil, errors.NewInternalError("appointment repository not configured")
+	}
+
+	if baseAmount <= 0 {
+		return nil, errors.NewValidationError("base amount must be greater than 0", map[string][]string{
+			"baseAmount": {"must be greater than 0"},
+		})
+	}
+
+	// Get appointment with relations (client data)
+	appointment, err := s.appointmentRepo.GetByIDWithRelations(ctx, appointmentID)
+	if err != nil {
+		return nil, errors.NewNotFoundError("appointment not found")
+	}
+
+	// Only completed or confirmed appointments can be invoiced
+	if appointment.Status != domain.AppointmentStatusCompleted && appointment.Status != domain.AppointmentStatusConfirmed {
+		return nil, errors.NewValidationError("only completed or confirmed appointments can be invoiced", map[string][]string{
+			"status": {fmt.Sprintf("appointment status is '%s', must be 'completed' or 'confirmed'", appointment.Status)},
+		})
+	}
+
+	// Check if invoice already exists for this appointment
+	existing, _ := s.invoiceRepo.GetByAppointmentID(ctx, appointmentID)
+	if existing != nil {
+		return nil, errors.NewConflictError("an invoice already exists for this appointment", "INVOICE_ALREADY_EXISTS")
+	}
+
+	// Validate client exists
+	_, err = s.clientRepo.GetByID(ctx, appointment.ClientID)
+	if err != nil {
+		return nil, errors.NewValidationError("client not found", map[string][]string{
+			"clientId": {"client associated with appointment does not exist"},
+		})
+	}
+
+	// Generate invoice number
+	now := time.Now()
+	invoiceNumber, err := s.invoiceRepo.GetNextInvoiceNumber(ctx, now.Year())
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate invoice number: %w", err)
+	}
+
+	// Build description from appointment
+	description := appointment.Title
+	if description == "" {
+		description = fmt.Sprintf("Sesión del %s", appointment.StartTime.Format("02/01/2006"))
+	}
+
+	dueDate := now.AddDate(0, 0, 30)
+
+	invoice := &domain.Invoice{
+		ID:            uuid.New(),
+		InvoiceNumber: invoiceNumber,
+		ClientID:      appointment.ClientID,
+		AppointmentID: &appointmentID,
+		IssueDate:     now,
+		DueDate:       dueDate,
+		Description:   description,
+		BaseAmount:    baseAmount,
+		VATRate:       domain.FixedVATRate,
+		Status:        domain.InvoiceStatusUnpaid,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}
+
+	invoice.CalculateAmounts()
+
+	if err := invoice.Validate(); err != nil {
+		return nil, err
+	}
+
+	if err := s.invoiceRepo.Create(ctx, invoice); err != nil {
+		return nil, fmt.Errorf("failed to create invoice from appointment: %w", err)
+	}
+
+	return invoice, nil
 }
 
 // GetInvoice retrieves an invoice by ID

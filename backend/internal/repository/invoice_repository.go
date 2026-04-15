@@ -54,4 +54,13 @@ type InvoiceRepository interface {
 
 	// GetUnpaidInvoices retrieves all unpaid invoices
 	GetUnpaidInvoices(ctx context.Context) ([]*domain.Invoice, error)
+
+	// GetRevenueByMonth returns monthly revenue totals (paid invoices) within a date range
+	GetRevenueByMonth(ctx context.Context, fromDate, toDate time.Time) ([]MonthlyRevenueRow, error)
+}
+
+// MonthlyRevenueRow represents a single month's revenue from the database
+type MonthlyRevenueRow struct {
+	Month   string  `db:"month"`
+	Revenue float64 `db:"revenue"`
 }

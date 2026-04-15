@@ -155,12 +155,20 @@ func (s *billingStatsService) GetDashboardStats(ctx context.Context, fromDate, t
 
 // GetRevenueByMonth calculates revenue grouped by month
 func (s *billingStatsService) GetRevenueByMonth(ctx context.Context, fromDate, toDate time.Time) ([]MonthlyRevenue, error) {
-	// This is a simplified implementation
-	// For production, you would want to query the database with GROUP BY month
+	rows, err := s.invoiceRepo.GetRevenueByMonth(ctx, fromDate, toDate)
+	if err != nil {
+		return nil, err
+	}
 
-	// For now, return a basic structure
-	// TODO: Implement proper monthly aggregation in repository
-	return []MonthlyRevenue{}, nil
+	result := make([]MonthlyRevenue, len(rows))
+	for i, row := range rows {
+		result[i] = MonthlyRevenue{
+			Month:   row.Month,
+			Revenue: row.Revenue,
+		}
+	}
+
+	return result, nil
 }
 
 // GetExpensesByCategory calculates expenses grouped by category
