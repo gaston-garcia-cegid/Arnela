@@ -1,8 +1,1 @@
-fix: resolve CI pipeline failures in both backend and frontend
-
-- Update Go version in CI from 1.24 to 1.25 (go.mod requires 1.25.0)
-- Fix TypeScript errors: rename 'nif' to 'dniCif' in api.test.ts
-- Fix useAppointments.test.ts: add proper type and mock data for response
-- Fix LoginModal.test.tsx: use valid form inputs so Zod validation passes
-  before API call, match Spanish error messages, fix useAuthStore mock
-  to handle selector pattern
+chore: use go-version-file in CI to auto-sync Go version from go.mod
