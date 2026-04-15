@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	pkgerrors "github.com/gaston-garcia-cegid/arnela/backend/pkg/errors"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/repository"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
 	"github.com/gin-gonic/gin"
@@ -41,7 +42,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Authorization header required", pkgerrors.CodeUnauthorized)
 			c.Abort()
 			return
 		}
@@ -49,7 +50,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// Extract token from "Bearer <token>"
 		parts := strings.SplitN(authHeader, " ", 2)
 		if len(parts) != 2 || parts[0] != "Bearer" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid authorization header format"})
+			pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Invalid authorization header format", pkgerrors.CodeUnauthorized)
 			c.Abort()
 			return
 		}
@@ -59,7 +60,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// Validate token
 		claims, err := m.tokenManager.ValidateToken(tokenString)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid or expired token"})
+			pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Invalid or expired token", pkgerrors.CodeUnauthorized)
 			c.Abort()
 			return
 		}
@@ -67,7 +68,7 @@ func (m *AuthMiddleware) RequireAuth() gin.HandlerFunc {
 		// Parse userID as UUID
 		userID, err := uuid.Parse(claims.UserID.String())
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
+			pkgerrors.RespondWithError(c, http.StatusInternalServerError, "Invalid user ID format", pkgerrors.CodeInternalError)
 			c.Abort()
 			return
 		}
@@ -103,14 +104,14 @@ func (m *AuthMiddleware) RequireRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userRole, exists := c.Get("role")
 		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized - no role in context"})
+			pkgerrors.RespondWithError(c, http.StatusUnauthorized, "Unauthorized - no role in context", pkgerrors.CodeUnauthorized)
 			c.Abort()
 			return
 		}
 
 		roleStr, ok := userRole.(string)
 		if !ok {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid role type"})
+			pkgerrors.RespondWithError(c, http.StatusInternalServerError, "Invalid role type", pkgerrors.CodeInternalError)
 			c.Abort()
 			return
 		}
@@ -123,7 +124,7 @@ func (m *AuthMiddleware) RequireRole(roles ...string) gin.HandlerFunc {
 			}
 		}
 
-		c.JSON(http.StatusForbidden, gin.H{"error": "Insufficient permissions"})
+		pkgerrors.RespondWithError(c, http.StatusForbidden, "Insufficient permissions", pkgerrors.CodeForbidden)
 		c.Abort()
 	}
 }
@@ -150,8 +151,13 @@ func (m *AuthMiddleware) OptionalAuth() gin.HandlerFunc {
 			return
 		}
 
-		// Set user information in context if token is valid
-		c.Set("userID", claims.UserID.String())
+		userID, parseErr := uuid.Parse(claims.UserID.String())
+		if parseErr != nil {
+			c.Next()
+			return
+		}
+
+		c.Set("userID", userID)
 		c.Set("email", claims.Email)
 		c.Set("role", claims.Role)
 

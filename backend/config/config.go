@@ -67,7 +67,7 @@ func LoadConfig() (*Config, error) {
 		},
 		JWT: JWTConfig{
 			Secret:      getEnv("JWT_SECRET", "your-secret-key-change-in-production"),
-			TokenExpiry: time.Hour * 24 * 7, // 7 days
+			TokenExpiry: time.Hour * time.Duration(getEnvAsInt("JWT_EXPIRY_HOURS", 168)),
 		},
 		Redis: RedisConfig{
 			Host:     getEnv("REDIS_HOST", "localhost"),

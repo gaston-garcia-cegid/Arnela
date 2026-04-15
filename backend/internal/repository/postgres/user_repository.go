@@ -18,9 +18,26 @@ type userRepository struct {
 	db *sqlx.DB
 }
 
-// GetByEmailAll implements repository.UserRepository.
+// GetByEmailAll retrieves a user by email regardless of is_active status.
+// Used for reactivation flows where we need to check inactive users.
 func (r *userRepository) GetByEmailAll(ctx context.Context, email string) (*domain.User, error) {
-	panic("unimplemented")
+	query := `
+		SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at, updated_at
+		FROM users
+		WHERE email = $1
+	`
+
+	user := &domain.User{}
+	err := r.db.GetContext(ctx, user, query, email)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user by email: %w", err)
+	}
+
+	return user, nil
 }
 
 // NewUserRepository creates a new UserRepository instance

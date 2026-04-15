@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Search, X, Loader2, User, Calendar, FileText, Users } from 'lucide-react';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -61,6 +62,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const token = useAuthStore((s) => s.token);
 
   const debouncedQuery = useDebounce(query, 500);
 
@@ -90,8 +92,6 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
 
       setIsLoading(true);
       try {
-        // Get token from localStorage (since we're in authenticated context)
-        const token = localStorage.getItem('token');
         if (!token) {
           throw new Error('No authentication token found');
         }
@@ -114,7 +114,7 @@ export function GlobalSearch({ isOpen, onClose }: GlobalSearchProps) {
     };
 
     performSearch();
-  }, [debouncedQuery]);
+  }, [debouncedQuery, token]);
 
   // Calculate total items for keyboard navigation
   const getTotalItems = useCallback(() => {

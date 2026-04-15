@@ -19,6 +19,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/cache"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/database"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/jwt"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/logger"
 	"github.com/gaston-garcia-cegid/arnela/backend/pkg/queue"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -200,11 +201,16 @@ func main() {
 	authMiddleware.SetClientRepo(clientRepo)
 	authMiddleware.SetEmployeeRepo(employeeRepo)
 
+	// Initialize structured logger
+	appLogger := logger.NewLogger(cfg.Server.Environment)
+
 	// Setup Gin router
 	if cfg.Server.Environment == "production" {
 		gin.SetMode(gin.ReleaseMode)
 	}
-	router := gin.Default()
+	router := gin.New()
+	router.Use(gin.Recovery())
+	router.Use(middleware.LoggingMiddleware(appLogger))
 
 	// CORS Configuration
 	router.Use(cors.New(cors.Config{
@@ -252,11 +258,12 @@ func main() {
 	// API v1 routes
 	v1 := router.Group("/api/v1")
 	{
-		// Auth routes (public)
+		// Auth routes (public, rate-limited)
+		authRateLimit := middleware.RateLimit(10, 5) // 10 req/min, burst of 5
 		auth := v1.Group("/auth")
 		{
-			auth.POST("/register", authHandler.Register)
-			auth.POST("/login", authHandler.Login)
+			auth.POST("/register", authRateLimit, authHandler.Register)
+			auth.POST("/login", authRateLimit, authHandler.Login)
 			auth.GET("/me", authMiddleware.RequireAuth(), authHandler.Me)
 		}
 

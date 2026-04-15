@@ -166,22 +166,57 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 
 // GetMyTasks godoc
 // @Summary Get my tasks
-// @Description Get tasks assigned to the current user (if employee)
+// @Description Get tasks assigned to the current employee
 // @Tags tasks
 // @Security BearerAuth
-// @Success 200 {array} domain.Task
+// @Param page query int false "Page number"
+// @Param pageSize query int false "Page size"
+// @Param status query string false "Filter by status"
+// @Success 200 {object} map[string]interface{}
+// @Failure 400 {object} ErrorResponse
+// @Failure 401 {object} ErrorResponse
 // @Router /api/v1/tasks/me [get]
 func (h *TaskHandler) GetMyTasks(c *gin.Context) {
-	// Logic to find employee ID from User ID would be needed here
-	// For now assuming the user IS the employee or we have a way to map it
-	// But wait, the context has userID. We need to find the EmployeeID for that UserID.
-	// The repo has GetByUserID. We should probably add that convenience or let the frontend pass the employee ID?
-	// Secure way: Get Employee by UserID.
+	employeeID, exists := c.Get("employeeID")
+	if !exists {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Employee profile not found for current user"})
+		return
+	}
 
-	// BUT, TaskService doesn't expose "GetEmployeeByUserID".
-	// I'll skip "GetMyTasks" implementation detail for this exact step to keep it simple or adds it if requested.
-	// Actually, the implementation plan asked for /tasks/me.
-	// I will just implement ListTasks with filter support and frontend can filter by their ID.
-	// Or I can fetch the employee in the handler. I'll stick to ListTasks for now to match the code content size.
-	c.JSON(http.StatusNotImplemented, gin.H{"message": "Use GET /tasks?assigneeId=..."})
+	empID, ok := employeeID.(uuid.UUID)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Invalid employee ID format"})
+		return
+	}
+
+	filter := repository.TaskFilter{
+		AssigneeID: &empID,
+	}
+
+	if status := c.Query("status"); status != "" {
+		s := domain.TaskStatus(status)
+		filter.Status = &s
+	}
+
+	if page, err := strconv.Atoi(c.Query("page")); err == nil {
+		filter.Page = page
+	}
+
+	if pageSize, err := strconv.Atoi(c.Query("pageSize")); err == nil {
+		filter.PageSize = pageSize
+	}
+
+	tasks, count, err := h.taskService.ListTasks(c.Request.Context(), filter)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"data": tasks,
+		"meta": gin.H{
+			"total": count,
+			"page":  filter.Page,
+		},
+	})
 }
