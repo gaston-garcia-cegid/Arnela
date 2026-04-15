@@ -177,12 +177,12 @@ describe('useAppointments Hook', () => {
     // Additional Coverage for listAllAppointments
     describe('listAllAppointments', () => {
         it('lists appointments with filters', async () => {
-            const mockData = { appointments: [], total: 0 };
+            const mockData = { appointments: [], total: 0, page: 2, pageSize: 20 };
             (api.appointments.list as any).mockResolvedValue(mockData);
 
             const { result } = renderHook(() => useAppointments());
 
-            let response;
+            let response: any;
             await act(async () => {
                 response = await result.current.listAllAppointments({ page: 2 });
             });

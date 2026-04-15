@@ -1,10 +1,8 @@
-feat: add PDF invoices, dark mode, and Google Calendar integration (Phase 4)
+fix: resolve CI pipeline failures in both backend and frontend
 
-- Add PDF invoice generation with branded layout (go-pdf/fpdf)
-- New endpoint GET /billing/invoices/:id/pdf for direct download
-- Implement full dark mode with next-themes (class strategy)
-- Add warm dark palette consistent with Arnela branding
-- Add ThemeToggle in public Navbar and backoffice header
-- Integrate Google Calendar API for appointment sync (service account)
-- Wire calendar handler into async worker pool
-- Add GOOGLE_CALENDAR_* and SMTP env vars to .env.example
+- Update Go version in CI from 1.24 to 1.25 (go.mod requires 1.25.0)
+- Fix TypeScript errors: rename 'nif' to 'dniCif' in api.test.ts
+- Fix useAppointments.test.ts: add proper type and mock data for response
+- Fix LoginModal.test.tsx: use valid form inputs so Zod validation passes
+  before API call, match Spanish error messages, fix useAuthStore mock
+  to handle selector pattern

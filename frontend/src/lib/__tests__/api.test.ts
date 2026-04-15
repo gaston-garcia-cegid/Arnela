@@ -277,7 +277,7 @@ describe('API Client', () => {
           lastName: 'Client',
           email: 'client@example.com',
           phone: '123456789',
-          nif: '12345678A',
+          dniCif: '12345678A',
         },
         'fake-jwt-token'
       );
@@ -302,7 +302,7 @@ describe('API Client', () => {
             lastName: 'Client',
             email: 'existing@example.com',
             phone: '123456789',
-            nif: '12345678A',
+            dniCif: '12345678A',
           },
           'fake-jwt-token'
         )

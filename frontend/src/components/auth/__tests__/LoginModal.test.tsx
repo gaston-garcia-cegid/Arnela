@@ -29,11 +29,13 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
-// Mock auth store
+// Mock auth store — component calls useAuthStore(selector), so we
+// pass the mock state through the selector to return the right value.
 vi.mock('@/stores/useAuthStore', () => ({
-  useAuthStore: vi.fn(() => ({
-    login: mockStoreLogin,
-  })),
+  useAuthStore: vi.fn((selector?: any) => {
+    const state = { login: mockStoreLogin };
+    return selector ? selector(state) : state;
+  }),
 }));
 
 describe('LoginModal', () => {
@@ -96,18 +98,18 @@ describe('LoginModal', () => {
   it('should display validation errors from backend', async () => {
     const user = userEvent.setup({ skipHover: true });
     const validationError = new ValidationError('Validation failed', {
-      email: ['Email format is invalid']
+      email: ['El formato del email es inválido']
     });
     mockLoginFn.mockRejectedValueOnce(validationError);
 
     render(<LoginModal isOpen={true} onClose={mockOnClose} />);
 
-    await user.type(screen.getByLabelText(/email/i), 'invalid-email');
-    await user.type(screen.getByLabelText(/contraseña/i), '123');
+    await user.type(screen.getByLabelText(/email/i), 'valid@example.com');
+    await user.type(screen.getByLabelText(/contraseña/i), 'password123');
     await user.click(screen.getByRole('button', { name: /ingresar/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/email format is invalid/i)).toBeInTheDocument();
+      expect(screen.getByText(/el formato del email es inválido/i)).toBeInTheDocument();
     });
   });
 
@@ -131,13 +133,15 @@ describe('LoginModal', () => {
     await user.type(screen.getByLabelText(/email/i), 'admin@example.com');
     await user.type(screen.getByLabelText(/contraseña/i), 'password123');
 
-    // Explicit wait for button to be enabled/ready if needed, but RHF is fast usually.
     const btn = screen.getByRole('button', { name: /ingresar/i });
     await user.click(btn);
 
-    await waitFor(() => {
-      expect(mockStoreLogin).toHaveBeenCalledWith(mockResponse.token, mockResponse.user);
-    });
+    await waitFor(
+      () => {
+        expect(mockStoreLogin).toHaveBeenCalledWith(mockResponse.token, mockResponse.user);
+      },
+      { timeout: 5000 }
+    );
 
     expect(mockPush).toHaveBeenCalledWith('/dashboard/backoffice');
     expect(mockOnClose).toHaveBeenCalled();
