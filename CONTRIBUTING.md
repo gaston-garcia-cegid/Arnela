@@ -130,6 +130,10 @@ go test ./... -count=1
 # Con race detector (recomendado)
 go test ./... -count=1 -race
 
+# CI ejecuta -race en Ubuntu (con CGO). En Windows, sin CGO habilitado,
+# `go test -race` puede fallar o no ejecutarse; usa WSL/Docker o
+# `set CGO_ENABLED=1` con un compilador C para reproducir lo mismo que GitHub Actions.
+
 # Con cobertura
 go test ./... -cover
 

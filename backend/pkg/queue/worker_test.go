@@ -2,6 +2,7 @@ package queue
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -102,10 +103,10 @@ func TestWorkerPool_ProcessTask(t *testing.T) {
 
 	pool := NewWorkerPool(client, 1)
 
-	// Register custom handler that tracks execution
-	executed := false
+	// Register custom handler that tracks execution (must be sync-safe: handler runs on worker goroutine)
+	var executed atomic.Bool
 	pool.RegisterHandler(TaskTypeSendEmail, func(ctx context.Context, task *Task) error {
-		executed = true
+		executed.Store(true)
 		assert.Equal(t, "test@example.com", task.Payload["to"])
 		return nil
 	})
@@ -125,7 +126,7 @@ func TestWorkerPool_ProcessTask(t *testing.T) {
 	time.Sleep(2 * time.Second)
 
 	// Verify task was executed
-	assert.True(t, executed, "Task should have been executed")
+	assert.True(t, executed.Load(), "Task should have been executed")
 
 	// Verify task was removed from queue
 	ctx := context.Background()
@@ -145,10 +146,10 @@ func TestWorkerPool_TaskRetry(t *testing.T) {
 
 	pool := NewWorkerPool(client, 1)
 
-	attempts := 0
+	var attempts atomic.Int32
 	pool.RegisterHandler(TaskTypeSendEmail, func(ctx context.Context, task *Task) error {
-		attempts++
-		if attempts < 3 {
+		n := attempts.Add(1)
+		if n < 3 {
 			return assert.AnError // Simulate failure
 		}
 		return nil // Success on third attempt
@@ -166,7 +167,7 @@ func TestWorkerPool_TaskRetry(t *testing.T) {
 	time.Sleep(10 * time.Second)
 
 	// Should have been retried and eventually succeeded
-	assert.Equal(t, 3, attempts)
+	assert.Equal(t, int32(3), attempts.Load())
 	stats := pool.GetStats()
 	assert.Equal(t, int64(1), stats.TasksProcessed)
 }

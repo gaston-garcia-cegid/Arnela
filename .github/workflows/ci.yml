@@ -51,7 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      # v5 runs on Node 24 (v4 used Node 16 and triggers GitHub deprecation annotations)
+      - uses: pnpm/action-setup@v5
         with:
           version: 9
 
