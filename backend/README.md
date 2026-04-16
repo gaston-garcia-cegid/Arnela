@@ -287,4 +287,10 @@ Los emails se procesan asincrónicamente a través del worker pool de Redis.
 
 ### Google Calendar
 
-Configurar `GOOGLE_CALENDAR_CREDENTIALS` (JSON de service account) y `GOOGLE_CALENDAR_ID`. Sin configurar, las operaciones se loguean sin ejecutar. Sincroniza eventos al confirmar/cancelar citas.
+Configurar `GOOGLE_CALENDAR_CREDENTIALS` (ruta al JSON de service account) y `GOOGLE_CALENDAR_ID` (ID del calendario destino). La cuenta de servicio debe tener permiso de escritura sobre ese calendario.
+
+Sin configurar, las tareas `sync_calendar` se descartan con un log claro (no hay llamada a Google).
+
+Con configurar: al **confirmar**, **actualizar** o **cancelar** una cita, la API encola un trabajo que crea, actualiza o borra el evento y persiste `google_calendar_event_id` en la tabla `appointments`. Los eventos incluyen recordatorio por email a **24 h** y popup a **30 min** (Google Calendar).
+
+**Comprobación manual:** confirmar una cita de prueba → ver el evento en Google Calendar → cambiar hora desde el backoffice → cancelar; revisar logs del API (`Google Calendar event created/updated/deleted`).

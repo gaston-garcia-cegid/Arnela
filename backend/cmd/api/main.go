@@ -150,23 +150,6 @@ func main() {
 		log.Println("⚠ SMTP not configured — emails will be logged but not sent")
 	}
 
-	// Configure Google Calendar handler
-	if gcal.IsConfigured() {
-		calService, err := gcal.NewCalendarService()
-		if err != nil {
-			log.Printf("⚠ Google Calendar init failed: %v", err)
-		} else {
-			workerPool.RegisterHandler(queue.TaskTypeSyncCalendar, gcal.NewCalendarTaskHandler(calService))
-			log.Println("✓ Google Calendar handler registered")
-		}
-	} else {
-		log.Println("⚠ Google Calendar not configured — calendar sync will be logged only")
-	}
-
-	workerPool.Start()
-	defer workerPool.Stop()
-	log.Println("✓ Worker pool started with 5 workers")
-
 	// Initialize JWT token manager
 	tokenManager := jwt.NewTokenManager(cfg.JWT.Secret, "arnela-api")
 
@@ -176,6 +159,25 @@ func main() {
 	appointmentRepo := postgres.NewAppointmentRepository(db)
 	employeeRepo := postgres.NewEmployeeRepository(db)
 	statsRepo := postgres.NewStatsRepository(db)
+
+	// Configure Google Calendar worker (requires appointment repository)
+	calendarEnqueue := false
+	if gcal.IsConfigured() {
+		calService, err := gcal.NewCalendarService()
+		if err != nil {
+			log.Printf("⚠ Google Calendar init failed: %v", err)
+		} else {
+			workerPool.RegisterHandler(queue.TaskTypeSyncCalendar, gcal.NewCalendarTaskHandler(calService, appointmentRepo))
+			calendarEnqueue = true
+			log.Println("✓ Google Calendar handler registered")
+		}
+	} else {
+		log.Println("⚠ Google Calendar not configured — calendar sync uses default no-op handler")
+	}
+
+	workerPool.Start()
+	defer workerPool.Stop()
+	log.Println("✓ Worker pool started with 5 workers")
 
 	// Billing repositories
 	invoiceRepo := postgres.NewInvoiceRepository(db)
@@ -209,7 +211,12 @@ func main() {
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	clientHandler := handler.NewClientHandler(clientService)
-	appointmentHandler := handler.NewAppointmentHandler(appointmentService, notificationService)
+	appointmentHandler := handler.NewAppointmentHandler(
+		appointmentService,
+		notificationService,
+		workerPool,
+		calendarEnqueue,
+	)
 	employeeHandler := handler.NewEmployeeHandler(employeeService)
 	taskHandler := handler.NewTaskHandler(taskService)
 	statsHandler := handler.NewStatsHandler(statsService, cacheService)
@@ -237,6 +244,8 @@ func main() {
 	}
 	router := gin.New()
 	router.Use(gin.Recovery())
+	router.Use(middleware.RequestID())
+	router.Use(middleware.SecurityHeaders())
 	router.Use(middleware.LoggingMiddleware(appLogger))
 
 	// CORS Configuration

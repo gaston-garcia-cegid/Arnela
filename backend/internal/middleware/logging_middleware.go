@@ -35,6 +35,9 @@ func LoggingMiddleware(log *logger.Logger) gin.HandlerFunc {
 		if userID, exists := c.Get("userID"); exists {
 			fields["user_id"] = userID
 		}
+		if rid, exists := c.Get(requestIDContextKey); exists {
+			fields["request_id"] = rid
+		}
 
 		// Log based on status code
 		if statusCode >= 500 {

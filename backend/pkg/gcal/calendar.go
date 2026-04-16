@@ -2,6 +2,7 @@ package gcal
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/calendar/v3"
+	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 )
 
@@ -78,12 +80,16 @@ func (cs *CalendarService) UpdateEvent(ctx context.Context, eventID string, appt
 
 func (cs *CalendarService) DeleteEvent(ctx context.Context, eventID string) error {
 	err := cs.svc.Events.Delete(cs.calendarID, eventID).Context(ctx).Do()
-	if err != nil {
-		return fmt.Errorf("failed to delete calendar event: %w", err)
+	if err == nil {
+		log.Printf("Google Calendar event deleted: %s", eventID)
+		return nil
 	}
-
-	log.Printf("Google Calendar event deleted: %s", eventID)
-	return nil
+	var gerr *googleapi.Error
+	if errors.As(err, &gerr) && gerr.Code == 404 {
+		log.Printf("Google Calendar event already absent: %s", eventID)
+		return nil
+	}
+	return fmt.Errorf("failed to delete calendar event: %w", err)
 }
 
 func appointmentToEvent(appt *domain.Appointment) *calendar.Event {
@@ -125,6 +131,7 @@ func appointmentToEvent(appt *domain.Appointment) *calendar.Event {
 			ForceSendFields: []string{"UseDefault"},
 			Overrides: []*calendar.EventReminder{
 				{Method: "popup", Minutes: 30},
+				{Method: "email", Minutes: 24 * 60}, // Google Calendar email reminder (Phase 7)
 			},
 		},
 	}

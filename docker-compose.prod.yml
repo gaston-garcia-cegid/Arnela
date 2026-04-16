@@ -85,6 +85,7 @@ services:
         # FIX: This must be the PUBLIC URL of the API as seen from the browser,
         # not the internal Docker service name. Nginx proxies /api → go-api:8080
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?Set NEXT_PUBLIC_API_URL in .env.prod}
+        NEXT_PUBLIC_SENTRY_DSN: ${NEXT_PUBLIC_SENTRY_DSN:-}
     container_name: arnela-frontend
     restart: unless-stopped
     depends_on:

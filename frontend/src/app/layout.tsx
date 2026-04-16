@@ -4,6 +4,7 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/common/ThemeProvider';
+import { SentryClientInit } from '@/components/monitoring/SentryClientInit';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="scroll-smooth" suppressHydrationWarning>
       <body className={`${inter.className} min-h-screen antialiased`}>
+        <SentryClientInit />
         <ThemeProvider>
           {children}
           <Toaster />

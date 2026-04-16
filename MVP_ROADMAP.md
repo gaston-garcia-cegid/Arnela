@@ -34,8 +34,8 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 |------|-----------|
 | **Sitio público** | **Formación**, **Intervención** y **Convenios** publicadas con textos e imágenes locales bajo `frontend/public/images/` alineados a [arnelagabinete.com](https://www.arnelagabinete.com/); revisar legal/cookies si se añaden widgets externos |
 | **IVA / dominio factura** | **Unificado (Fase 6):** `vatRate` en puntos porcentuales (21 = 21%), `CalculateAmounts` coherente, migración `000016` corrige filas antiguas; tests en `domain` y preview en frontend (`invoiceFiscal`) |
-| **Cola de trabajos** | TODOs en worker para SMS/WhatsApp y sync completo de Calendar según evolución del código |
-| **Frontend observabilidad** | `logger` con TODO hacia servicio de monitoring (p. ej. Sentry) |
+| **Cola de trabajos** | **Calendar (Fase 7):** sync Google al confirmar/editar/cancelar cuando hay credenciales. SMS/WhatsApp siguen sin proveedor (no-op con log); SMTP opcional para emails de cita |
+| **Frontend observabilidad** | **Sentry opcional** (`NEXT_PUBLIC_SENTRY_DSN`); `logger` envía a Sentry en producción si hay DSN; correlación con API vía `X-Request-ID` en logs |
 | **Página dedicada** `invoices/[id]` | No es obligatoria si el flujo es modal/listado; opcional para edición “pantalla completa” |
 
 ---
@@ -69,11 +69,11 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 
 **Objetivo:** integraciones **verificables** en entorno de staging, no solo variables de entorno.
 
-- Completar **Google Calendar** (crear / actualizar / borrar alineado con el ciclo de vida de la cita, según diseño acordado).
-- **SMS / WhatsApp** o retirar de la cola y de la documentación si no hay roadmap claro.
-- **Recordatorios** de cita (p. ej. 24h antes) reutilizando email y/o canal móvil si aplica.
+- ✅ **Google Calendar:** al confirmar / actualizar / cancelar cita se encola `sync_calendar` (`upsert`); el worker crea o actualiza el evento si la cita está `confirmed` / `rescheduled` / `completed`, borra y limpia `google_calendar_event_id` si está `cancelled` o vuelve a `pending` con enlace huérfano. Requiere `GOOGLE_CALENDAR_CREDENTIALS` + `GOOGLE_CALENDAR_ID`. Tests de contrato en `pkg/gcal/handler_test.go`.
+- ✅ **Recordatorios ~24h:** recordatorio por **email** en el propio evento de Google Calendar (`Overrides` 24h + popup 30min), además del email de confirmación/cancelación en cola SMTP cuando está configurado.
+- **SMS / WhatsApp:** sin proveedor; la cola mantiene los tipos pero el worker **no-op** con log explícito (no simula envío). Próximo paso: Twilio/similar o retirar tipos si no hay roadmap.
 
-**Criterio de salida:** checklist de pruebas con credenciales reales + evidencia (logs o tests de contrato donde sea viable).
+**Criterio de salida (staging):** con credenciales reales de Calendar y SMTP: (1) confirmar cita → evento aparece en el calendario compartido y `google_calendar_event_id` en BD; (2) editar horario → evento actualizado; (3) cancelar → evento eliminado e id limpiado; (4) logs sin errores en worker. Evidencia: captura o export de log `Google Calendar event created/updated/deleted`.
 
 ---
 
@@ -81,11 +81,12 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 
 **Objetivo:** operación tranquila en servidor.
 
-- Monitoring (p. ej. **Sentry** en frontend, correlación con errores API si aplica).
-- Runbooks: backup/restore Postgres y Redis, rotación de secretos (extender `docs/DEPLOYMENT.md` si hace falta).
-- Revisión **seguridad**: headers Nginx, permisos por rol en endpoints sensibles, límites de tasa donde tenga sentido.
+- ✅ **Sentry (frontend):** SDK **`@sentry/browser`** (solo cliente, compatible con `output: 'standalone'` y builds en Windows); inicialización en `SentryClientInit` + `global-error.tsx`; `logger` envía errores en producción en el navegador si hay `NEXT_PUBLIC_SENTRY_DSN`.
+- ✅ **Correlación API:** cabecera `X-Request-ID` (cliente en `api.ts`, middleware Gin + campo en logs).
+- ✅ **Runbooks:** backup/restore Postgres (SQL y custom), Redis, simulacro de incidente y rotación de secretos en `docs/DEPLOYMENT.md`.
+- ✅ **Seguridad:** cabeceras en `nginx/nginx.conf` y middleware `SecurityHeaders` en Gin; rate limit ya aplicado en login/register; permisos por rol revisados en rutas existentes (`RequireRole` en `main.go`).
 
-**Criterio de salida:** simulacro de incidente recuperable siguiendo documentación interna.
+**Criterio de salida:** simulacro de incidente recuperable siguiendo `docs/DEPLOYMENT.md` (sección *Simulacro de incidente*).
 
 ---
 

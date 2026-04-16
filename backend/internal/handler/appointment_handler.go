@@ -9,6 +9,8 @@ import (
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/domain"
 	"github.com/gaston-garcia-cegid/arnela/backend/internal/service"
 	pkgerrors "github.com/gaston-garcia-cegid/arnela/backend/pkg/errors"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/gcal"
+	"github.com/gaston-garcia-cegid/arnela/backend/pkg/queue"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -17,18 +19,34 @@ import (
 type AppointmentHandler struct {
 	appointmentService  service.AppointmentServiceInterface
 	notificationService service.NotificationService
+	workerPool          *queue.WorkerPool
+	calendarSyncEnabled bool
 }
 
 // NewAppointmentHandler creates a new AppointmentHandler.
-// An optional NotificationService enables email notifications on confirm/cancel.
-func NewAppointmentHandler(appointmentService service.AppointmentServiceInterface, notifSvc ...service.NotificationService) *AppointmentHandler {
-	h := &AppointmentHandler{
-		appointmentService: appointmentService,
+// Pass notificationService as nil to disable email notifications.
+// When calendarSyncEnabled is true and workerPool is non-nil, confirm/update/cancel enqueue Google Calendar sync tasks.
+func NewAppointmentHandler(
+	appointmentService service.AppointmentServiceInterface,
+	notificationService service.NotificationService,
+	workerPool *queue.WorkerPool,
+	calendarSyncEnabled bool,
+) *AppointmentHandler {
+	return &AppointmentHandler{
+		appointmentService:  appointmentService,
+		notificationService: notificationService,
+		workerPool:          workerPool,
+		calendarSyncEnabled: calendarSyncEnabled,
 	}
-	if len(notifSvc) > 0 {
-		h.notificationService = notifSvc[0]
+}
+
+func (h *AppointmentHandler) scheduleCalendarSync(appointmentID uuid.UUID) {
+	if !h.calendarSyncEnabled || h.workerPool == nil {
+		return
 	}
-	return h
+	if err := gcal.EnqueueAppointmentCalendarSync(h.workerPool, appointmentID); err != nil {
+		log.Printf("Failed to enqueue Google Calendar sync for appointment %s: %v", appointmentID, err)
+	}
 }
 
 // CreateAppointment creates a new appointment
@@ -68,6 +86,7 @@ func (h *AppointmentHandler) CreateAppointment(c *gin.Context) {
 		return
 	}
 
+	// Pending bookings are not pushed to Google Calendar until staff confirms them.
 	c.JSON(http.StatusCreated, appointment)
 }
 
@@ -157,6 +176,8 @@ func (h *AppointmentHandler) UpdateAppointment(c *gin.Context) {
 		return
 	}
 
+	h.scheduleCalendarSync(appointment.ID)
+
 	c.JSON(http.StatusOK, appointment)
 }
 
@@ -224,6 +245,8 @@ func (h *AppointmentHandler) CancelAppointment(c *gin.Context) {
 		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
+
+	h.scheduleCalendarSync(id)
 
 	if h.notificationService != nil && appointmentForNotif != nil && appointmentForNotif.Client != nil && appointmentForNotif.Client.Email != "" {
 		go func() {
@@ -322,6 +345,8 @@ func (h *AppointmentHandler) ConfirmAppointment(c *gin.Context) {
 		pkgerrors.RespondWithAppError(c, appErr)
 		return
 	}
+
+	h.scheduleCalendarSync(appointment.ID)
 
 	if h.notificationService != nil && appointment.Client != nil && appointment.Client.Email != "" {
 		go func() {

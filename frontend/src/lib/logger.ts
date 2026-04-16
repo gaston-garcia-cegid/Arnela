@@ -1,7 +1,6 @@
 /**
  * Centralized Logging Service
- * Only logs to console in development mode
- * In production, errors are silenced or sent to monitoring service
+ * Development: console. Production: optional Sentry (browser) when NEXT_PUBLIC_SENTRY_DSN is set.
  */
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -41,7 +40,7 @@ class Logger {
     /**
      * Log error message
      * In development: console.error
-     * In production: send to monitoring service (TODO: implement)
+     * In production: Sentry (client) when NEXT_PUBLIC_SENTRY_DSN is configured
      */
     error(message: string, error?: Error | unknown, context?: LogContext) {
         if (this.isDevelopment) {
@@ -50,10 +49,18 @@ class Logger {
                 context,
                 stack: error instanceof Error ? error.stack : undefined,
             });
-        } else {
-            // TODO: Send to monitoring service (Sentry, LogRocket, etc.)
-            // Example: Sentry.captureException(error, { extra: context });
+            return;
         }
+        if (!process.env.NEXT_PUBLIC_SENTRY_DSN || typeof window === 'undefined') {
+            return;
+        }
+        const err = error instanceof Error ? error : new Error(message);
+        void import('@sentry/browser').then((Sentry) => {
+            Sentry.captureException(err, {
+                tags: { source: 'logger' },
+                extra: { logMessage: message, ...context },
+            });
+        });
     }
 
     /**

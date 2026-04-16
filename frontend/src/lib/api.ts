@@ -47,6 +47,13 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
+function newRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
 // Types matching backend responses
 export interface ApiErrorResponse {
   error: string;  // Backend sends "error" field with the message
@@ -145,9 +152,11 @@ async function fetchWithAuth(
   options: RequestInit = {},
   retries = 3
 ) {
+  const requestId = newRequestId();
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(options.headers as Record<string, string>),
+    'X-Request-ID': requestId,
   };
 
   if (token) {
@@ -226,6 +235,7 @@ async function fetchBlobWithAuth(
     ...options,
     method: options.method ?? 'GET',
     headers: {
+      'X-Request-ID': newRequestId(),
       Authorization: `Bearer ${token}`,
       ...(options.headers as Record<string, string>),
     },

@@ -22,6 +22,7 @@ Abre `http://localhost:3000`. Requiere que el backend esté corriendo en `http:/
 | Variable | Default | Descripción |
 |----------|---------|-------------|
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api/v1` | URL base de la API |
+| `NEXT_PUBLIC_SENTRY_DSN` | (vacío) | Si está definido, errores en el navegador y `logger.error` en producción (solo cliente) se envían a Sentry vía `@sentry/browser` |
 
 ## Estructura
 

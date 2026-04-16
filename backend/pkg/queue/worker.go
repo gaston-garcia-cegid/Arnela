@@ -278,22 +278,16 @@ func defaultEmailHandler(ctx context.Context, task *Task) error {
 }
 
 func defaultSMSHandler(ctx context.Context, task *Task) error {
-	log.Printf("SMS HANDLER: Sending SMS - %+v", task.Payload)
-	// TODO: Implement actual SMS sending via Twilio
-	time.Sleep(500 * time.Millisecond) // Simulate work
+	log.Printf("SMS HANDLER: no provider configured — task dropped (payload=%+v)", task.Payload)
 	return nil
 }
 
 func defaultWhatsAppHandler(ctx context.Context, task *Task) error {
-	log.Printf("WHATSAPP HANDLER: Sending WhatsApp message - %+v", task.Payload)
-	// TODO: Implement actual WhatsApp sending via Twilio
-	time.Sleep(500 * time.Millisecond) // Simulate work
+	log.Printf("WHATSAPP HANDLER: no provider configured — task dropped (payload=%+v)", task.Payload)
 	return nil
 }
 
 func defaultCalendarHandler(ctx context.Context, task *Task) error {
-	log.Printf("CALENDAR HANDLER: Syncing calendar event - %+v", task.Payload)
-	// TODO: Implement actual Google Calendar sync
-	time.Sleep(500 * time.Millisecond) // Simulate work
+	log.Printf("CALENDAR HANDLER: Google Calendar not configured — task dropped (payload=%+v)", task.Payload)
 	return nil
 }
