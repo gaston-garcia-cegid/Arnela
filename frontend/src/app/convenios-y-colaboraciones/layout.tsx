@@ -4,11 +4,11 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Convenios y Colaboraciones - Arnela Gabinete',
   description:
-    'Convenios y entidades colaboradoras de Arnela Gabinete en Vigo. Trabajo en red con instituciones educativas y sociales.',
+    'Programa BienQuerer y convenios de Arnela Gabinete en Vigo. Acompañamiento emocional gratuito y colaboración con entidades.',
   openGraph: {
     title: 'Convenios y Colaboraciones - Arnela Gabinete',
     description:
-      'Convenios y colaboraciones de Arnela Gabinete con instituciones en Vigo.',
+      'Programa BienQuerer, convenios y colaboraciones con instituciones en Vigo.',
     type: 'website',
   },
 };

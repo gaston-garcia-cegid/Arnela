@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 export const metadata: Metadata = {
   title: 'Intervención - Arnela Gabinete',
   description:
-    'Servicios de intervención terapéutica y educativa en Vigo. Intervención familiar, resolución de conflictos y acompañamiento emocional.',
+    'Intervención socioeducativa en Vigo: familia, adultos, infancia y adolescencia. Arnela Gabinete.',
   openGraph: {
     title: 'Intervención - Arnela Gabinete',
     description:
