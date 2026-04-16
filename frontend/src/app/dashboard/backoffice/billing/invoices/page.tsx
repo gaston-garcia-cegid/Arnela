@@ -32,12 +32,14 @@ import {
   XCircle,
   Download,
   FileSpreadsheet,
+  FileText,
   ChevronDown,
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { ClientNameDisplay } from "@/components/billing/ClientNameDisplay";
 import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
+import { invoiceFiscalAmountsForExport, vatRatePercentForDisplay } from '@/lib/invoiceFiscal';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +51,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -72,6 +75,7 @@ export default function InvoicesPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (token) loadInvoices();
@@ -116,6 +120,25 @@ export default function InvoicesPage() {
       setDetailOpen(false);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  const handleDownloadInvoicePdf = async (invoiceId: string, invoiceNumber: string) => {
+    if (!token) {
+      toast.error('No estás autenticado');
+      return;
+    }
+    setPdfLoadingId(invoiceId);
+    try {
+      await api.billing.invoices.downloadPdf(invoiceId, token, invoiceNumber);
+      toast.success('PDF descargado');
+    } catch (error) {
+      logError('Error downloading invoice PDF', error, { component: 'InvoicesPage' });
+      toast.error('No se pudo descargar el PDF', {
+        description: error instanceof Error ? error.message : '',
+      });
+    } finally {
+      setPdfLoadingId(null);
     }
   };
 
@@ -174,9 +197,7 @@ export default function InvoicesPage() {
         numero: invoice.invoiceNumber,
         cliente: invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : '',
         fecha: invoice.issueDate ? new Date(invoice.issueDate) : '',
-        importe: invoice.baseAmount,
-        iva: invoice.vatAmount,
-        total: invoice.totalAmount,
+        ...invoiceFiscalAmountsForExport(invoice),
         estado: invoice.status === 'paid' ? 'Cobrada' : 'Pendiente',
         metodoPago: invoice.paymentMethod || '',
         fechaPago: '',
@@ -214,9 +235,7 @@ export default function InvoicesPage() {
         numero: invoice.invoiceNumber,
         cliente: invoice.client ? `${invoice.client.firstName} ${invoice.client.lastName}` : '',
         fecha: invoice.issueDate ? new Date(invoice.issueDate) : '',
-        importe: invoice.baseAmount,
-        iva: invoice.vatAmount,
-        total: invoice.totalAmount,
+        ...invoiceFiscalAmountsForExport(invoice),
         estado: invoice.status === 'paid' ? 'Cobrada' : 'Pendiente',
         metodoPago: invoice.paymentMethod || '',
         fechaPago: '',
@@ -396,6 +415,19 @@ export default function InvoicesPage() {
                         >
                           Ver detalles
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={pdfLoadingId === invoice.id}
+                          onClick={() => {
+                            void handleDownloadInvoicePdf(invoice.id, invoice.invoiceNumber);
+                          }}
+                        >
+                          {pdfLoadingId === invoice.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="mr-2 h-4 w-4" />
+                          )}
+                          Descargar PDF
+                        </DropdownMenuItem>
                         {invoice.status === "unpaid" && (
                           <>
                             <DropdownMenuSeparator />
@@ -497,10 +529,9 @@ export default function InvoicesPage() {
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">
                   IVA (
-                  {(detailInvoice.vatRate <= 1
-                    ? detailInvoice.vatRate * 100
-                    : detailInvoice.vatRate
-                  ).toLocaleString('es-ES', { maximumFractionDigits: 2 })}
+                  {vatRatePercentForDisplay(detailInvoice.vatRate).toLocaleString('es-ES', {
+                    maximumFractionDigits: 2,
+                  })}
                   %)
                 </span>
                 <span>{formatCurrency(detailInvoice.vatAmount)}</span>
@@ -527,6 +558,26 @@ export default function InvoicesPage() {
                   </p>
                 </div>
               )}
+              <DialogFooter className="pt-4 sm:justify-start">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pdfLoadingId === detailInvoice.id}
+                  onClick={() => {
+                    void handleDownloadInvoicePdf(
+                      detailInvoice.id,
+                      detailInvoice.invoiceNumber,
+                    );
+                  }}
+                >
+                  {pdfLoadingId === detailInvoice.id ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="mr-2 h-4 w-4" />
+                  )}
+                  Descargar PDF
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>

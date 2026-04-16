@@ -32,8 +32,8 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 
 | Área | Situación |
 |------|-----------|
-| **Sitio público** | **Formación**, **Intervención** y **Convenios** publicadas con textos e imágenes alineados a [arnelagabinete.com](https://www.arnelagabinete.com/) (CDN); revisar legal/cookies si se añaden widgets externos |
-| **IVA / dominio factura** | Existe tensión histórica entre tasa como % vs decimal y `CalculateAmounts` (`/100`); conviene **un criterio único** + tests que lo fijen |
+| **Sitio público** | **Formación**, **Intervención** y **Convenios** publicadas con textos e imágenes locales bajo `frontend/public/images/` alineados a [arnelagabinete.com](https://www.arnelagabinete.com/); revisar legal/cookies si se añaden widgets externos |
+| **IVA / dominio factura** | **Unificado (Fase 6):** `vatRate` en puntos porcentuales (21 = 21%), `CalculateAmounts` coherente, migración `000016` corrige filas antiguas; tests en `domain` y preview en frontend (`invoiceFiscal`) |
 | **Cola de trabajos** | TODOs en worker para SMS/WhatsApp y sync completo de Calendar según evolución del código |
 | **Frontend observabilidad** | `logger` con TODO hacia servicio de monitoring (p. ej. Sentry) |
 | **Página dedicada** `invoices/[id]` | No es obligatoria si el flujo es modal/listado; opcional para edición “pantalla completa” |
@@ -46,7 +46,8 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 
 **Objetivo:** alinear la web con la oferta real del gabinete.
 
-- ✅ **Formación**, **Intervención** y **Convenios y colaboraciones**: contenido sustituido (textos oficiales + imágenes desde el CDN del sitio actual).
+- ✅ **Formación**, **Intervención** y **Convenios y colaboraciones**: contenido sustituido (textos oficiales + imágenes en `public/images/`).
+- ✅ **Tests:** Vitest sobre `arnelaSiteAssets` (rutas locales, sin URLs remotas).
 - Pendiente opcional: revisar CTAs, enlaces internos, metadatos SEO entre landing y esas páginas; valorar copiar logos EU/PRTR como assets locales si hace falta.
 
 **Criterio de salida:** ninguna ruta enlazada desde el menú principal queda en *Under construction* — **cumplido** para las tres rutas anteriores.
@@ -57,10 +58,10 @@ Estas líneas de trabajo **se consideran cerradas** en el código y documentaci�
 
 **Objetivo:** facturación **auditables** (contabilidad / inspección).
 
-- Unificar modelo de **IVA** (dominio, API, UI, export CSV/Excel, PDF).
-- Revisar redondeos, fechas de cobro, método de pago y coherencia listado ↔ detalle ↔ export.
+- ✅ Unificar modelo de **IVA** (dominio `DefaultVATPercent` = 21, API JSON, UI nueva factura + detalle, PDF, migración `000016_fix_invoice_vat_percent` para datos legados; Vitest `invoiceFiscal` para el preview del formulario).
+- Pendiente: revisar redondeos en casos límite, fechas de cobro, método de pago y coherencia listado ↔ detalle ↔ export en escenarios reales.
 
-**Criterio de salida:** tests que documenten el contrato fiscal; flujo crear factura → PDF → export sin discrepancias en montos.
+**Criterio de salida:** tests que documenten el contrato fiscal; flujo crear factura → PDF → export sin discrepancias en montos — **contrato IVA cubierto** con tests Go (`domain`) + Vitest (`invoiceFiscal`); integración `pkg/pdf` (PDF sin comprimir en test + misma terna base/IVA/total que CSV) y `invoiceFiscalExportSegment` alineado con export; seguir validando exportes con datos de producción tras migración.
 
 ---
 

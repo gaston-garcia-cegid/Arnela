@@ -15,6 +15,7 @@ import type { CreateInvoiceRequest } from "@/types/billing";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { ClientSelector } from "@/components/billing/ClientSelector";
+import { computeVatAndTotalFromBase, DEFAULT_VAT_PERCENT } from "@/lib/invoiceFiscal";
 
 export default function NewInvoicePage() {
   const router = useRouter();
@@ -56,12 +57,11 @@ export default function NewInvoicePage() {
   };
 
   const calculateTotal = () => {
-    const vatAmount = formData.baseAmount * 0.21;
-    const total = formData.baseAmount + vatAmount;
+    const { vatAmount, totalAmount } = computeVatAndTotalFromBase(formData.baseAmount);
     return {
       base: formData.baseAmount,
       vat: vatAmount,
-      total: total,
+      total: totalAmount,
     };
   };
 
@@ -190,7 +190,7 @@ export default function NewInvoicePage() {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">IVA (21%):</span>
+                  <span className="text-muted-foreground">IVA ({DEFAULT_VAT_PERCENT}%):</span>
                   <span className="font-medium">{amounts.vat.toFixed(2)} €</span>
                 </div>
                 <div className="border-t pt-3">

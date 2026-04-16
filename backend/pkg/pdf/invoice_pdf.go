@@ -18,7 +18,14 @@ const (
 )
 
 func GenerateInvoicePDF(invoice *domain.Invoice, client *domain.Client) ([]byte, error) {
+	return generateInvoicePDF(invoice, client, true)
+}
+
+// generateInvoicePDF renders the invoice PDF; compress controls zlib page streams (off in tests).
+func generateInvoicePDF(invoice *domain.Invoice, client *domain.Client, compress bool) ([]byte, error) {
 	pdf := fpdf.New("P", "mm", "A4", "")
+	registerUnicodeFonts(pdf)
+	pdf.SetCompression(compress)
 	pdf.SetAutoPageBreak(true, 20)
 	pdf.AddPage()
 
@@ -40,18 +47,18 @@ func drawHeader(pdf *fpdf.Fpdf) {
 	pdf.SetFillColor(212, 147, 109) // primary terracotta
 	pdf.Rect(0, 0, 210, 40, "F")
 
-	pdf.SetFont("Helvetica", "B", 22)
+	pdf.SetFont(unicodeFontFamily, "B", 22)
 	pdf.SetTextColor(255, 255, 255)
 	pdf.SetXY(15, 10)
 	pdf.Cell(100, 10, companyName)
 
-	pdf.SetFont("Helvetica", "", 9)
+	pdf.SetFont(unicodeFontFamily, "", 9)
 	pdf.SetXY(15, 22)
 	pdf.Cell(100, 5, companyAddress+" · "+companyCity)
 	pdf.SetXY(15, 27)
 	pdf.Cell(100, 5, companyPhone+" · "+companyEmail)
 
-	pdf.SetFont("Helvetica", "B", 18)
+	pdf.SetFont(unicodeFontFamily, "B", 18)
 	pdf.SetXY(140, 12)
 	pdf.Cell(55, 10, "FACTURA")
 
@@ -59,44 +66,44 @@ func drawHeader(pdf *fpdf.Fpdf) {
 }
 
 func drawInvoiceInfo(pdf *fpdf.Fpdf, invoice *domain.Invoice) {
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont(unicodeFontFamily, "B", 10)
 	pdf.SetXY(130, 50)
-	pdf.Cell(30, 6, "N\xba Factura:")
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.Cell(30, 6, "N\u00ba Factura:")
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.Cell(40, 6, invoice.InvoiceNumber)
 
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont(unicodeFontFamily, "B", 10)
 	pdf.SetXY(130, 57)
 	pdf.Cell(30, 6, "Fecha:")
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.Cell(40, 6, invoice.IssueDate.Format("02/01/2006"))
 
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont(unicodeFontFamily, "B", 10)
 	pdf.SetXY(130, 64)
 	pdf.Cell(30, 6, "Vencimiento:")
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.Cell(40, 6, invoice.DueDate.Format("02/01/2006"))
 
 	statusLabel := "No Cobrada"
 	if invoice.Status == domain.InvoiceStatusPaid {
 		statusLabel = "Cobrada"
 	}
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont(unicodeFontFamily, "B", 10)
 	pdf.SetXY(130, 71)
 	pdf.Cell(30, 6, "Estado:")
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.Cell(40, 6, statusLabel)
 }
 
 func drawClientInfo(pdf *fpdf.Fpdf, client *domain.Client) {
-	pdf.SetFont("Helvetica", "B", 11)
+	pdf.SetFont(unicodeFontFamily, "B", 11)
 	pdf.SetXY(15, 50)
 	pdf.Cell(100, 6, "Datos del cliente")
 
 	pdf.SetDrawColor(212, 147, 109)
 	pdf.Line(15, 57, 115, 57)
 
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	y := 60.0
 	pdf.SetXY(15, y)
 	pdf.Cell(100, 6, client.FirstName+" "+client.LastName)
@@ -136,14 +143,14 @@ func drawLineItems(pdf *fpdf.Fpdf, invoice *domain.Invoice) {
 
 	// Table header
 	pdf.SetFillColor(245, 237, 228) // muted beige
-	pdf.SetFont("Helvetica", "B", 10)
+	pdf.SetFont(unicodeFontFamily, "B", 10)
 	pdf.SetXY(15, tableTop)
 	pdf.CellFormat(110, 8, "  Concepto", "1", 0, "L", true, 0, "")
 	pdf.CellFormat(35, 8, "Base", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(35, 8, "IVA (21%)", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(35, 8, fmt.Sprintf("IVA (%.0f%%)", domain.VatRateAsPercent(invoice.VATRate)), "1", 0, "C", true, 0, "")
 
 	// Single line item (the invoice description)
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	y := tableTop + 8
 	pdf.SetXY(15, y)
 
@@ -163,27 +170,27 @@ func drawLineItems(pdf *fpdf.Fpdf, invoice *domain.Invoice) {
 func drawTotals(pdf *fpdf.Fpdf, invoice *domain.Invoice) {
 	y := pdf.GetY() + 15
 
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.SetXY(125, y)
 	pdf.Cell(35, 7, "Base imponible:")
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.Cell(35, 7, formatMoney(invoice.BaseAmount))
 
-	pdf.SetFont("Helvetica", "", 10)
+	pdf.SetFont(unicodeFontFamily, "", 10)
 	pdf.SetXY(125, y+8)
-	pdf.Cell(35, 7, fmt.Sprintf("IVA (%.0f%%):", invoice.VATRate*100))
+	pdf.Cell(35, 7, fmt.Sprintf("IVA (%.0f%%):", domain.VatRateAsPercent(invoice.VATRate)))
 	pdf.Cell(35, 7, formatMoney(invoice.VATAmount))
 
 	pdf.SetDrawColor(212, 147, 109)
 	pdf.Line(125, y+17, 195, y+17)
 
-	pdf.SetFont("Helvetica", "B", 12)
+	pdf.SetFont(unicodeFontFamily, "B", 12)
 	pdf.SetXY(125, y+19)
 	pdf.Cell(35, 8, "TOTAL:")
 	pdf.Cell(35, 8, formatMoney(invoice.TotalAmount))
 
 	if invoice.Notes != "" {
-		pdf.SetFont("Helvetica", "I", 9)
+		pdf.SetFont(unicodeFontFamily, "I", 9)
 		pdf.SetTextColor(100, 100, 100)
 		pdf.SetXY(15, y)
 		pdf.MultiCell(100, 5, "Notas: "+invoice.Notes, "", "L", false)
@@ -192,7 +199,7 @@ func drawTotals(pdf *fpdf.Fpdf, invoice *domain.Invoice) {
 }
 
 func drawFooter(pdf *fpdf.Fpdf) {
-	pdf.SetFont("Helvetica", "", 8)
+	pdf.SetFont(unicodeFontFamily, "", 8)
 	pdf.SetTextColor(150, 150, 150)
 	pdf.SetXY(15, 270)
 	pdf.Cell(180, 4, fmt.Sprintf(
@@ -203,5 +210,5 @@ func drawFooter(pdf *fpdf.Fpdf) {
 }
 
 func formatMoney(amount float64) string {
-	return fmt.Sprintf("%.2f \xe2\x82\xac", amount) // €
+	return fmt.Sprintf("%.2f €", amount)
 }

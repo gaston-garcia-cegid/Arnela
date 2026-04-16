@@ -192,6 +192,69 @@ async function fetchWithAuth(
   throw lastError || new ApiErrorClass('Unknown error', 500);
 }
 
+function stripQuotes(s: string) {
+  const t = s.trim();
+  if (t.length >= 2 && t.startsWith('"') && t.endsWith('"')) {
+    return t.slice(1, -1);
+  }
+  return t;
+}
+
+function parseFilenameFromContentDisposition(header: string | null): string | undefined {
+  if (!header) return undefined;
+  const star = /filename\*=UTF-8''([^;\s]+)/i.exec(header);
+  if (star?.[1]) {
+    const raw = stripQuotes(star[1]);
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }
+  const plain = /filename=([^;\s]+)/i.exec(header);
+  if (!plain?.[1]) return undefined;
+  return stripQuotes(plain[1]).trim();
+}
+
+/** Authenticated GET returning a Blob (e.g. PDF); does not set JSON Content-Type. */
+async function fetchBlobWithAuth(
+  url: string,
+  token: string,
+  options: RequestInit = {}
+): Promise<{ blob: Blob; filename?: string }> {
+  const response = await fetch(`${API_BASE_URL}${url}`, {
+    ...options,
+    method: options.method ?? 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...(options.headers as Record<string, string>),
+    },
+  });
+
+  if (!response.ok) {
+    const errorData: ApiErrorResponse = await response.json().catch(() => ({
+      error: 'Unknown error occurred',
+    }));
+    throw parseApiError(response.status, errorData);
+  }
+
+  const filename = parseFilenameFromContentDisposition(response.headers.get('Content-Disposition'));
+  const blob = await response.blob();
+  return { blob, filename };
+}
+
+function triggerBrowserDownload(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 // Auth endpoints
 export const api = {
   auth: {
@@ -619,6 +682,18 @@ export const api = {
        */
       delete: async (id: string, token: string): Promise<void> => {
         return fetchWithAuth(`/billing/invoices/${id}`, token, { method: 'DELETE' });
+      },
+
+      /**
+       * Downloads invoice PDF (same document as GET /billing/invoices/:id/pdf).
+       */
+      downloadPdf: async (id: string, token: string, fallbackBaseName?: string): Promise<void> => {
+        const { blob, filename } = await fetchBlobWithAuth(`/billing/invoices/${id}/pdf`, token);
+        const safe =
+          filename ||
+          (fallbackBaseName ? `${fallbackBaseName.replaceAll(/[^\w.-]+/g, '_')}.pdf` : undefined) ||
+          `factura-${id}.pdf`;
+        triggerBrowserDownload(blob, safe);
       },
     },
 

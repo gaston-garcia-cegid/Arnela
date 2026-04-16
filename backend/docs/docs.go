@@ -3578,11 +3578,11 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "vatAmount": {
-                    "description": "Calculated: BaseAmount * 0.21",
+                    "description": "Calculated: BaseAmount * vatRate / 100 (vatRate in percentage points)",
                     "type": "number"
                 },
                 "vatRate": {
-                    "description": "21% by default",
+                    "description": "VAT rate as percentage points (21 = 21%)",
                     "type": "number"
                 }
             }

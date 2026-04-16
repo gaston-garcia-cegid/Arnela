@@ -14,9 +14,19 @@ const (
 	InvoiceStatusPaid   InvoiceStatus = "paid"   // Cobrado
 	InvoiceStatusUnpaid InvoiceStatus = "unpaid" // No Cobrado
 
-	// FixedVATRate is the fixed VAT rate of 21% for all invoices
-	FixedVATRate float64 = 0.21
+	// DefaultVATPercent is the standard Spanish VAT rate as percentage points (21 = 21%).
+	// Stored in DB and exposed in JSON as vatRate; CalculateAmounts uses percent (base * rate / 100).
+	DefaultVATPercent float64 = 21.0
 )
+
+// VatRateAsPercent returns the VAT rate as percentage points (e.g. 21).
+// It maps legacy values stored as a fraction (e.g. 0.21) to 21 for display/PDF.
+func VatRateAsPercent(rate float64) float64 {
+	if rate > 0 && rate < 1 {
+		return rate * 100
+	}
+	return rate
+}
 
 // Invoice represents a billing invoice for services rendered
 type Invoice struct {
@@ -28,8 +38,8 @@ type Invoice struct {
 	DueDate       time.Time     `json:"dueDate" db:"due_date"` // Payment due date
 	Description   string        `json:"description" db:"description"`
 	BaseAmount    float64       `json:"baseAmount" db:"base_amount"`                 // Base imponible (sin IVA)
-	VATRate       float64       `json:"vatRate" db:"vat_rate"`                       // 21% by default
-	VATAmount     float64       `json:"vatAmount" db:"vat_amount"`                   // Calculated: BaseAmount * 0.21
+	VATRate       float64       `json:"vatRate" db:"vat_rate"`                       // Percentage points (21 = 21%)
+	VATAmount     float64       `json:"vatAmount" db:"vat_amount"`                   // BaseAmount * VATRate / 100
 	TotalAmount   float64       `json:"totalAmount" db:"total_amount"`               // BaseAmount + VATAmount
 	Status        InvoiceStatus `json:"status" db:"status"`                          // paid/unpaid
 	PaymentMethod *string       `json:"paymentMethod,omitempty" db:"payment_method"` // Nullable payment method

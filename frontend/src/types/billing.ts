@@ -11,6 +11,7 @@ export interface Invoice {
   dueDate: string;
   description: string;
   baseAmount: number;
+  /** VAT rate as percentage points from the API (21 = 21%). */
   vatRate: number;
   vatAmount: number;
   totalAmount: number;
