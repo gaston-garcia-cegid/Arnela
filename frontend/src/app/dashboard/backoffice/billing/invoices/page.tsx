@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +26,15 @@ import { useOptimisticUpdate } from "@/hooks/useOptimisticUpdate";
 import { logError } from '@/lib/logger';
 import { toast } from 'sonner';
 import type { Invoice, InvoiceFilters, PaginatedResponse } from "@/types/billing";
-import { Plus, Search, Eye, CheckCircle, XCircle, Download, FileSpreadsheet } from "lucide-react";
+import {
+  Plus,
+  CheckCircle,
+  XCircle,
+  Download,
+  FileSpreadsheet,
+  ChevronDown,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { ClientNameDisplay } from "@/components/billing/ClientNameDisplay";
 import { exportToCSV, exportToExcel, generateFilename } from '@/lib/exportUtils';
@@ -35,11 +42,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 export default function InvoicesPage() {
-  const router = useRouter();
   const { token } = useAuthStore();
   const { execute, isLoading: isOptimisticLoading } = useOptimisticUpdate();
   const [invoices, setInvoices] = useState<PaginatedResponse<Invoice>>({
@@ -54,6 +68,10 @@ export default function InvoicesPage() {
     page: 1,
     pageSize: 10,
   });
+
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailInvoice, setDetailInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     if (token) loadInvoices();
@@ -82,6 +100,23 @@ export default function InvoicesPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("es-ES");
+  };
+
+  const openInvoiceDetail = async (id: string) => {
+    if (!token) return;
+    setDetailOpen(true);
+    setDetailLoading(true);
+    setDetailInvoice(null);
+    try {
+      const inv = await api.billing.invoices.getById(id, token);
+      setDetailInvoice(inv);
+    } catch (error) {
+      logError('Error loading invoice detail', error, { component: 'InvoicesPage' });
+      toast.error('No se pudo cargar el detalle de la factura');
+      setDetailOpen(false);
+    } finally {
+      setDetailLoading(false);
+    }
   };
 
   const handleMarkPaid = async (id: string) => {
@@ -346,29 +381,36 @@ export default function InvoicesPage() {
                   </TableCell>
                   <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          router.push(
-                            `/dashboard/backoffice/billing/invoices/${invoice.id}`
-                          )
-                        }
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {invoice.status === "unpaid" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleMarkPaid(invoice.id)}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-1" />
-                          Cobrar
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1">
+                          Acciones
+                          <ChevronDown className="h-4 w-4" />
                         </Button>
-                      )}
-                    </div>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            void openInvoiceDetail(invoice.id);
+                          }}
+                        >
+                          Ver detalles
+                        </DropdownMenuItem>
+                        {invoice.status === "unpaid" && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => {
+                                void handleMarkPaid(invoice.id);
+                              }}
+                            >
+                              <CheckCircle className="mr-2 h-4 w-4" />
+                              Marcar como cobrada
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))
@@ -399,6 +441,96 @@ export default function InvoicesPage() {
           </Button>
         </div>
       )}
+
+      <Dialog
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setDetailInvoice(null);
+            setDetailLoading(false);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Detalle de factura</DialogTitle>
+            <DialogDescription>
+              Información de la factura seleccionada.
+            </DialogDescription>
+          </DialogHeader>
+          {detailLoading && (
+            <div className="flex items-center justify-center py-8 text-muted-foreground">
+              <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+          )}
+          {!detailLoading && detailInvoice && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Número</span>
+                <span className="font-medium">{detailInvoice.invoiceNumber}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Cliente</span>
+                <span className="font-medium text-right">
+                  <ClientNameDisplay clientId={detailInvoice.clientId} />
+                </span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Emisión</span>
+                <span>{formatDate(detailInvoice.issueDate)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Vencimiento</span>
+                <span>{formatDate(detailInvoice.dueDate)}</span>
+              </div>
+              <div className="pt-2">
+                <span className="text-muted-foreground">Descripción</span>
+                <p className="mt-1 rounded-md border bg-muted/30 p-2">
+                  {detailInvoice.description || '—'}
+                </p>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Base</span>
+                <span>{formatCurrency(detailInvoice.baseAmount)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">
+                  IVA (
+                  {(detailInvoice.vatRate <= 1
+                    ? detailInvoice.vatRate * 100
+                    : detailInvoice.vatRate
+                  ).toLocaleString('es-ES', { maximumFractionDigits: 2 })}
+                  %)
+                </span>
+                <span>{formatCurrency(detailInvoice.vatAmount)}</span>
+              </div>
+              <div className="flex justify-between gap-4 border-t pt-2 font-semibold">
+                <span>Total</span>
+                <span>{formatCurrency(detailInvoice.totalAmount)}</span>
+              </div>
+              <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Estado</span>
+                <span>{getStatusBadge(detailInvoice.status)}</span>
+              </div>
+              {detailInvoice.paymentMethod && (
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Método de pago</span>
+                  <span>{detailInvoice.paymentMethod}</span>
+                </div>
+              )}
+              {detailInvoice.notes && (
+                <div className="pt-2">
+                  <span className="text-muted-foreground">Notas</span>
+                  <p className="mt-1 rounded-md border bg-muted/30 p-2 whitespace-pre-wrap">
+                    {detailInvoice.notes}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
