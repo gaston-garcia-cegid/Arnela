@@ -17,6 +17,15 @@ pnpm dev
 
 Abre `http://localhost:3000`. Requiere que el backend esté corriendo en `http://localhost:8080`.
 
+## Build en Windows (`pnpm build`)
+
+La imagen de producción (`Dockerfile`) ejecuta el build en **Linux**, donde `output: 'standalone'` no tiene problema.
+
+En **Windows nativo**, Next.js puede fallar con `EPERM: operation not permitted, symlink` al generar `standalone`: el SO restringe symlinks por defecto. Opciones:
+
+1. **Recomendado para validar local:** `pnpm build` ya omite `standalone` en Windows (ver `next.config.js`).
+2. **Igual que producción en tu máquina:** activar **Modo de desarrollador** en Windows y ejecutar `set FORCE_STANDALONE=1` antes de `pnpm build`, o construir dentro de **Docker** / **WSL2**.
+
 ## Variables de entorno
 
 | Variable | Default | Descripción |
