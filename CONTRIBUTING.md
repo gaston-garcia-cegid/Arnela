@@ -117,6 +117,10 @@ Flujo de datos:
 - API calls centralizadas en `lib/api.ts`
 - Errores manejados con `useErrorHandler` + sonner toasts
 
+## Deploy remoto asistido (Cursor)
+
+Para un flujo guiado por el agente (preguntas → SSH → `git pull` → Docker Compose en el servidor), usar la skill **`.cursor/skills/remote-deploy/SKILL.md`** (triggers: *deploy remoto*, *ssh deploy*, *remote deploy*, …). La guía operativa sigue siendo **`docs/DEPLOYMENT.md`**.
+
 ## Testing
 
 ### Backend
