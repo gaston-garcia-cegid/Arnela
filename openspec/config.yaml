@@ -1,0 +1,61 @@
+# Arnela — Spec-Driven Development (initialized 2026-04-16)
+schema: spec-driven
+
+context: |
+  Tech stack: Go 1.25 (Gin, sqlx, Redis, PostgreSQL, Swagger), Next.js 16 (App Router, React 19, Tailwind v4, Zustand, Vitest).
+  Architecture: Monorepo — backend/cmd/api, internal/{handler,service,middleware}, pkg/*; frontend/src (app, components, lib).
+  CI: GitHub Actions — backend go vet/build/test -race; frontend pnpm lint, tsc, vitest, build (Linux).
+  Style: gofmt; ESLint (eslint-config-next); CONTRIBUTING.md for workflow.
+
+strict_tdd: true
+
+testing:
+  capabilities: |
+    ## Testing Capabilities
+    **Strict TDD Mode**: enabled
+    **Detected**: 2026-04-16
+
+    ### Test Runner
+    - Backend: `go test ./...` (from `backend/`)
+    - Frontend: `pnpm test` / `pnpm test -- --run` (from `frontend/`)
+
+    ### Test Layers
+    | Layer | Available | Tool |
+    |-------|-----------|------|
+    | Unit | Yes | Go: testify; TS: Vitest |
+    | Integration | Partial | Go: httptest/handlers; TS: Testing Library + mocked fetch |
+    | E2E | No | — (Playwright etc. not in package.json) |
+
+    ### Coverage
+    - Backend: Yes — `go test -cover` / CI `-coverprofile=coverage.out`
+    - Frontend: Yes — `pnpm test:coverage` (Vitest)
+
+    ### Quality Tools
+    | Tool | Available | Command |
+    |------|-----------|---------|
+    | Linter | Yes | `pnpm lint` (frontend); `go vet ./...` (backend) |
+    | Type checker | Yes | `pnpm exec tsc --noEmit` |
+    | Formatter | Yes | `gofmt`; Prettier via ESLint ecosystem |
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (infrastructure, implementation, testing)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - Run backend: go test ./... from backend/; frontend: pnpm test -- --run after substantive changes
+  verify:
+    - Run tests if test infrastructure exists
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas (large removals)

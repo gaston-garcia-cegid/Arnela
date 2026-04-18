@@ -1,0 +1,12 @@
+---
+alwaysApply: true
+description: Engram persistent memory — cuándo usar MCP
+---
+
+Tienes acceso a **Engram** vía MCP (memoria persistente entre sesiones). Usa las herramientas del servidor `engram` cuando correspondan (nombres exactos según la versión del CLI, p. ej. guardar/buscar/recuperar contexto).
+
+- **Guardar** tras trabajo significativo: decisiones, bugs resueltos, convenciones del repo, estado SDD.
+- **Buscar / recuperar** al retomar un tema o tras compactación de contexto, antes de asumir que no hay memoria previa.
+- Para flujos SDD del repo, usa `topic_key` / títulos alineados con `openspec` y `_shared/engram-convention.md` cuando apliques convención del proyecto.
+
+Si las herramientas no aparecen, reinicia Cursor tras añadir `.cursor/mcp.json` y comprueba que `engram` esté en el `PATH` (`engram version` en terminal).
