@@ -35,7 +35,6 @@ import {
 export default function EmployeesPage() {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
-  const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
 
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -117,11 +116,6 @@ export default function EmployeesPage() {
         description: errorMessage,
       });
     }
-  };
-
-  const handleLogout = () => {
-    logout();
-    router.push('/');
   };
 
   const formatDate = (dateString: string) => {
@@ -279,102 +273,94 @@ export default function EmployeesPage() {
         )}
 
         {/* Loading State */}
-        {isLoading ? (
-          <EmployeesTableSkeleton />
-        ) : (
-          <>
-            {/* Employees Grid */}
-            (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {employees.map((employee) => (
-                <Card key={employee.id} className="relative">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
-                          style={{ backgroundColor: employee.avatarColor }}
-                        >
-                          {employee.firstName[0]}{employee.lastName[0]}
-                        </div>
-                        <div>
-                          <CardTitle className="text-lg">
-                            {employee.firstName} {employee.lastName}
-                          </CardTitle>
-                          <CardDescription className="text-sm">
-                            {employee.position}
-                          </CardDescription>
-                        </div>
+        {isLoading && <EmployeesTableSkeleton />}
+        {!isLoading && employees.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {employees.map((employee) => (
+              <Card key={employee.id} className="relative">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg"
+                        style={{ backgroundColor: employee.avatarColor }}
+                      >
+                        {employee.firstName[0]}{employee.lastName[0]}
                       </div>
-                      <Badge variant={employee.isActive ? "default" : "secondary"}>
-                        {employee.isActive ? 'Activo' : 'Inactivo'}
-                      </Badge>
+                      <div>
+                        <CardTitle className="text-lg">
+                          {employee.firstName} {employee.lastName}
+                        </CardTitle>
+                        <CardDescription className="text-sm">
+                          {employee.position}
+                        </CardDescription>
+                      </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Mail className="h-4 w-4" />
-                      <span className="truncate">{employee.email}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Phone className="h-4 w-4" />
-                      <span>{employee.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Calendar className="h-4 w-4" />
-                      <span>Ingreso: {employee.hireDate ? formatDate(employee.hireDate) : 'N/A'}</span>
-                    </div>
-                    {employee.notes && (
-                      <p className="text-sm text-muted-foreground line-clamp-2 pt-2 border-t">
-                        {employee.notes}
-                      </p>
-                    )}
-                    <div className="flex gap-2 pt-4">
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="flex-1"
-                        onClick={() => router.push(`/dashboard/backoffice/employees/${employee.id}`)}
-                      >
-                        Ver Dashboard
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(employee)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteClick(employee)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            )
-
-            {/* Empty State */}
-            {employees.length === 0 && (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-12">
-                  <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">No hay empleados registrados</h3>
-                  <p className="text-muted-foreground mb-4">
-                    Comienza agregando tu primer empleado
-                  </p>
-                  <Button onClick={() => setIsCreateModalOpen(true)}>
-                    Crear Primer Empleado
-                  </Button>
+                    <Badge variant={employee.isActive ? "default" : "secondary"}>
+                      {employee.isActive ? 'Activo' : 'Inactivo'}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span className="truncate">{employee.email}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{employee.phone}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4" />
+                    <span>Ingreso: {employee.hireDate ? formatDate(employee.hireDate) : 'N/A'}</span>
+                  </div>
+                  {employee.notes && (
+                    <p className="text-sm text-muted-foreground line-clamp-2 pt-2 border-t">
+                      {employee.notes}
+                    </p>
+                  )}
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => router.push(`/dashboard/backoffice/employees/${employee.id}`)}
+                    >
+                      Ver Dashboard
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditClick(employee)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteClick(employee)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
-            )}
-          </>
+            ))}
+          </div>
+        )}
+        {!isLoading && employees.length === 0 && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No hay empleados registrados</h3>
+              <p className="text-muted-foreground mb-4">
+                Comienza agregando tu primer empleado
+              </p>
+              <Button onClick={() => setIsCreateModalOpen(true)}>
+                Crear Primer Empleado
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </main>
 
