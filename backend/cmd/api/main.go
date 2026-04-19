@@ -341,6 +341,8 @@ func main() {
 			tasks.GET("", authMiddleware.RequireRole("admin", "employee"), taskHandler.ListTasks)
 			// My tasks
 			tasks.GET("/me", authMiddleware.RequireRole("employee"), taskHandler.GetMyTasks)
+			// Single task (must be registered after /me so "me" is not captured as :id)
+			tasks.GET("/:id", authMiddleware.RequireRole("admin", "employee"), taskHandler.GetTask)
 			// Update task
 			tasks.PUT("/:id", authMiddleware.RequireRole("admin", "employee"), taskHandler.UpdateTask)
 			// Delete task

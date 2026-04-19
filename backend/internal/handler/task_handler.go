@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -107,6 +108,35 @@ func (h *TaskHandler) ListTasks(c *gin.Context) {
 			"page":  filter.Page,
 		},
 	})
+}
+
+// GetTask godoc
+// @Summary Get a task by ID
+// @Tags tasks
+// @Security BearerAuth
+// @Param id path string true "Task ID"
+// @Success 200 {object} domain.Task
+// @Failure 400 {object} ErrorResponse
+// @Failure 404 {object} ErrorResponse
+// @Router /api/v1/tasks/{id} [get]
+func (h *TaskHandler) GetTask(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid ID"})
+		return
+	}
+
+	task, err := h.taskService.GetTask(c.Request.Context(), id)
+	if err != nil {
+		if errors.Is(err, service.ErrTaskNotFound) {
+			c.JSON(http.StatusNotFound, ErrorResponse{Error: "Task not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, task)
 }
 
 // UpdateTask godoc

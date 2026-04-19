@@ -45,6 +45,16 @@ import type {
   PaginatedResponse,
 } from '@/types/billing';
 
+import type {
+  Task,
+  TaskListResponse,
+  TaskListFilters,
+  CreateTaskRequest,
+  UpdateTaskRequest,
+} from '@/types/task';
+
+import { normalizeTaskListResponse } from './taskList';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 /** Go/sqlx often JSON-encode a nil slice as null; UI expects an array. */
@@ -968,6 +978,50 @@ export const api = {
       ): Promise<{ balance: number; totalRevenue: number; totalExpenses: number }> => {
         return fetchWithAuth('/billing/balance', token, { method: 'GET' });
       },
+    },
+  },
+
+  // ============================================
+  // Tasks (internal / backoffice)
+  // ============================================
+  tasks: {
+    list: async (token: string, filters?: TaskListFilters): Promise<TaskListResponse> => {
+      const qs = buildQueryParams((filters ?? {}) as Record<string, any>);
+      const url = qs ? `/tasks?${qs}` : '/tasks';
+      const raw = (await fetchWithAuth(url, token, { method: 'GET' })) as TaskListResponse;
+      return normalizeTaskListResponse(raw);
+    },
+
+    mine: async (
+      token: string,
+      filters?: Pick<TaskListFilters, 'status' | 'page' | 'pageSize'>
+    ): Promise<TaskListResponse> => {
+      const qs = buildQueryParams((filters ?? {}) as Record<string, any>);
+      const url = qs ? `/tasks/me?${qs}` : '/tasks/me';
+      const raw = (await fetchWithAuth(url, token, { method: 'GET' })) as TaskListResponse;
+      return normalizeTaskListResponse(raw);
+    },
+
+    getById: async (id: string, token: string): Promise<Task> => {
+      return fetchWithAuth(`/tasks/${id}`, token, { method: 'GET' });
+    },
+
+    create: async (data: CreateTaskRequest, token: string): Promise<Task> => {
+      return fetchWithAuth('/tasks', token, {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    },
+
+    update: async (id: string, data: UpdateTaskRequest, token: string): Promise<void> => {
+      await fetchWithAuth(`/tasks/${id}`, token, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    },
+
+    delete: async (id: string, token: string): Promise<void> => {
+      await fetchWithAuth(`/tasks/${id}`, token, { method: 'DELETE' });
     },
   },
 

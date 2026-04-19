@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"testing"
 
@@ -61,6 +62,42 @@ func TestTaskService_CreateTask_AssigneeNotFound(t *testing.T) {
 
 	assert.ErrorIs(t, err, ErrAssigneeNotFound)
 	mockTaskRepo.AssertNotCalled(t, "Create")
+}
+
+func TestTaskService_GetTask_Success(t *testing.T) {
+	mockTaskRepo := new(mocks.MockTaskRepository)
+	mockEmployeeRepo := new(mocks.MockEmployeeRepository)
+	svc := NewTaskService(mockTaskRepo, mockEmployeeRepo)
+
+	ctx := context.Background()
+	id := uuid.New()
+	expected := &domain.Task{ID: id, Title: "Do thing", Status: domain.TaskStatusPending}
+
+	mockTaskRepo.On("GetByID", ctx, id).Return(expected, nil)
+
+	got, err := svc.GetTask(ctx, id)
+
+	assert.NoError(t, err)
+	assert.Equal(t, expected, got)
+	mockTaskRepo.AssertExpectations(t)
+	mockEmployeeRepo.AssertNotCalled(t, "GetByID")
+}
+
+func TestTaskService_GetTask_NotFound(t *testing.T) {
+	mockTaskRepo := new(mocks.MockTaskRepository)
+	mockEmployeeRepo := new(mocks.MockEmployeeRepository)
+	svc := NewTaskService(mockTaskRepo, mockEmployeeRepo)
+
+	ctx := context.Background()
+	id := uuid.New()
+
+	mockTaskRepo.On("GetByID", ctx, id).Return(nil, sql.ErrNoRows)
+
+	got, err := svc.GetTask(ctx, id)
+
+	assert.Nil(t, got)
+	assert.ErrorIs(t, err, ErrTaskNotFound)
+	mockTaskRepo.AssertExpectations(t)
 }
 
 func TestTaskService_UpdateTask_Complete(t *testing.T) {

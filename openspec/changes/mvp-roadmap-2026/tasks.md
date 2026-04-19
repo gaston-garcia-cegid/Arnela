@@ -7,10 +7,10 @@
 
 ## Fase 1: Tasks backoffice (listado + detalle mínimo + sidebar)
 
-- [ ] 1.1 Backend: `GET /api/v1/tasks/:id` en `backend/internal/handler/task_handler.go` y registro en `backend/cmd/api/main.go` **después** de `GET /tasks/me` (evitar capturar `me` como id); usar `TaskService.GetTask`; 404 si no existe; roles `admin`+`employee` como en list/update.
-- [ ] 1.2 Backend: test del handler o servicio para `GET /tasks/:id` (éxito + 404).
-- [ ] 1.3 Frontend: `frontend/src/types/task.ts` con `Task`, `TaskStatus`, `TaskPriority` alineados a `domain.Task` JSON (camelCase).
-- [ ] 1.4 Frontend: en `frontend/src/lib/api.ts` añadir `api.tasks` — `list` (`GET /tasks` + query), `mine` (`GET /tasks/me`), `getById` (`GET /tasks/:id` tras 1.1), `create`, `update`, `delete`; normalizar `data` a array vacío si el backend devuelve `null`.
+- [x] 1.1 Backend: `GET /api/v1/tasks/:id` en `backend/internal/handler/task_handler.go` y registro en `backend/cmd/api/main.go` **después** de `GET /tasks/me` (evitar capturar `me` como id); usar `TaskService.GetTask`; 404 si no existe; roles `admin`+`employee` como en list/update.
+- [x] 1.2 Backend: test del handler o servicio para `GET /tasks/:id` (éxito + 404).
+- [x] 1.3 Frontend: `frontend/src/types/task.ts` con `Task`, `TaskStatus`, `TaskPriority` alineados a `domain.Task` JSON (camelCase).
+- [x] 1.4 Frontend: en `frontend/src/lib/api.ts` añadir `api.tasks` — `list` (`GET /tasks` + query), `mine` (`GET /tasks/me`), `getById` (`GET /tasks/:id` tras 1.1), `create`, `update`, `delete`; normalizar `data` a array vacío si el backend devuelve `null`.
 - [ ] 1.5 `frontend/src/components/backoffice/BackofficeSidebar.tsx`: ítem **Tareas** con enlace `/dashboard/backoffice/tasks` (icono tipo checklist); visible para admin y employee.
 - [ ] 1.6 `frontend/src/app/dashboard/backoffice/tasks/page.tsx`: tabla o cards; **admin** usa `api.tasks.list` (paginación/filtros `assigneeId`, `status`); **employee** usa `api.tasks.mine`; acciones: ver detalle (`router.push` a `[id]`), enlace a nueva tarea.
 - [ ] 1.7 `frontend/src/app/dashboard/backoffice/tasks/[id]/page.tsx`: detalle lectura (título, descripción, estado, prioridad, fechas, ids creator/assignee); botón volver; opcional cambio de estado vía `update` si encaja en una sesión.

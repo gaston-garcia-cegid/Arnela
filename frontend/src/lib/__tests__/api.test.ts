@@ -310,6 +310,50 @@ describe('API Client', () => {
     });
   });
 
+  describe('api.tasks', () => {
+    it('list normaliza data null a array vacío', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: null, meta: { total: 0, page: 1 } }),
+      });
+
+      const result = await api.tasks.list('fake-jwt-token');
+
+      expect(result.data).toEqual([]);
+      expect(result.meta).toEqual({ total: 0, page: 1 });
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/tasks'),
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+
+    it('getById solicita GET /tasks/:id', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'task-uuid-1',
+          title: 'Hacer informe',
+          description: '',
+          creatorId: 'c1',
+          assigneeId: 'a1',
+          status: 'pending',
+          priority: 'medium',
+          dueDate: null,
+          createdAt: '2026-01-01T00:00:00.000Z',
+          updatedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      });
+
+      const task = await api.tasks.getById('task-uuid-1', 'fake-jwt-token');
+
+      expect(task.title).toBe('Hacer informe');
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringMatching(/\/tasks\/task-uuid-1$/),
+        expect.objectContaining({ method: 'GET' })
+      );
+    });
+  });
+
   describe('clients.list', () => {
     it('should fetch list of clients', async () => {
       const mockResponse = {

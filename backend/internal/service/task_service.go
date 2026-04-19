@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"time"
 
@@ -56,7 +57,14 @@ func (s *TaskService) CreateTask(ctx context.Context, task *domain.Task) error {
 }
 
 func (s *TaskService) GetTask(ctx context.Context, id uuid.UUID) (*domain.Task, error) {
-	return s.taskRepo.GetByID(ctx, id)
+	t, err := s.taskRepo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrTaskNotFound
+		}
+		return nil, err
+	}
+	return t, nil
 }
 
 func (s *TaskService) UpdateTask(ctx context.Context, task *domain.Task) error {
