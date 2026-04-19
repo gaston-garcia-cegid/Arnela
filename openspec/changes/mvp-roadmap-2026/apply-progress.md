@@ -13,30 +13,31 @@
 | 1.2 Tests backend GET | Suite nueva. | `task_handler_test` + `task_service_test` GetTask. | — |
 | 1.3 Tipos `Task` | **Triangulation skipped** (solo tipos). | `types/task.ts`. | — |
 | 1.4 `api.tasks` | `taskList.test` / `api.test` sin impl. | `taskList.ts`, `api.tasks`. | Cast `buildQueryParams`. |
-| 1.5 Sidebar Tareas | — | `ListTodo` + ruta en `BackofficeSidebar`. | — |
-| 1.6 `tasks/page` | — | Listado admin/employee, filtros, paginación, navegación. | `useEffect` auth sin `return` redundante; `tableRows` sin ternario anidado; empleados activos en filtro. |
-| 1.7 `tasks/[id]` | — | `TaskDetailView` + `getById` + `update` con payload completo + selector estado. | Auth `useEffect` simplificado. |
-| 1.8 `tasks/new` | — | Formulario create; admin select / employee `getMyProfile`. | Auth `useEffect` simplificado. |
-| 1.9 `taskLabels` + `TaskDetailView` | Imports rotos (`taskLabels`, `TaskDetailView`). | Implementación + tests (incl. fallback raw). | `formatDate` sin `dateStyle`+`timeStyle` (jsdom). |
-| 1.10 Cierre F1 | — | `pnpm test -- --run` + `tsc --noEmit` verdes. | Smoke manual: pendiente verificación humana admin/employee. |
+| 1.5–1.10 Tasks UI | Varios (ver commits previos). | Sidebar, páginas, `taskLabels`, `TaskDetailView`, tests. | Sonar / formato fechas. |
+| 2.1–2.3 Playwright tooling | **Triangulation skipped** (deps + config + `.env.example`). | `@playwright/test`, scripts, `playwright.config.ts`, `e2e/.env.example`, carga opcional `e2e/.env`. | `PLAYWRIGHT_SKIP_WEBSERVER`; `vitest` exclude `e2e/`; eslint ignore `e2e/`. |
+| 2.4 `loginBackoffice` | — | Helper con Navbar + `LoginModal` (labels Email/Contraseña, botón Ingresar). | — |
+| 2.5–2.7 E2E specs | Sin credenciales → `test.skip` (3 skipped, exit 0). | Specs auth, facturas, citas con `loginBackoffice` + headings reales. | — |
+| 2.8 + 2.11 + 2.12 Docs | — | `docs/E2E.md`, enlace en `frontend/README.md`. | — |
+| 2.9–2.10 CI workflow | Pendiente implementación. | — | — |
 
-## Archivos tocados (último batch 1.5–1.10)
+## Archivos tocados (batch Fase 2 parcial 2.1–2.8, 2.11–2.12)
 
-- `frontend/src/lib/taskLabels.ts`, `frontend/src/lib/__tests__/taskLabels.test.ts`
-- `frontend/src/components/tasks/TaskDetailView.tsx`, `frontend/src/components/tasks/__tests__/TaskDetailView.test.tsx`
-- `frontend/src/components/backoffice/BackofficeSidebar.tsx`
-- `frontend/src/app/dashboard/backoffice/tasks/page.tsx`
-- `frontend/src/app/dashboard/backoffice/tasks/[id]/page.tsx`
-- `frontend/src/app/dashboard/backoffice/tasks/new/page.tsx`
+- `frontend/package.json`, `frontend/pnpm-lock.yaml`
+- `frontend/playwright.config.ts`
+- `frontend/e2e/.env.example`, `frontend/e2e/helpers/loginBackoffice.ts`
+- `frontend/e2e/auth-backoffice.spec.ts`, `frontend/e2e/billing-invoice.spec.ts`, `frontend/e2e/appointment.spec.ts`
+- `frontend/vitest.config.ts`, `frontend/eslint.config.mjs`, `frontend/.gitignore`
+- `docs/E2E.md`, `frontend/README.md`
+- `openspec/changes/mvp-roadmap-2026/tasks.md`
 
 ## Desviaciones
 
-Ninguna respecto a `tasks.md`. Sin `design.md` en el change.
+Specs usan `test.skip` si faltan `E2E_ADMIN_*` para que CI/Vitest no fallen sin secrets; ejecución real requiere `e2e/.env`. Workflow `e2e.yml` (2.9–2.10) no incluido en este batch.
 
 ## Issues
 
-**Update task**: el backend hace merge en servicio; el front envía siempre campos completos en el PUT de cambio de estado para no pisar título vacío.
+Ninguno bloqueante.
 
 ## Estado
 
-**Fase 1 completa** (1.1–1.10). Siguiente: **Fase 2** (Playwright + CI) u otro change.
+**Fase 1** completa. **Fase 2**: 2.1–2.8 y 2.11–2.12 listas; **pendientes 2.9–2.10** (GitHub Actions full stack + artefactos).

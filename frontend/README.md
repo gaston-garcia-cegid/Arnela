@@ -33,6 +33,12 @@ En **Windows nativo**, Next.js puede fallar con `EPERM: operation not permitted,
 | `NEXT_PUBLIC_API_URL` | `http://localhost:8080/api/v1` | URL base de la API |
 | `NEXT_PUBLIC_SENTRY_DSN` | (vacío) | Si está definido, errores en el navegador y `logger.error` en producción (solo cliente) se envían a Sentry vía `@sentry/browser` |
 
+## Pruebas E2E (Playwright)
+
+- Scripts: `pnpm test:e2e` y `pnpm test:e2e:ui`.
+- Variables: copiar `e2e/.env.example` → `e2e/.env` y definir al menos `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD`.
+- Guía detallada (CI, troubleshooting): [`../docs/E2E.md`](../docs/E2E.md).
+
 ## Estructura
 
 ```
