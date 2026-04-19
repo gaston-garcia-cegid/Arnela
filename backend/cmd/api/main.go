@@ -252,7 +252,9 @@ func main() {
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.Server.CORSOrigins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		// Must list every non-simple header the browser sends (preflight checks
+		// Access-Control-Request-Headers). See frontend fetchWithAuth: X-Request-ID.
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "X-Request-ID"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

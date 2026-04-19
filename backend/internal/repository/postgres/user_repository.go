@@ -271,7 +271,7 @@ func (r *userRepository) List(ctx context.Context, offset, limit int) ([]*domain
 		LIMIT $1 OFFSET $2
 	`
 
-	var users []*domain.User
+	users := make([]*domain.User, 0)
 	// Use SelectContext for batch queries
 	err := r.db.SelectContext(ctx, &users, query, limit, offset)
 	if err != nil {

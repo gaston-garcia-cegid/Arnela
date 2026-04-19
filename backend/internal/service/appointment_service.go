@@ -454,7 +454,7 @@ func (s *appointmentService) GetAvailableSlots(ctx context.Context, employeeID u
 	}
 
 	// Generate all possible slots (15min intervals)
-	var availableSlots []time.Time
+	availableSlots := make([]time.Time, 0)
 	currentSlot := startOfDay
 
 	for currentSlot.Before(endOfDay) {

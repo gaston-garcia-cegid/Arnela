@@ -38,7 +38,7 @@ export const useAppointmentStore = create<AppointmentStore>((set) => ({
     total: 0,
   },
 
-  setAppointments: (appointments) => set({ appointments }),
+  setAppointments: (appointments) => set({ appointments: appointments ?? [] }),
 
   setSelectedAppointment: (appointment) => set({ selectedAppointment: appointment }),
 

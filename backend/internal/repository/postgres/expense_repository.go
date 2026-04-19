@@ -145,7 +145,7 @@ func (r *expenseRepository) List(ctx context.Context, filters repository.Expense
 		LIMIT $%d OFFSET $%d`,
 		whereClause, limitArg, offsetArg)
 
-	var expenses []*domain.Expense
+	expenses := make([]*domain.Expense, 0)
 	err = r.db.SelectContext(ctx, &expenses, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list expenses: %w", err)
@@ -209,7 +209,7 @@ func (r *expenseRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // GetByCategory retrieves all expenses for a specific category
 func (r *expenseRepository) GetByCategory(ctx context.Context, categoryID uuid.UUID) ([]*domain.Expense, error) {
-	var expenses []*domain.Expense
+	expenses := make([]*domain.Expense, 0)
 	query := `
 		SELECT * FROM expenses 
 		WHERE category_id = $1 AND deleted_at IS NULL 
@@ -252,7 +252,7 @@ func (r *expenseRepository) GetTotalByCategory(ctx context.Context, fromDate, to
 		Total      float64   `db:"total"`
 	}
 
-	var results []categoryTotal
+	results := make([]categoryTotal, 0)
 	query := `
 		SELECT category_id, COALESCE(SUM(amount), 0) as total
 		FROM expenses
@@ -276,7 +276,7 @@ func (r *expenseRepository) GetTotalByCategory(ctx context.Context, fromDate, to
 
 // GetBySupplier retrieves expenses by supplier name
 func (r *expenseRepository) GetBySupplier(ctx context.Context, supplier string) ([]*domain.Expense, error) {
-	var expenses []*domain.Expense
+	expenses := make([]*domain.Expense, 0)
 	query := `
 		SELECT * FROM expenses 
 		WHERE supplier ILIKE $1 AND deleted_at IS NULL 

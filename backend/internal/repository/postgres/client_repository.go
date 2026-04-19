@@ -196,7 +196,7 @@ func (r *clientRepository) Delete(ctx context.Context, id uuid.UUID) error {
 
 // List retrieves a paginated list of clients with optional filters
 func (r *clientRepository) List(ctx context.Context, filters repository.ClientFilters, page, pageSize int) ([]*domain.Client, error) {
-	var clients []*domain.Client
+	clients := make([]*domain.Client, 0)
 
 	// ✅ Usar columnas explícitas en lugar de SELECT *
 	query := fmt.Sprintf(`SELECT %s FROM clients WHERE deleted_at IS NULL`, clientColumns)

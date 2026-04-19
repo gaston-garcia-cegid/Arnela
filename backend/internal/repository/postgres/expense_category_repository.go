@@ -72,7 +72,7 @@ func (r *expenseCategoryRepository) GetByName(ctx context.Context, name string) 
 
 // List retrieves all expense categories
 func (r *expenseCategoryRepository) List(ctx context.Context) ([]*domain.ExpenseCategory, error) {
-	var categories []*domain.ExpenseCategory
+	categories := make([]*domain.ExpenseCategory, 0)
 	query := `
 		SELECT * FROM expense_categories 
 		WHERE is_active = true 
@@ -88,7 +88,7 @@ func (r *expenseCategoryRepository) List(ctx context.Context) ([]*domain.Expense
 
 // GetCategories retrieves only parent categories (no parent_id)
 func (r *expenseCategoryRepository) GetCategories(ctx context.Context) ([]*domain.ExpenseCategory, error) {
-	var categories []*domain.ExpenseCategory
+	categories := make([]*domain.ExpenseCategory, 0)
 	query := `
 		SELECT * FROM expense_categories 
 		WHERE parent_id IS NULL AND is_active = true 
@@ -104,7 +104,7 @@ func (r *expenseCategoryRepository) GetCategories(ctx context.Context) ([]*domai
 
 // GetSubcategories retrieves subcategories for a parent category
 func (r *expenseCategoryRepository) GetSubcategories(ctx context.Context, parentID uuid.UUID) ([]*domain.ExpenseCategory, error) {
-	var subcategories []*domain.ExpenseCategory
+	subcategories := make([]*domain.ExpenseCategory, 0)
 	query := `
 		SELECT * FROM expense_categories 
 		WHERE parent_id = $1 AND is_active = true 

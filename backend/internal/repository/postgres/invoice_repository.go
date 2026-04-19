@@ -152,7 +152,8 @@ func (r *invoiceRepository) List(ctx context.Context, filters repository.Invoice
 		LIMIT $%d OFFSET $%d`,
 		whereClause, limitArg, offsetArg)
 
-	var invoices []*domain.Invoice
+	// Non-nil slice so JSON encodes [] not null (frontend expects data.length).
+	invoices := make([]*domain.Invoice, 0)
 	err = r.db.SelectContext(ctx, &invoices, query, args...)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list invoices: %w", err)
@@ -241,7 +242,7 @@ func (r *invoiceRepository) GetNextInvoiceNumber(ctx context.Context, year int) 
 
 // GetByClientID retrieves all invoices for a specific client
 func (r *invoiceRepository) GetByClientID(ctx context.Context, clientID uuid.UUID) ([]*domain.Invoice, error) {
-	var invoices []*domain.Invoice
+	invoices := make([]*domain.Invoice, 0)
 	query := `
 		SELECT * FROM invoices 
 		WHERE client_id = $1 AND deleted_at IS NULL 
@@ -296,7 +297,7 @@ func (r *invoiceRepository) GetTotalRevenueByDateRange(ctx context.Context, from
 
 // GetUnpaidInvoices retrieves all unpaid invoices
 func (r *invoiceRepository) GetUnpaidInvoices(ctx context.Context) ([]*domain.Invoice, error) {
-	var invoices []*domain.Invoice
+	invoices := make([]*domain.Invoice, 0)
 	query := `
 		SELECT * FROM invoices 
 		WHERE status = 'unpaid' AND deleted_at IS NULL 
@@ -324,7 +325,7 @@ func (r *invoiceRepository) GetRevenueByMonth(ctx context.Context, fromDate, toD
 		GROUP BY TO_CHAR(issue_date, 'YYYY-MM')
 		ORDER BY month ASC`
 
-	var rows []repository.MonthlyRevenueRow
+	rows := make([]repository.MonthlyRevenueRow, 0)
 	err := r.db.SelectContext(ctx, &rows, query, fromDate, toDate)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get revenue by month: %w", err)

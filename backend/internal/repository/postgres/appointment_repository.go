@@ -215,7 +215,7 @@ func (r *appointmentRepository) Delete(ctx context.Context, id uuid.UUID) error 
 }
 
 func (r *appointmentRepository) GetByDateRange(ctx context.Context, startDate, endDate time.Time, employeeID *uuid.UUID) ([]*domain.Appointment, error) {
-	var appointments []*domain.Appointment
+	appointments := make([]*domain.Appointment, 0)
 
 	query := fmt.Sprintf(`
         SELECT %s
@@ -243,7 +243,7 @@ func (r *appointmentRepository) GetByDateRange(ctx context.Context, startDate, e
 }
 
 func (r *appointmentRepository) List(ctx context.Context, filters domain.AppointmentFilter) ([]*domain.Appointment, error) {
-	var appointments []*domain.Appointment
+	appointments := make([]*domain.Appointment, 0)
 
 	query := fmt.Sprintf(`
 		SELECT %s
@@ -458,7 +458,7 @@ func (r *appointmentRepository) CheckRoomAvailability(ctx context.Context, room 
 }
 
 func (r *appointmentRepository) GetByClientID(ctx context.Context, clientID uuid.UUID, page, pageSize int) ([]*domain.Appointment, error) {
-	var appointments []*domain.Appointment
+	appointments := make([]*domain.Appointment, 0)
 
 	query := fmt.Sprintf(`
 		SELECT %s
@@ -478,7 +478,7 @@ func (r *appointmentRepository) GetByClientID(ctx context.Context, clientID uuid
 }
 
 func (r *appointmentRepository) GetByEmployeeID(ctx context.Context, employeeID uuid.UUID, page, pageSize int) ([]*domain.Appointment, error) {
-	var appointments []*domain.Appointment
+	appointments := make([]*domain.Appointment, 0)
 
 	query := fmt.Sprintf(`
 		SELECT %s

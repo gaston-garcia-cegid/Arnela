@@ -222,7 +222,7 @@ func (r *employeeRepository) List(ctx context.Context, limit, offset int) ([]*do
 		LIMIT $1 OFFSET $2
 	`
 
-	var employees []*domain.Employee
+	employees := make([]*domain.Employee, 0)
 	err := r.db.SelectContext(ctx, &employees, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list employees: %w", err)
@@ -253,7 +253,7 @@ func (r *employeeRepository) GetBySpecialty(ctx context.Context, specialty strin
 		ORDER BY first_name, last_name
 	`
 
-	var employees []*domain.Employee
+	employees := make([]*domain.Employee, 0)
 	err := r.db.SelectContext(ctx, &employees, query, specialty)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get employees by specialty: %w", err)

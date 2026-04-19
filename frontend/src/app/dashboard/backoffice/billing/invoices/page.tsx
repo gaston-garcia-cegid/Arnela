@@ -86,7 +86,10 @@ export default function InvoicesPage() {
     try {
       setLoading(true);
       const response = await api.billing.invoices.list(token, filters);
-      setInvoices(response);
+      setInvoices({
+        ...response,
+        data: response.data ?? [],
+      });
     } catch (error) {
       logError('Error loading invoices', error, { component: 'InvoicesPage' });
       toast.error('Error al cargar facturas');

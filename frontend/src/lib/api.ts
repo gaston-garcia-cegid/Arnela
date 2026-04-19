@@ -47,6 +47,15 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
+/** Go/sqlx often JSON-encode a nil slice as null; UI expects an array. */
+function normalizePaginated<T>(r: PaginatedResponse<T>): PaginatedResponse<T> {
+  return { ...r, data: r.data ?? [] };
+}
+
+function normalizeArray<T>(r: T[] | null | undefined): T[] {
+  return r ?? [];
+}
+
 function newRequestId(): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -291,9 +300,10 @@ export const api = {
 
   clients: {
     list: async (token: string): Promise<ListClientsResponse> => {
-      return fetchWithAuth('/clients', token, {
+      const r = (await fetchWithAuth('/clients', token, {
         method: 'GET',
-      });
+      })) as ListClientsResponse;
+      return { ...r, clients: r.clients ?? [] };
     },
 
     getById: async (id: string, token: string): Promise<Client> => {
@@ -337,7 +347,7 @@ export const api = {
   },
 
   employees: {
-    list: async (token: string, page: number = 1, pageSize: number = 50): Promise<ListEmployeesResponse> => {
+      list: async (token: string, page: number = 1, pageSize: number = 50): Promise<ListEmployeesResponse> => {
       const queryParams = new URLSearchParams();
       queryParams.append('page', page.toString());
       queryParams.append('pageSize', pageSize.toString());
@@ -345,15 +355,13 @@ export const api = {
       const response = await fetchWithAuth(`/employees?${queryParams.toString()}`, token, {
         method: 'GET',
       }) as ListEmployeesResponse;
-      
-      // Map backend response to include specialty for backward compatibility
-      if (response.employees) {
-        response.employees = response.employees.map(emp => ({
-          ...emp,
-          specialty: emp.position || emp.specialties?.[0] || ''
-        }));
-      }
-      
+
+      const employees = response.employees ?? [];
+      response.employees = employees.map(emp => ({
+        ...emp,
+        specialty: emp.position || emp.specialties?.[0] || ''
+      }));
+
       return response;
     },
 
@@ -491,9 +499,10 @@ export const api = {
       page: number = 1, 
       pageSize: number = 10
     ): Promise<GetMyAppointmentsResponse> => {
-      return fetchWithAuth(`/appointments/me?page=${page}&pageSize=${pageSize}`, token, {
+      const r = (await fetchWithAuth(`/appointments/me?page=${page}&pageSize=${pageSize}`, token, {
         method: 'GET',
-      });
+      })) as GetMyAppointmentsResponse;
+      return { ...r, appointments: r.appointments ?? [] };
     },
 
     // Confirm appointment (admin/employee only)
@@ -535,9 +544,10 @@ export const api = {
       const queryString = queryParams.toString();
       const url = queryString ? `/appointments?${queryString}` : '/appointments';
 
-      return fetchWithAuth(url, token, {
+      const r = (await fetchWithAuth(url, token, {
         method: 'GET',
-      });
+      })) as ListAppointmentsResponse;
+      return { ...r, appointments: r.appointments ?? [] };
     },
 
     // Get available employees for appointments
@@ -547,9 +557,10 @@ export const api = {
 
     // Deprecated: Use getEmployees instead
     getTherapists: async (token: string): Promise<GetTherapistsResponse> => {
-      return fetchWithAuth('/appointments/therapists', token, {
+      const r = (await fetchWithAuth('/appointments/therapists', token, {
         method: 'GET',
-      });
+      })) as GetTherapistsResponse;
+      return { therapists: r.therapists ?? [] };
     },
 
     // Get available time slots for an employee on a specific date
@@ -565,9 +576,10 @@ export const api = {
         duration: duration.toString(),
       });
 
-      return fetchWithAuth(`/appointments/available-slots?${queryParams.toString()}`, token, {
+      const r = (await fetchWithAuth(`/appointments/available-slots?${queryParams.toString()}`, token, {
         method: 'GET',
-      });
+      })) as GetAvailableSlotsResponse;
+      return { slots: r.slots ?? [] };
     },
   },
 
@@ -605,11 +617,17 @@ export const api = {
        */
       list: async (token: string, filters?: InvoiceFilters): Promise<PaginatedResponse<Invoice>> => {
         if (!filters) {
-          return fetchWithAuth('/billing/invoices', token, { method: 'GET' });
+          return normalizePaginated(
+            (await fetchWithAuth('/billing/invoices', token, { method: 'GET' })) as PaginatedResponse<Invoice>
+          );
         }
 
         const queryParams = buildQueryParams(filters);
-        return fetchWithAuth(`/billing/invoices?${queryParams}`, token, { method: 'GET' });
+        return normalizePaginated(
+          (await fetchWithAuth(`/billing/invoices?${queryParams}`, token, {
+            method: 'GET',
+          })) as PaginatedResponse<Invoice>
+        );
       },
 
       /**
@@ -732,11 +750,15 @@ export const api = {
        */
       list: async (token: string, filters?: ExpenseFilters): Promise<PaginatedResponse<Expense>> => {
         if (!filters) {
-          return fetchWithAuth('/billing/expenses', token, { method: 'GET' });
+          return normalizePaginated(
+            (await fetchWithAuth('/billing/expenses', token, { method: 'GET' })) as PaginatedResponse<Expense>
+          );
         }
 
         const queryParams = buildQueryParams(filters);
-        return fetchWithAuth(`/billing/expenses?${queryParams}`, token, { method: 'GET' });
+        return normalizePaginated(
+          (await fetchWithAuth(`/billing/expenses?${queryParams}`, token, { method: 'GET' })) as PaginatedResponse<Expense>
+        );
       },
 
       /**
@@ -803,7 +825,9 @@ export const api = {
        * @returns Array of all categories
        */
       list: async (token: string): Promise<ExpenseCategory[]> => {
-        return fetchWithAuth('/billing/expense-categories', token, { method: 'GET' });
+        return normalizeArray(
+          (await fetchWithAuth('/billing/expense-categories', token, { method: 'GET' })) as ExpenseCategory[]
+        );
       },
 
       /**
@@ -812,7 +836,9 @@ export const api = {
        * @returns Array of parent categories with nested subcategories
        */
       getTree: async (token: string): Promise<ExpenseCategory[]> => {
-        return fetchWithAuth('/billing/expense-categories/tree', token, { method: 'GET' });
+        return normalizeArray(
+          (await fetchWithAuth('/billing/expense-categories/tree', token, { method: 'GET' })) as ExpenseCategory[]
+        );
       },
 
       /**
@@ -821,9 +847,11 @@ export const api = {
        * @returns Array of parent categories
        */
       getParents: async (token: string): Promise<ExpenseCategory[]> => {
-        return fetchWithAuth('/billing/expense-categories/parents', token, {
-          method: 'GET',
-        });
+        return normalizeArray(
+          (await fetchWithAuth('/billing/expense-categories/parents', token, {
+            method: 'GET',
+          })) as ExpenseCategory[]
+        );
       },
 
       /**
@@ -845,10 +873,12 @@ export const api = {
        * @returns Array of subcategories
        */
       getSubcategories: async (parentId: string, token: string): Promise<ExpenseCategory[]> => {
-        return fetchWithAuth(
-          `/billing/expense-categories/${parentId}/subcategories`,
-          token,
-          { method: 'GET' }
+        return normalizeArray(
+          (await fetchWithAuth(
+            `/billing/expense-categories/${parentId}/subcategories`,
+            token,
+            { method: 'GET' }
+          )) as ExpenseCategory[]
         );
       },
 
@@ -988,7 +1018,53 @@ export const api = {
       totalResults: number;
     }> => {
       const queryParams = new URLSearchParams({ q: query });
-      return fetchWithAuth(`/search?${queryParams}`, token, { method: 'GET' });
+      type ClientHit = {
+        id: string;
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string;
+        dniCif: string;
+      };
+      type EmployeeHit = {
+        id: string;
+        name: string;
+        email: string;
+        phone: string;
+        specialties: string[];
+        avatarColor: string;
+      };
+      type AppointmentHit = {
+        id: string;
+        title: string;
+        startTime: string;
+        endTime: string;
+        status: string;
+        clientName: string;
+        employeeName: string;
+      };
+      type InvoiceHit = {
+        id: string;
+        invoiceNumber: string;
+        clientName: string;
+        totalAmount: number;
+        status: string;
+        issueDate: string;
+      };
+      const r = (await fetchWithAuth(`/search?${queryParams}`, token, { method: 'GET' })) as {
+        clients?: ClientHit[];
+        employees?: EmployeeHit[];
+        appointments?: AppointmentHit[];
+        invoices?: InvoiceHit[];
+        totalResults?: number;
+      };
+      return {
+        clients: r.clients ?? [],
+        employees: r.employees ?? [],
+        appointments: r.appointments ?? [],
+        invoices: r.invoices ?? [],
+        totalResults: r.totalResults ?? 0,
+      };
     },
   },
 };

@@ -64,7 +64,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id uuid.UUID) error {
 }
 
 func (r *TaskRepository) List(ctx context.Context, filter repository.TaskFilter) ([]domain.Task, int, error) {
-	var tasks []domain.Task
+	tasks := make([]domain.Task, 0)
 	var count int
 
 	baseQuery := `SELECT * FROM tasks WHERE 1=1`

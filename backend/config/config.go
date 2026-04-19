@@ -54,7 +54,13 @@ func LoadConfig() (*Config, error) {
 		Server: ServerConfig{
 			Port:        getEnvAsInt("SERVER_PORT", 8080),
 			Environment: getEnv("ENVIRONMENT", "development"),
-			CORSOrigins: getEnvAsSlice("CORS_ORIGINS", []string{"http://localhost:3000", "http://localhost:3001"}),
+			// Include 127.0.0.1: browsers treat it as a different origin than localhost.
+			CORSOrigins: getEnvAsSlice("CORS_ORIGINS", []string{
+				"http://localhost:3000",
+				"http://localhost:3001",
+				"http://127.0.0.1:3000",
+				"http://127.0.0.1:3001",
+			}),
 		},
 		Database: DatabaseConfig{
 			Host:           getEnv("DB_HOST", "localhost"),

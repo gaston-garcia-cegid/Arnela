@@ -61,7 +61,7 @@ func (r *SearchRepository) SearchClients(ctx context.Context, query string, limi
 	}
 	defer rows.Close()
 
-	var clients []domain.SearchClient
+	clients := make([]domain.SearchClient, 0)
 	for rows.Next() {
 		var client domain.SearchClient
 		err := rows.Scan(
@@ -127,7 +127,7 @@ func (r *SearchRepository) SearchEmployees(ctx context.Context, query string, li
 	}
 	defer rows.Close()
 
-	var employees []domain.SearchEmployee
+	employees := make([]domain.SearchEmployee, 0)
 	for rows.Next() {
 		var employee domain.SearchEmployee
 
@@ -188,7 +188,7 @@ func (r *SearchRepository) SearchAppointments(ctx context.Context, query string,
 	}
 	defer rows.Close()
 
-	var appointments []domain.SearchAppointment
+	appointments := make([]domain.SearchAppointment, 0)
 	for rows.Next() {
 		var appointment domain.SearchAppointment
 		err := rows.Scan(
@@ -249,7 +249,7 @@ func (r *SearchRepository) SearchInvoices(ctx context.Context, query string, lim
 	}
 	defer rows.Close()
 
-	var invoices []domain.SearchInvoice
+	invoices := make([]domain.SearchInvoice, 0)
 	for rows.Next() {
 		var invoice domain.SearchInvoice
 		err := rows.Scan(
