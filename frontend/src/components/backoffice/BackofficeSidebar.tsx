@@ -10,6 +10,7 @@ import {
   Users,
   UserCircle,
   Calendar,
+  ListTodo,
   FileText,
   Receipt,
   FolderOpen,
@@ -60,6 +61,11 @@ const allMenuItems: MenuItem[] = [
     title: "Citas",
     href: "/dashboard/backoffice/appointments",
     icon: Calendar,
+  },
+  {
+    title: "Tareas",
+    href: "/dashboard/backoffice/tasks",
+    icon: ListTodo,
   },
   {
     title: "Facturación",

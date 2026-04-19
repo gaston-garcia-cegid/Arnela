@@ -11,12 +11,12 @@
 - [x] 1.2 Backend: tests servicio + handler para `GET /tasks/:id`.
 - [x] 1.3 `frontend/src/types/task.ts` (JSON camelCase alineado a `domain.Task`).
 - [x] 1.4 `frontend/src/lib/api.ts` → `api.tasks` + `taskList.ts` / tests de normalización.
-- [ ] 1.5 `frontend/src/components/backoffice/BackofficeSidebar.tsx`: entrada **Tareas** → `/dashboard/backoffice/tasks` (p. ej. `ListTodo`); visible admin y employee (no `employeeHidden`).
-- [ ] 1.6 `frontend/src/app/dashboard/backoffice/tasks/page.tsx`: **admin** `api.tasks.list` con `page`/`pageSize` y filtros opcionales `assigneeId`/`status`; **employee** `api.tasks.mine`; tabla shadcn; loading/error/vacío; `router.push` a `./tasks/[id]` y enlace a `./tasks/new`.
-- [ ] 1.7 `frontend/src/app/dashboard/backoffice/tasks/[id]/page.tsx`: detalle lectura (título, descripción, estado, prioridad, fechas, creator/assignee); volver al listado; opcional selector estado + `api.tasks.update` + toast.
-- [ ] 1.8 `frontend/src/app/dashboard/backoffice/tasks/new/page.tsx`: POST `api.tasks.create`; **admin**: `Select` asignatario desde `api.employees.list` (activos); **employee**: `api.employees.getMyProfile` y `assigneeId` fijo sin selector; validación mínima (título, asignatario).
-- [ ] 1.9 Strict TDD: `frontend/src/lib/taskLabels.ts` (etiquetas ES `status`/`priority`) + `src/lib/__tests__/taskLabels.test.ts` **antes** de usar en UI; componente presentacional p. ej. `TaskDetailView.tsx` + tests RTL en `src/components/tasks/__tests__/` (RED→GREEN→REFACTOR en `apply-progress.md`).
-- [ ] 1.10 Cierre F1: `pnpm test -- --run` y `pnpm exec tsc --noEmit`; smoke manual admin (list+filtros+alta) y employee (mis tareas+alta+detalle).
+- [x] 1.5 `frontend/src/components/backoffice/BackofficeSidebar.tsx`: entrada **Tareas** → `/dashboard/backoffice/tasks` (p. ej. `ListTodo`); visible admin y employee (no `employeeHidden`).
+- [x] 1.6 `frontend/src/app/dashboard/backoffice/tasks/page.tsx`: **admin** `api.tasks.list` con `page`/`pageSize` y filtros opcionales `assigneeId`/`status`; **employee** `api.tasks.mine`; tabla shadcn; loading/error/vacío; `router.push` a `./tasks/[id]` y enlace a `./tasks/new`.
+- [x] 1.7 `frontend/src/app/dashboard/backoffice/tasks/[id]/page.tsx`: detalle lectura (título, descripción, estado, prioridad, fechas, creator/assignee); volver al listado; opcional selector estado + `api.tasks.update` + toast.
+- [x] 1.8 `frontend/src/app/dashboard/backoffice/tasks/new/page.tsx`: POST `api.tasks.create`; **admin**: `Select` asignatario desde `api.employees.list` (activos); **employee**: `api.employees.getMyProfile` y `assigneeId` fijo sin selector; validación mínima (título, asignatario).
+- [x] 1.9 Strict TDD: `frontend/src/lib/taskLabels.ts` (etiquetas ES `status`/`priority`) + `src/lib/__tests__/taskLabels.test.ts` **antes** de usar en UI; componente presentacional p. ej. `TaskDetailView.tsx` + tests RTL en `src/components/tasks/__tests__/` (RED→GREEN→REFACTOR en `apply-progress.md`).
+- [x] 1.10 Cierre F1: `pnpm test -- --run` y `pnpm exec tsc --noEmit`; smoke manual admin (list+filtros+alta) y employee (mis tareas+alta+detalle).
 
 ## Fase 2: E2E críticos + CI (2 jun–27 jun, propuesta)
 
