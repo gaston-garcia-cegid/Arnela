@@ -1,40 +1,29 @@
 # Tasks — mvp-roadmap-2026
 
-## Fase 0: Detalle de gasto (hueco 404)
+## Fases completadas (referencia)
 
-- [x] 0.1 Tests Vitest + RTL para vista de detalle (`ExpenseDetailView`): proveedor/importe/categoría, categoría sin nombre, estado de carga.
-- [x] 0.2 Ruta App Router `frontend/src/app/dashboard/backoffice/billing/expenses/[id]/page.tsx`: `getById`, token/id inválidos, `NotFoundError`, enlace volver al listado.
+- [x] **F0** Gasto detalle: `ExpenseDetailView`, tests Vitest, `billing/expenses/[id]/page.tsx`.
+- [x] **F1** Tasks: `GET /tasks/:id`, `api.tasks` + tipos, `taskLabels` + `TaskDetailView` + tests, sidebar, `tasks/page.tsx` | `new` | `[id]`, cierre Vitest/tsc.
 
-## Fase 1: Tasks backoffice (listado + detalle mínimo + sidebar)
+## Fase 2: E2E críticos + CI (2 jun–27 jun)
 
-- [x] 1.1 Backend: `GET /api/v1/tasks/:id` en `backend/internal/handler/task_handler.go` y registro en `backend/cmd/api/main.go` **después** de `GET /tasks/me`; `TaskService.GetTask`; 404; roles `admin`+`employee`.
-- [x] 1.2 Backend: tests servicio + handler para `GET /tasks/:id`.
-- [x] 1.3 `frontend/src/types/task.ts` (JSON camelCase alineado a `domain.Task`).
-- [x] 1.4 `frontend/src/lib/api.ts` → `api.tasks` + `taskList.ts` / tests de normalización.
-- [x] 1.5 `frontend/src/components/backoffice/BackofficeSidebar.tsx`: entrada **Tareas** → `/dashboard/backoffice/tasks` (p. ej. `ListTodo`); visible admin y employee (no `employeeHidden`).
-- [x] 1.6 `frontend/src/app/dashboard/backoffice/tasks/page.tsx`: **admin** `api.tasks.list` con `page`/`pageSize` y filtros opcionales `assigneeId`/`status`; **employee** `api.tasks.mine`; tabla shadcn; loading/error/vacío; `router.push` a `./tasks/[id]` y enlace a `./tasks/new`.
-- [x] 1.7 `frontend/src/app/dashboard/backoffice/tasks/[id]/page.tsx`: detalle lectura (título, descripción, estado, prioridad, fechas, creator/assignee); volver al listado; opcional selector estado + `api.tasks.update` + toast.
-- [x] 1.8 `frontend/src/app/dashboard/backoffice/tasks/new/page.tsx`: POST `api.tasks.create`; **admin**: `Select` asignatario desde `api.employees.list` (activos); **employee**: `api.employees.getMyProfile` y `assigneeId` fijo sin selector; validación mínima (título, asignatario).
-- [x] 1.9 Strict TDD: `frontend/src/lib/taskLabels.ts` (etiquetas ES `status`/`priority`) + `src/lib/__tests__/taskLabels.test.ts` **antes** de usar en UI; componente presentacional p. ej. `TaskDetailView.tsx` + tests RTL en `src/components/tasks/__tests__/` (RED→GREEN→REFACTOR en `apply-progress.md`).
-- [x] 1.10 Cierre F1: `pnpm test -- --run` y `pnpm exec tsc --noEmit`; smoke manual admin (list+filtros+alta) y employee (mis tareas+alta+detalle).
-
-## Fase 2: E2E críticos + CI (2 jun–27 jun, propuesta)
-
-- [ ] 2.1 `frontend/package.json`: devDependency `@playwright/test`, script `test:e2e` (p. ej. `playwright test`) y opcional `test:e2e:ui`.
-- [ ] 2.2 `frontend/playwright.config.ts`: `baseURL` (Next dev o preview), `testDir: e2e`, timeouts razonables, `forbidOnly` en CI.
-- [ ] 2.3 `frontend/e2e/.env.example` (o doc): `E2E_BASE_URL`, credenciales/usuario seed **sin** secretos reales; alinear con `docker-compose` / API local.
-- [ ] 2.4 `frontend/e2e/auth-backoffice.spec.ts`: login backoffice (reutilizar selectores de `LoginModal` / rutas reales) → expect URL bajo `/dashboard/backoffice`.
-- [ ] 2.5 `frontend/e2e/billing-invoice.spec.ts`: smoke facturación (p. ej. abrir listado facturas o flujo corto acordado con datos seed).
-- [ ] 2.6 `frontend/e2e/appointment.spec.ts`: smoke citas (listado o crear mínimo según seed estable).
-- [ ] 2.7 `.github/workflows/ci.yml` (o nuevo `e2e.yml`): job **e2e** con servicios (Postgres/Redis si aplica), migraciones + API + `pnpm build && pnpm start` o `webServer` de Playwright; `pnpm exec playwright install --with-deps`; subir artefacto (trace/screenshot) en fallo.
-- [ ] 2.8 `frontend/README.md` o `docs/E2E.md`: cómo ejecutar E2E local, variables obligatorias, alcance smoke vs regresión completa.
+- [ ] 2.1 `frontend/package.json`: devDependency `@playwright/test`; scripts `test:e2e` (`playwright test`) y `test:e2e:ui` (`playwright test --ui`).
+- [ ] 2.2 `frontend/playwright.config.ts`: `testDir: 'e2e'`, `baseURL` desde `process.env.E2E_BASE_URL` (fallback `http://127.0.0.1:3000`), `forbidOnly: !!process.env.CI`, `retries`/`timeout` razonables, reporter `html`+`list`.
+- [ ] 2.3 `frontend/e2e/.env.example`: `E2E_BASE_URL`, `E2E_API_URL` (coherente con `NEXT_PUBLIC_API_URL`), `E2E_ADMIN_EMAIL` / `E2E_ADMIN_PASSWORD` como placeholders; aviso de no versionar secretos.
+- [ ] 2.4 `frontend/e2e/helpers/loginBackoffice.ts` (o `fixtures/`): helper que complete el flujo de login real del proyecto y espere URL bajo `/dashboard/backoffice`.
+- [ ] 2.5 `frontend/e2e/auth-backoffice.spec.ts`: smoke login → aserción `URL` contiene `backoffice` (o ruta acordada post-login).
+- [ ] 2.6 `frontend/e2e/billing-invoice.spec.ts`: con sesión admin, visitar listado facturas y aserción mínima (heading o tabla).
+- [ ] 2.7 `frontend/e2e/appointment.spec.ts`: visitar agenda backoffice y aserción mínima (rol admin/employee según seed).
+- [ ] 2.8 **Datos CI**: documentar en `docs/E2E.md` o script bajo `scripts/` cómo obtener usuario/contraseña conocidos (GitHub Secrets `E2E_*`, sin valores reales en git).
+- [ ] 2.9 `.github/workflows/e2e.yml` (nuevo, recomendado): job con `services` Postgres 16 + Redis 7 (alineado a `docker-compose.yml`), env DB/Redis, migraciones + arranque API Go en background, `pnpm build` + `pnpm start` en `frontend`, `playwright install --with-deps` (Chromium only opcional).
+- [ ] 2.10 Mismo workflow: paso `pnpm exec playwright test`; en fallo subir artefacto `playwright-report/` y `test-results/` (`upload-artifact`).
+- [ ] 2.11 `docs/E2E.md`: prerequisitos, copia de `.env.example`, comando local, apuntar API Docker vs host, timeouts y alcance smoke vs suite amplia.
+- [ ] 2.12 `frontend/README.md`: enlace a `docs/E2E.md` y variables necesarias para E2E local/CI.
 
 ## Fase 3: Hardening (30 jun–25 jul)
 
-- [ ] 3.1 Inventario rate limits sensibles (login/registro ya existentes) + gaps en `backend/`; tareas de implementación en change dedicado.
-- [ ] 3.2 Matriz permisos admin/employee/client vs rutas Gin y páginas App Router; acciones correctivas documentadas.
-- [ ] 3.3 Métricas/observabilidad (Prometheus/OpenTelemetry o mínimo logs estructurados) según acuerdo ops.
+- [ ] 3.1–3.3 Rate limits, matriz permisos, métricas — desglosar en change dedicado según `proposal.md`.
 
 ## Fase 4: Buffer UX (28 jul–22 ago)
 
-- [ ] 4.1 Backlog deuda menor post-MVP priorizado con negocio (referencia `MVP_ROADMAP.md`).
+- [ ] 4.1 Backlog deuda menor con negocio (`MVP_ROADMAP.md`).
