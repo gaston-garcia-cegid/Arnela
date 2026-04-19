@@ -51,7 +51,7 @@ sequenceDiagram
 
 1. `cd "$REMOTE_REPO_PATH"`
 2. `git fetch --all && git checkout <ref> && git pull` (o `git pull` si ya está en la rama)
-3. `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build`
+3. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`
 
 Variables sensibles solo en servidor (`.env.prod`); la skill **no** las embebe en el comando salvo que el usuario confirme rutas ya existentes.
 

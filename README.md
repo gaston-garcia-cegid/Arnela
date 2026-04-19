@@ -187,7 +187,7 @@ GitHub Actions ejecuta en cada push/PR a `main`:
 copy .env.prod.example .env.prod
 
 # Deploy
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
 Requiere en `.env.prod`: `DB_PASSWORD`, `REDIS_PASSWORD`, `JWT_SECRET`, `CORS_ORIGINS`, `NEXT_PUBLIC_API_URL`.

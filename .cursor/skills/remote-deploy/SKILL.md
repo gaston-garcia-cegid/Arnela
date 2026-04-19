@@ -41,7 +41,7 @@ ssh -i "<CLIENT_KEY_PATH>" "<USER>@<HOST>" 'bash -lc '\''set -e
 cd "<REMOTE_REPO_PATH>"
 git fetch --all
 git checkout "<REF>" && git pull --ff-only
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 '\'''
 ```
 
@@ -65,7 +65,7 @@ If the user says Docker is not used:
 From docs / server context, suggest:
 
 ```bash
-ssh -i "<CLIENT_KEY_PATH>" "<USER>@<HOST>" 'bash -lc '\''cd "<REMOTE_REPO_PATH>" && docker compose -f docker-compose.yml -f docker-compose.prod.yml ps'\'''
+ssh -i "<CLIENT_KEY_PATH>" "<USER>@<HOST>" 'bash -lc '\''cd "<REMOTE_REPO_PATH>" && docker compose -f docker-compose.prod.yml ps'\'''
 ```
 
 Health (adjust URL: on server `localhost`, or public URL behind Nginx):

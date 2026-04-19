@@ -21,7 +21,7 @@ The skill **MUST** require the agent to obtain, in order and explicitly:
 3. **Authentication method**: (a) path to private key on the **client** machine, or (b) password — if password, the skill **MUST** state that pasting passwords in chat is a security risk and **SHOULD** recommend key-based auth or user typing in a local terminal.
 4. **Remote repository path** (absolute path to the clone on the server).
 5. **Git ref** to deploy (branch name or tag); default **MAY** be `main` if the user accepts.
-6. **Project / compose context**: for Arnela, confirm use of `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod` per **`docs/DEPLOYMENT.md`**; if the user does not use Docker, the skill **MUST** stop the Docker path and ask for the user’s build/run commands instead.
+6. **Project / compose context**: for Arnela, confirm use of `docker compose -f docker-compose.prod.yml --env-file .env.prod` per **`docs/DEPLOYMENT.md`** (production server uses prod compose only; do not merge with dev `docker-compose.yml`); if the user does not use Docker, the skill **MUST** stop the Docker path and ask for the user’s build/run commands instead.
 
 ### R-3 — SSH execution model
 
@@ -35,7 +35,7 @@ When the user confirms Docker-based Arnela deploy, the inner remote script **MUS
 
 1. `cd <remote-repo-path>`
 2. `git fetch` and `git pull` (or `git checkout` + pull as agreed) for the chosen ref.
-3. `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build` (same flags as **`docs/DEPLOYMENT.md`** § Deploy).
+3. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build` (same flags as **`docs/DEPLOYMENT.md`** § Deploy).
 
 The skill **SHOULD** remind that `.env.prod` **MUST** exist on the server and is out of scope for the skill to create.
 

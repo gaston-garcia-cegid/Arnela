@@ -121,6 +121,8 @@ Flujo de datos:
 
 Para un flujo guiado por el agente (preguntas → SSH → `git pull` → Docker Compose en el servidor), usar la skill **`.cursor/skills/remote-deploy/SKILL.md`** (triggers: *deploy remoto*, *ssh deploy*, *remote deploy*, …). La guía operativa sigue siendo **`docs/DEPLOYMENT.md`**.
 
+En el servidor, el script **`scripts/update-server-arnela.sh`** hace `git pull` + `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build` (solo compose de producción; evita mezclar con `docker-compose.yml` del desarrollo local).
+
 ## Testing
 
 ### Backend

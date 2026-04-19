@@ -6,7 +6,7 @@
 - [x] 1.2 Añadir `SKILL.md` con frontmatter (`name`, `description` + **Trigger:** en ES/EN: deploy remoto, ssh deploy, desplegar servidor, remote deploy).
 - [x] 1.3 Documentar prerequisitos: OpenSSH cliente, servidor con Docker+Compose si Arnela, `docs/DEPLOYMENT.md` como referencia obligatoria.
 - [x] 1.4 Sección “Datos a recoger” en orden: host, usuario, auth (clave `ssh -i` preferida; contraseña con advertencia), ruta remota del repo, rama/tag, confirmación Docker vs comandos custom.
-- [x] 1.5 Plantilla remota Arnela: `cd` + `git fetch`/`git pull` (o checkout) + `docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build` (copiar de `docs/DEPLOYMENT.md` § Deploy).
+- [x] 1.5 Plantilla remota Arnela: `cd` + `git fetch`/`git pull` (o checkout) + `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build` (copiar de `docs/DEPLOYMENT.md` § Deploy).
 - [x] 1.6 Bloque “Sin Docker”: pedir comandos explícitos de build/run antes de plantillar SSH.
 - [x] 1.7 Modo agente vs usuario: `ssh … 'bash -lc …'` no interactivo; fallback “copiar y ejecutar en tu terminal” si no hay TTY.
 - [x] 1.8 Post-deploy: `docker compose … ps`, `curl` health/readiness (URLs según doc).

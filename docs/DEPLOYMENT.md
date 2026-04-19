@@ -80,15 +80,17 @@ Crear estos directorios si no existen, o modificar las rutas en `docker-compose.
 
 ### Build y arranque
 
+En **servidor de producción** usa solo `docker-compose.prod.yml` (stack completo: Postgres, Redis, go-api, frontend, nginx). No combines con `docker-compose.yml`: ese archivo orienta el desarrollo local y deja `go-api` bajo el profile `app`; mezclar ambos hace fallar Compose (`frontend` depende de un `go-api` no definido en el proyecto efectivo).
+
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 ```
 
 ### Verificar estado
 
 ```bash
 # Estado de contenedores
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 
 # Health check del backend
 curl http://localhost:8080/health
@@ -97,15 +99,15 @@ curl http://localhost:8080/health
 curl http://localhost:8080/readiness
 
 # Logs
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f go-api
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f frontend
-docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f nginx
+docker compose -f docker-compose.prod.yml logs -f go-api
+docker compose -f docker-compose.prod.yml logs -f frontend
+docker compose -f docker-compose.prod.yml logs -f nginx
 ```
 
 ### Detener
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod down
+docker compose -f docker-compose.prod.yml --env-file .env.prod down
 ```
 
 ## Servicios
@@ -186,10 +188,10 @@ nginx:
 git pull
 
 # Rebuild y restart
-docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
 # Verificar
-docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml ps
 curl http://localhost:8080/health
 ```
 
@@ -215,21 +217,21 @@ docker exec arnela-postgres pg_dump -U arnela_user -Fc arnela_db > backup_$(date
 
 ```bash
 # Parar el API evita escrituras durante el restore
-docker compose -f docker-compose.yml -f docker-compose.prod.yml stop go-api
+docker compose -f docker-compose.prod.yml stop go-api
 
 cat backup.sql | docker exec -i arnela-postgres psql -U arnela_user arnela_db
 
-docker compose -f docker-compose.yml -f docker-compose.prod.yml start go-api
+docker compose -f docker-compose.prod.yml start go-api
 ```
 
 **Restore desde `.dump`:**
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.prod.yml stop go-api
+docker compose -f docker-compose.prod.yml stop go-api
 
 docker exec -i arnela-postgres pg_restore -U arnela_user --clean --if-exists -d arnela_db < backup_YYYYMMDD.dump
 
-docker compose -f docker-compose.yml -f docker-compose.prod.yml start go-api
+docker compose -f docker-compose.prod.yml start go-api
 ```
 
 **Comprobaciones post-restore:** `curl` a `/readiness`, login en el backoffice, revisar `schema_migrations` en Postgres si hubo dudas sobre el estado de migraciones.
@@ -299,7 +301,7 @@ Next.js intenta crear enlaces simbólicos al copiar trazas al directorio `standa
 
 ```bash
 # Ver logs del backend
-docker compose logs go-api | head -50
+docker compose -f docker-compose.prod.yml logs go-api | head -50
 
 # Conectar a PostgreSQL
 docker exec -it arnela-postgres psql -U arnela_user arnela_db
@@ -312,7 +314,7 @@ SELECT * FROM schema_migrations;
 
 ```bash
 # Ver logs de crash
-docker compose logs --tail 50 <servicio>
+docker compose -f docker-compose.prod.yml logs --tail 50 <servicio>
 
 # Verificar healthcheck
 docker inspect arnela-go-api | jq '.[0].State.Health'
